@@ -44,6 +44,10 @@ let bootWindow;
 let firstOpen = false;
 let workspaces = []; // workspaceDir, id, browserWindow, tray
 let kernelPort = 6806;
+if (isDevEnv) {
+    kernelPort = 6808; // 开发时使用6808端口启动前后端
+}
+
 let resetWindowStateOnRestart = false;
 
 remote.initialize();

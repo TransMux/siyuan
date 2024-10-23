@@ -84,6 +84,10 @@ func Boot() {
 	mode := flag.String("mode", "prod", "dev/prod")
 	flag.Parse()
 
+	if "dev" == *mode {
+		ServerPort = "6808"
+	}
+
 	if "" != *wdPath {
 		WorkingDir = *wdPath
 	}
