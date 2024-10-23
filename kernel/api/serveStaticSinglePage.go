@@ -1,6 +1,7 @@
 package api
 
 import (
+	"html/template"
 	"net/http"
 	"strings"
 
@@ -51,5 +52,5 @@ func serveStaticSinglePage(c *gin.Context) {
 	content = strings.ReplaceAll(content, "contenteditable=\"true\"", "")
 
 	c.Header("Content-Type", "text/html; charset=utf-8")
-	c.HTML(http.StatusOK, "SinglePageServeTemplate.html", gin.H{"content": content})
+	c.HTML(http.StatusOK, "SinglePageServeTemplate.html", gin.H{"content": template.HTML(content), "docTitle": "测试", "docID": id})
 }

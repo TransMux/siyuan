@@ -4,11 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SiYuan Single Page</title>
+    <title>{{ .docTitle}}</title>
+    <link href="base.74c4d0762acd5b35cbaf.css" rel="stylesheet">
 </head>
 
 <body>
-    <h1>{{ .content }}</h1>
+    <div class="protyle" data-id="{{ .docID }}">
+        <div class="protyle-content">
+            <div class="protyle-top">{{ .docTitle }}</div>
+            <div class="protyle-wysiwyg" data-doc-type="NodeDocument">{{ .content }}</div>
+        </div>
+    </div>
 </body>
 
 </html>
