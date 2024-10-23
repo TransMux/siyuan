@@ -75,6 +75,32 @@ jobs:
       - name: Building UI  # 构建UI
         run: pnpm run build
         working-directory: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app
+
+      - name: Remove Build Directory
+        uses: JesseTG/rm@v1.0.2
+        with:
+          path: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app/build
+
+      - name: Remove Kernel Directory for Linux
+        uses: JesseTG/rm@v1.0.2
+        with:
+          path: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app/kernel-linux
+
+      - name: Remove Kernel Directory for Windows
+        uses: JesseTG/rm@v1.0.2
+        with:
+          path: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app/kernel
+
+      - name: Remove Kernel Directory for macOS
+        uses: JesseTG/rm@v1.0.2
+        with:
+          path: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app/kernel-darwin
+
+      - name: Remove Kernel Directory for macOS ARM64
+        uses: JesseTG/rm@v1.0.2
+        with:
+          path: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app/kernel-darwin-arm64
+
       - name: Generate Icon Resource and Properties/Version Info For Windows  # 为Windows生成图标资源和属性/版本信息
         run: ${{ github.workspace }}\go\${{ matrix.config.gobin }}\goversioninfo -platform-specific=true -icon="resource\icon.ico" -manifest="resource\goversioninfo.exe.manifest"
         if: "contains( matrix.config.goos, 'windows')"
@@ -89,6 +115,10 @@ jobs:
           GOOS: ${{ matrix.config.goos }}
           GOPATH: ${{ github.workspace }}/go
           GOARCH: ${{ matrix.config.goarch }}
+
+      - name: Building Electron App
+        run: pnpm run ${{ matrix.config.electron_args }}
+        working-directory: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app
 
       - name: List build directory  # 列出构建目录
         run: Get-ChildItem -Recurse -Force ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app/build/
