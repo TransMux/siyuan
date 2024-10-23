@@ -64,6 +64,9 @@ var (
 func Serve(fastMode bool) {
 	gin.SetMode(gin.ReleaseMode)
 	ginServer := gin.New()
+	// 加载HTML文件模板
+	// 加载单页渲染模板
+	ginServer.LoadHTMLGlob("resource/templates/*")
 	ginServer.UseH2C = true
 	ginServer.MaxMultipartMemory = 1024 * 1024 * 32 // 插入较大的资源文件时内存占用较大 https://github.com/siyuan-note/siyuan/issues/5023
 	ginServer.Use(

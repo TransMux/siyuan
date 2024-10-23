@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/88250/gulu"
 	"github.com/gin-gonic/gin"
@@ -43,6 +44,12 @@ func serveStaticSinglePage(c *gin.Context) {
 		return
 	}
 
+	// 去掉其中的动态元素
+	// draggable="true"
+	// contenteditable="true"
+	content = strings.ReplaceAll(content, "draggable=\"true\"", "")
+	content = strings.ReplaceAll(content, "contenteditable=\"true\"", "")
+
 	c.Header("Content-Type", "text/html; charset=utf-8")
-	c.String(http.StatusOK, content)
+	c.HTML(http.StatusOK, "SinglePageServeTemplate.html", gin.H{"content": content})
 }
