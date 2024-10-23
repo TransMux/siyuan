@@ -3,69 +3,61 @@ name: CD For SiYuan
 on:
   push:
     tags:
-      - '*-dev*'
-  workflow_dispatch:
+      - '*-dev*'  # 当推送的标签匹配*-dev*时触发，例如 v3.1.10-dev6
+  workflow_dispatch:  # 手动触发
 
 # ref https://docs.github.com/zh/actions/learn-github-actions/variables
 env:
-  repo_name_android: "siyuan-android"
-  repo_name: "siyuan"
-  repo_owner: "siyuan-note"
-  package_json: "app/package.json"
+  repo_name: "siyuan"  # 仓库名称
+  repo_owner: "TransMux"  # 仓库所有者
+  package_json: "app/package.json"  # package.json文件路径
 
 jobs:
   create_release:
-    name: Create Release
-    runs-on: ubuntu-latest
+    name: Create Release  # 创建发布
+    runs-on: ubuntu-latest  # 在最新的Ubuntu上运行
     outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-      release_version: ${{ steps.release_info.outputs.release_version }}
-      version: ${{ steps.version.outputs.value }}
-      packageManager: ${{ steps.packageManager.outputs.value }}
+      upload_url: ${{ steps.create_release.outputs.upload_url }}  # 上传URL
+      release_version: ${{ steps.release_info.outputs.release_version }}  # 发布版本
+      version: ${{ steps.version.outputs.value }}  # 版本
+      packageManager: ${{ steps.packageManager.outputs.value }}  # 包管理器
     steps:
-      - name: Checkout code
+      - name: Checkout code  # 检出代码
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
 
-      - name: Setup Python
+      - name: Setup Python  # 设置Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-      - run: pip install PyGithub
+          python-version: "3.11"  # 使用Python 3.11版本
+      - run: pip install PyGithub  # 安装PyGithub
 
-      - id: thisLatestRelease
-        uses: pozetroninc/github-action-get-latest-release@master
-        with:
-          # owner: siyuan-note
-          # repo: siyuan
-          repository: ${{ github.repository }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          excludes: prerelease, draft
-
-      - name: Extract version from package.json
+      - name: Extract version from package.json  # 从package.json中提取版本
         uses: sergeysova/jq-action@v2
         id: version
         with:
           cmd: 'jq .version ${{ env.package_json }} -r'
 
-      - name: Extract electronVersion from package.json
+      - name: Extract electronVersion from package.json  # 从package.json中提取electron版本
         uses: sergeysova/jq-action@v2
         id: electronVersion
         with:
           cmd: "jq .devDependencies.electron ${{ env.package_json }} -r"
 
-      - name: Extract packageManager from package.json
+      - name: Extract packageManager from package.json  # 从package.json中提取包管理器
         uses: sergeysova/jq-action@v2
         id: packageManager
         with:
             cmd: "jq .packageManager ${{ env.package_json }} -r"
 
-      - name: Gather Release Information
+      - name: Gather Release Information  # 收集发布信息
         id: release_info
         run: |
             echo "release_title=$(git show --format=%s --no-patch | head -1)" >> $GITHUB_OUTPUT
             echo "release_version=$(TZ=Asia/Shanghai date +'v%Y%m%d%H%M')" >> $GITHUB_OUTPUT
-            changelog_header=$(python scripts/parse-changelog-HEAD.py -t ${{ github.ref }} -b ${{ steps.thisLatestRelease.outputs.release }} -e ${{ steps.electronVersion.outputs.value }} ${{ env.repo_owner }}/${{ env.repo_name }})
-            changelog=$(python scripts/parse-changelog.py -t ${{ github.ref }} ${{ env.repo_owner }}/${{ env.repo_name }})
+            changelog_header=""
+            changelog=""
             EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
             echo "release_body<<$EOF" >> $GITHUB_ENV
             echo "$changelog_header" >> $GITHUB_ENV
@@ -74,7 +66,7 @@ jobs:
         env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create Release
+      - name: Create Release  # 创建发布
         id: create_release
         uses: ncipollo/release-action@v1
         with:
@@ -86,48 +78,12 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
   build:
-    runs-on: ${{ matrix.config.os }}
-    name: ${{ matrix.config.name }}
-    needs: create_release
+    runs-on: ${{ matrix.config.os }}  # 在矩阵配置的操作系统上运行
+    name: ${{ matrix.config.name }}  # 矩阵配置的名称
+    needs: create_release  # 依赖create_release作业
     strategy:
       matrix:
         config:
-          - os: ubuntu-20.04
-            name: ubuntu build linux.AppImage
-            kernel_path: "../app/kernel-linux/SiYuan-Kernel"
-            build_args_prefix: "-s -w -X"
-            build_args_suffix: "Mode=prod"
-            electron_args: "dist-linux"
-            goos: "linux"
-            goarch: "amd64"
-            suffix: "linux.AppImage"
-          - os: ubuntu-20.04
-            name: ubuntu build linux.tar.gz
-            kernel_path: "../app/kernel-linux/SiYuan-Kernel"
-            build_args_prefix: "-s -w -X"
-            build_args_suffix: "Mode=prod"
-            electron_args: "dist-linux"
-            goos: "linux"
-            goarch: "amd64"
-            suffix: "linux.tar.gz"
-          - os: macos-latest
-            name: macos build mac.dmg
-            kernel_path: "../app/kernel-darwin/SiYuan-Kernel"
-            build_args_prefix: "-s -w -X"
-            build_args_suffix: "Mode=prod"
-            electron_args: "dist-darwin"
-            goos: "darwin"
-            goarch: "amd64"
-            suffix: "mac.dmg"
-          - os: macos-latest
-            name: macos build mac-arm64.dmg
-            kernel_path: "../app/kernel-darwin-arm64/SiYuan-Kernel"
-            build_args_prefix: "-s -w -X"
-            build_args_suffix: "Mode=prod"
-            electron_args: "dist-darwin-arm64"
-            goos: "darwin"
-            goarch: "arm64"
-            suffix: "mac-arm64.dmg"
           - os: windows-latest
             name: windows build win.exe
             kernel_path: "../app/kernel/SiYuan-Kernel.exe"
@@ -141,23 +97,23 @@ jobs:
             suffix: "win.exe"
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v4  # 检出代码
       with:
         path: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}
 
-    - name: Set up MingGW
+    - name: Set up MingGW  # 设置MingGW
       uses: msys2/setup-msys2@v2
       if: "contains( matrix.config.goos, 'windows')"
       with:
         install: p7zip mingw-w64-x86_64-lua
 
-    - name: Set up Go
+    - name: Set up Go  # 设置Go
       uses: actions/setup-go@v5
       with:
         go-version-file: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/kernel/go.mod
     - run: go version
 
-    - name: Set up goversioninfo
+    - name: Set up goversioninfo  # 设置goversioninfo
       run: go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo && go install github.com/josephspurrier/goversioninfo/cmd/goversioninfo
       if: "contains( matrix.config.goos, 'windows')"
       working-directory: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/kernel
@@ -168,54 +124,54 @@ jobs:
         GOPATH: ${{ github.workspace }}/go
         GOARCH: ${{ matrix.config.goarch }}
 
-    - name: Set up Node
+    - name: Set up Node  # 设置Node
       uses: actions/setup-node@v4
       with:
         node-version: 20
 
-    - name: Install Node pnpm
+    - name: Install Node pnpm  # 安装Node pnpm
       run: npm install -g ${{ needs.create_release.outputs.packageManager }}
       working-directory: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app
 
-    - name: Install Node Dependencies
+    - name: Install Node Dependencies  # 安装Node依赖
       run: pnpm install --no-frozen-lockfile
       working-directory: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app
 
-    - name: Building UI
+    - name: Building UI  # 构建UI
       run: pnpm run build
       working-directory: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app
 
-    - name: Remove Build Directory
+    - name: Remove Build Directory  # 删除构建目录
       uses: JesseTG/rm@v1.0.2
       with:
         path: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app/build
 
-    - name: Remove Kernel Directory for Linux
+    - name: Remove Kernel Directory for Linux  # 删除Linux内核目录
       uses: JesseTG/rm@v1.0.2
       with:
         path: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app/kernel-linux
 
-    - name: Remove Kernel Directory for Windows
+    - name: Remove Kernel Directory for Windows  # 删除Windows内核目录
       uses: JesseTG/rm@v1.0.2
       with:
         path: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app/kernel
 
-    - name: Remove Kernel Directory for macOS
+    - name: Remove Kernel Directory for macOS  # 删除macOS内核目录
       uses: JesseTG/rm@v1.0.2
       with:
         path: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app/kernel-darwin
 
-    - name: Remove Kernel Directory for macOS ARM64
+    - name: Remove Kernel Directory for macOS ARM64  # 删除macOS ARM64内核目录
       uses: JesseTG/rm@v1.0.2
       with:
         path: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app/kernel-darwin-arm64
 
-    - name: Generate Icon Resource and Properties/Version Info For Windows
+    - name: Generate Icon Resource and Properties/Version Info For Windows  # 为Windows生成图标资源和属性/版本信息
       run: ${{ github.workspace }}\go\${{ matrix.config.gobin }}\goversioninfo -platform-specific=true -icon="resource\icon.ico" -manifest="resource\goversioninfo.exe.manifest"
       if: "contains( matrix.config.goos, 'windows')"
       working-directory: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/kernel
     
-    - name: Building Kernel
+    - name: Building Kernel  # 构建内核
       run: go build --tags fts5 -o "${{ matrix.config.kernel_path }}" -v -ldflags "${{ matrix.config.build_args_prefix }} github.com/${{ env.repo_owner }}/${{ env.repo_name }}/kernel/util.${{ matrix.config.build_args_suffix }}"
       working-directory: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/kernel
       env:
@@ -225,11 +181,11 @@ jobs:
         GOPATH: ${{ github.workspace }}/go
         GOARCH: ${{ matrix.config.goarch }}
       
-    - name: Building Electron App
+    - name: Building Electron App  # 构建Electron应用
       run: pnpm run ${{ matrix.config.electron_args }}
       working-directory: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app
 
-    - name: Upload Release
+    - name: Upload Release  # 上传发布
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
