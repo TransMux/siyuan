@@ -91,11 +91,11 @@ jobs:
           GOARCH: ${{ matrix.config.goarch }}
 
       - name: List build directory  # 列出构建目录
-        run: Get-ChildItem -Recurse -Force ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app/build
+        run: Get-ChildItem -Recurse -Force ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app/build/
         shell: pwsh
 
       - name: Upload build artifact  # 上传构建产物
         uses: actions/upload-artifact@v4
         with:
           name: siyuan-${{ matrix.config.suffix }}  # 产物名称
-          path: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app/build/siyuan-*${{ matrix.config.suffix }}  # 产物路径
+          path: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app/build/*${{ matrix.config.suffix }}  # 产物路径
