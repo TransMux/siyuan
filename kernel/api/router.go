@@ -454,5 +454,5 @@ func ServeAPI(ginServer *gin.Engine) {
 	ginServer.Handle("POST", "/api/archive/unzip", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, unzip)
 
 	// Serve Static Page
-	ginServer.Handle("POST", "/s/:block_id", model.CheckAuth, model.CheckAdminRole, serveStaticSinglePage)
+	ginServer.Handle("GET", "/s/:block_id", model.CheckAuth, model.CheckAdminRole, serveStaticSinglePage)
 }
