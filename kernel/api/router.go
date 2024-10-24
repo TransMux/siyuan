@@ -452,4 +452,8 @@ func ServeAPI(ginServer *gin.Engine) {
 
 	ginServer.Handle("POST", "/api/archive/zip", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, zip)
 	ginServer.Handle("POST", "/api/archive/unzip", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, unzip)
+
+	// Mux - 通过http协议跳转文档, 发送请求 -> 前端打开文档 -> 前端聚焦block -> 前端获取焦点
+	// 如果思源不是运行在当前电脑上，那么浏览器打开对应的页面？
+	ginServer.Handle("GET", "/j/:block_id", model.CheckAuth, redirect)
 }
