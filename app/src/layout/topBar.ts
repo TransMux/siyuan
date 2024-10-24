@@ -166,8 +166,10 @@ export const initBar = (app: App) => {
                 break;
             } else if (targetId === "toolbarVIP") {
                 if (!window.siyuan.config.readonly) {
-                    const dialogSetting = openSetting(app);
-                    dialogSetting.element.querySelector('.b3-tab-bar [data-name="account"]').dispatchEvent(new CustomEvent("click"));
+                    window.location.reload();
+                    // 原来还能这样打开设置，然后切换到对应选项卡
+                    // const dialogSetting = openSetting(app);
+                    // dialogSetting.element.querySelector('.b3-tab-bar [data-name="account"]').dispatchEvent(new CustomEvent("click"));
                 }
                 event.stopPropagation();
                 break;
