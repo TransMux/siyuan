@@ -1,22 +1,23 @@
-import {Constants} from "../../constants";
-import {uploadFiles, uploadLocalFiles} from "../upload";
-import {processPasteCode, processRender} from "./processCode";
-import {readText, writeText} from "./compatibility";
+import { Constants } from "../../constants";
+import { uploadFiles, uploadLocalFiles } from "../upload";
+import { processPasteCode, processRender } from "./processCode";
+import { readText, writeText } from "./compatibility";
 /// #if !BROWSER
-import {clipboard} from "electron";
+import { clipboard } from "electron";
 /// #endif
-import {hasClosestBlock} from "./hasClosest";
-import {getEditorRange} from "./selection";
-import {blockRender} from "../render/blockRender";
-import {highlightRender} from "../render/highlightRender";
-import {fetchPost, fetchSyncPost} from "../../util/fetch";
-import {isDynamicRef, isFileAnnotation} from "../../util/functions";
-import {insertHTML} from "./insertHTML";
-import {scrollCenter} from "../../util/highlightById";
-import {hideElements} from "../ui/hideElements";
-import {avRender} from "../render/av/render";
-import {cellScrollIntoView, getCellText} from "../render/av/cell";
-import {getContenteditableElement} from "../wysiwyg/getBlock";
+import { hasClosestBlock } from "./hasClosest";
+import { getEditorRange } from "./selection";
+import { blockRender } from "../render/blockRender";
+import { highlightRender } from "../render/highlightRender";
+import { fetchPost, fetchSyncPost } from "../../util/fetch";
+import { isDynamicRef, isFileAnnotation } from "../../util/functions";
+import { insertHTML } from "./insertHTML";
+import { scrollCenter } from "../../util/highlightById";
+import { hideElements } from "../ui/hideElements";
+import { avRender } from "../render/av/render";
+import { cellScrollIntoView, getCellText } from "../render/av/cell";
+import { getContenteditableElement } from "../wysiwyg/getBlock";
+import { modifyPasteContent } from "./mux/paste";
 
 export const getTextStar = (blockElement: HTMLElement) => {
     const dataType = blockElement.dataset.type;
@@ -220,14 +221,21 @@ export const pasteText = (protyle: IProtyle, textPlain: string, nodeElement: Ele
     filterClipboardHint(protyle, textPlain);
     scrollCenter(protyle, undefined, false, "smooth");
 };
-
+/**
+ * 处理粘贴事件
+ * @param {IProtyle} protyle - Protyle 实例
+ * @param {(ClipboardEvent | DragEvent) & { target: HTMLElement }} event - 粘贴事件
+ */
 export const paste = async (protyle: IProtyle, event: (ClipboardEvent | DragEvent) & { target: HTMLElement }) => {
-    event.stopPropagation();
-    event.preventDefault();
+    event.stopPropagation(); // 阻止事件冒泡
+    event.preventDefault(); // 阻止默认行为
+
     let textHTML: string;
     let textPlain: string;
     let siyuanHTML: string;
     let files: FileList | DataTransferItemList;
+
+    // 从剪贴板或拖放事件中获取数据
     if ("clipboardData" in event) {
         textHTML = event.clipboardData.getData("text/html");
         textPlain = event.clipboardData.getData("text/plain");
@@ -279,24 +287,30 @@ export const paste = async (protyle: IProtyle, event: (ClipboardEvent | DragEven
         `<!--StartFragment--><a href="${textPlain}">${textPlain}</a><!--EndFragment-->`) {
         textHTML = "";
     }
+
     // 复制标题及其下方块使用 writeText，需将 textPlain 转换为 textHTML
     if (textPlain.endsWith(Constants.ZWSP) && !textHTML && !siyuanHTML) {
         siyuanHTML = textPlain.substr(0, textPlain.length - 1);
     }
+
     // 剪切复制中首位包含空格或仅有空格 https://github.com/siyuan-note/siyuan/issues/5667
     if (!siyuanHTML) {
-        // process word
+        // 处理 Word 文档
         const doc = new DOMParser().parseFromString(textHTML, "text/html");
         if (doc.body && doc.body.innerHTML) {
             textHTML = doc.body.innerHTML;
         }
-        // windows 剪切板
+        // 处理 Windows 剪切板
         if (textHTML.startsWith("\n<!--StartFragment-->") && textHTML.endsWith("<!--EndFragment-->\n\n")) {
             textHTML = doc.body.innerHTML.trim().replace("<!--StartFragment-->", "").replace("<!--EndFragment-->", "");
         }
         textHTML = Lute.Sanitize(textHTML);
     }
 
+    // 我的粘贴事件处理逻辑
+    [textPlain, textHTML, siyuanHTML] = modifyPasteContent(textPlain, textHTML, siyuanHTML);
+
+    // 处理插件的粘贴事件
     if (protyle && protyle.app && protyle.app.plugins) {
         for (let i = 0; i < protyle.app.plugins.length; i++) {
             const response: IObject & { files: FileList } = await new Promise((resolve) => {
@@ -335,12 +349,16 @@ export const paste = async (protyle: IProtyle, event: (ClipboardEvent | DragEven
         }
         return;
     }
+
     hideElements(["select"], protyle);
     protyle.wysiwyg.element.querySelectorAll(".protyle-wysiwyg--hl").forEach(item => {
         item.classList.remove("protyle-wysiwyg--hl");
     });
+
     const code = processPasteCode(textHTML, textPlain);
     const range = getEditorRange(protyle.wysiwyg.element);
+
+    // 处理代码块粘贴
     if (nodeElement.getAttribute("data-type") === "NodeCodeBlock" ||
         protyle.toolbar.getCurrentType(range).includes("code")) {
         insertHTML(textPlain, protyle);
@@ -426,7 +444,7 @@ export const paste = async (protyle: IProtyle, event: (ClipboardEvent | DragEven
                 insertHTML(response.data, protyle, false, false, true);
                 protyle.wysiwyg.element.querySelectorAll('[data-type~="block-ref"]').forEach(item => {
                     if (item.textContent === "") {
-                        fetchPost("/api/block/getRefText", {id: item.getAttribute("data-id")}, (response) => {
+                        fetchPost("/api/block/getRefText", { id: item.getAttribute("data-id") }, (response) => {
                             item.innerHTML = response.data;
                         });
                     }
