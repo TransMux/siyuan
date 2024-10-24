@@ -84,15 +84,12 @@ export function modifyPasteContent(textContent: string, textHTML: string, siyuan
     }
 
     let replaced = false;
-
     textContent = textContent.replace(/🔗 (.*?)\s*(https?:\/\/[^\s]+)/g, function (match, p1, p2) {
         replaced = true;
         return `[${p1}](${p2})`;
     });
-    // 检查是否需要替换文本内容中的换行符
     if (replaced) {
-        // 使用正则表达式替换所有的换行符为 <br/>
-        textHTML = textContent.replace(/\n/g, "<br/>");
+        textHTML = "";
     }
 
     // 去除 textHTML 中的小图片
