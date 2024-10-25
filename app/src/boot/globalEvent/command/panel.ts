@@ -23,6 +23,7 @@ import {globalCommand} from "./global";
 import {getDisplayName, getNotebookName, getTopPaths, movePathTo, moveToPath, pathPosix} from "../../../util/pathName";
 import {hintMoveBlock} from "../../../protyle/hint/extend";
 import {fetchSyncPost} from "../../../util/fetch";
+import {focusByRange} from "../../../protyle/util/selection";
 
 export const commandPanel = (app: App) => {
     const range = getSelection().rangeCount > 0 ? getSelection().getRangeAt(0) : undefined;
@@ -41,7 +42,13 @@ export const commandPanel = (app: App) => {
         <kbd>${window.siyuan.languages.enterKey}/${window.siyuan.languages.click}</kbd> ${window.siyuan.languages.confirm}
         <kbd>Esc</kbd> ${window.siyuan.languages.close}
     </div>
-</div>`
+</div>`,
+        // [打开时不要取消之前的焦点](siyuan://blocks/20241025222946-jwrrwo3)
+        destroyCallback(options: IObject) {
+            if (range && !options) {
+                focusByRange(range);
+            }
+        },
     });
     dialog.element.setAttribute("data-key", Constants.DIALOG_COMMANDPANEL);
     const listElement = dialog.element.querySelector("#commands");
@@ -112,7 +119,7 @@ export const commandPanel = (app: App) => {
         if (liElement) {
             const command = liElement.getAttribute("data-command");
             if (command) {
-                execByCommand({command, app, previousRange: range});
+                execByCommand({ command, app, previousRange: range });
                 dialog.destroy();
                 event.preventDefault();
                 event.stopPropagation();
@@ -130,7 +137,7 @@ export const commandPanel = (app: App) => {
             if (currentElement) {
                 const command = currentElement.getAttribute("data-command");
                 if (command) {
-                    execByCommand({command, app, previousRange: range});
+                    execByCommand({ command, app, previousRange: range });
                 } else {
                     currentElement.dispatchEvent(new CustomEvent("click"));
                 }
@@ -298,7 +305,7 @@ export const execByCommand = async (options: {
         (isMobile() && !document.getElementById("empty").classList.contains("fn__none"))) {
         if (options.command === "replace") {
             /// #if MOBILE
-            popSearch(options.app, {hasReplace: true, page: 1});
+            popSearch(options.app, { hasReplace: true, page: 1 });
             /// #else
             openSearch({
                 app: options.app,
@@ -308,7 +315,7 @@ export const execByCommand = async (options: {
             /// #endif
         } else if (options.command === "search") {
             /// #if MOBILE
-            popSearch(options.app, {hasReplace: false, page: 1});
+            popSearch(options.app, { hasReplace: false, page: 1 });
             /// #else
             openSearch({
                 app: options.app,
