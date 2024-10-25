@@ -6,3 +6,8 @@ dev-front:
 
 dev-electron:
 	cd app && pnpm run start --no-sandbox
+
+install-app:
+	cd app && pnpm build:app
+	mv /mnt/c/Users/InEas/AppData/Local/Programs/SiYuan/resources/stage/build/app /mnt/c/Users/InEas/AppData/Local/Programs/SiYuan/resources/stage/build/app-bak
+	cp -r /root/projects/siyuan/app/stage/build/app /mnt/c/Users/InEas/AppData/Local/Programs/SiYuan/resources/stage/build/app
