@@ -134,6 +134,9 @@ export const commandPanel = (app: App) => {
         }
         upDownHint(listElement, event);
         if (event.key === "Enter") {
+            // 触发后不再执行默认的点击事件
+            event.preventDefault();
+            event.stopPropagation();
             const currentElement = listElement.querySelector(".b3-list-item--focus");
             if (currentElement) {
                 const command = currentElement.getAttribute("data-command");
@@ -144,9 +147,6 @@ export const commandPanel = (app: App) => {
                     currentElement.dispatchEvent(new CustomEvent("click", {
                         detail: { command, app, previousRange: range }
                     }));
-                    // 触发后不再执行默认的点击事件
-                    event.preventDefault();
-                    event.stopPropagation();
                 }
             }
             dialog.destroy();
