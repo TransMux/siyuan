@@ -1,29 +1,29 @@
-import {Dialog} from "../../../dialog";
-import {App} from "../../../index";
-import {upDownHint} from "../../../util/upDownHint";
-import {updateHotkeyTip} from "../../../protyle/util/compatibility";
-import {isMobile} from "../../../util/functions";
-import {Constants} from "../../../constants";
-import {Editor} from "../../../editor";
+import { Dialog } from "../../../dialog";
+import { App } from "../../../index";
+import { upDownHint } from "../../../util/upDownHint";
+import { updateHotkeyTip } from "../../../protyle/util/compatibility";
+import { isMobile } from "../../../util/functions";
+import { Constants } from "../../../constants";
+import { Editor } from "../../../editor";
 /// #if MOBILE
-import {getCurrentEditor} from "../../../mobile/editor";
-import {popSearch} from "../../../mobile/menu/search";
+import { getCurrentEditor } from "../../../mobile/editor";
+import { popSearch } from "../../../mobile/menu/search";
 /// #else
-import {getActiveTab, getDockByType} from "../../../layout/tabUtil";
-import {Custom} from "../../../layout/dock/Custom";
-import {getAllModels} from "../../../layout/getAll";
-import {Files} from "../../../layout/dock/Files";
-import {Search} from "../../../search";
-import {openSearch} from "../../../search/spread";
+import { getActiveTab, getDockByType } from "../../../layout/tabUtil";
+import { Custom } from "../../../layout/dock/Custom";
+import { getAllModels } from "../../../layout/getAll";
+import { Files } from "../../../layout/dock/Files";
+import { Search } from "../../../search";
+import { openSearch } from "../../../search/spread";
 /// #endif
-import {addEditorToDatabase, addFilesToDatabase} from "../../../protyle/render/av/addToDatabase";
-import {hasClosestBlock, hasClosestByClassName, hasTopClosestByTag} from "../../../protyle/util/hasClosest";
-import {onlyProtyleCommand} from "./protyle";
-import {globalCommand} from "./global";
-import {getDisplayName, getNotebookName, getTopPaths, movePathTo, moveToPath, pathPosix} from "../../../util/pathName";
-import {hintMoveBlock} from "../../../protyle/hint/extend";
-import {fetchSyncPost} from "../../../util/fetch";
-import {focusByRange} from "../../../protyle/util/selection";
+import { addEditorToDatabase, addFilesToDatabase } from "../../../protyle/render/av/addToDatabase";
+import { hasClosestBlock, hasClosestByClassName, hasTopClosestByTag } from "../../../protyle/util/hasClosest";
+import { onlyProtyleCommand } from "./protyle";
+import { globalCommand } from "./global";
+import { getDisplayName, getNotebookName, getTopPaths, movePathTo, moveToPath, pathPosix } from "../../../util/pathName";
+import { hintMoveBlock } from "../../../protyle/hint/extend";
+import { fetchSyncPost } from "../../../util/fetch";
+import { focusByRange } from "../../../protyle/util/selection";
 
 export const commandPanel = (app: App) => {
     const range = getSelection().rangeCount > 0 ? getSelection().getRangeAt(0) : undefined;
@@ -165,9 +165,12 @@ const filterList = (inputElement: HTMLInputElement, listElement: Element) => {
     let hasFocus = false;
     Array.from(listElement.children).forEach((element: HTMLElement) => {
         const elementValue = element.querySelector(".b3-list-item__text").textContent.toLowerCase();
-        const command = element.dataset.command;
-        if (inputValue.indexOf(elementValue) > -1 || elementValue.indexOf(inputValue) > -1 ||
-            inputValue.indexOf(command) > -1 || command.indexOf(inputValue) > -1) {
+        // [解决命令面板搜索报错的问题Pull Request](siyuan://blocks/20241025222931-f6d7vej)
+        const command = element.dataset.command; // can be undefined
+        const isCommandMatch = command ? inputValue.indexOf(command) > -1 || command.indexOf(inputValue) > -1 : false;
+        const isNameMatch = inputValue.indexOf(elementValue) > -1 || elementValue.indexOf(inputValue) > -1;
+
+        if (isNameMatch || isCommandMatch) {
             if (!hasFocus) {
                 element.classList.add("b3-list-item--focus");
             }
