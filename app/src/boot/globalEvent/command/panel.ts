@@ -144,6 +144,9 @@ export const commandPanel = (app: App) => {
                     currentElement.dispatchEvent(new CustomEvent("click", {
                         detail: { command, app, previousRange: range }
                     }));
+                    // 触发后不再执行默认的点击事件
+                    event.preventDefault();
+                    event.stopPropagation();
                 }
             }
             dialog.destroy();
