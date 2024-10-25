@@ -139,7 +139,10 @@ export const commandPanel = (app: App) => {
                 if (command) {
                     execByCommand({ command, app, previousRange: range });
                 } else {
-                    currentElement.dispatchEvent(new CustomEvent("click"));
+                    // siyuan://blocks/20241025231614-ui1r5ui
+                    currentElement.dispatchEvent(new CustomEvent("click", {
+                        detail: { command, app, previousRange: range }
+                    }));
                 }
             }
             dialog.destroy();
