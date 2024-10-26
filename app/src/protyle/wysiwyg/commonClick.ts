@@ -55,6 +55,14 @@ export const commonClick = (event: MouseEvent & {
         return true;
     }
 
+    // siyuan://blocks/20241026162411-x83o4e9
+    const avMuxElement = hasClosestByClassName(event.target, "mux-av-attr-inline");
+    if (avMuxElement) {
+        openAttr(avMuxElement.parentElement.parentElement, "av", protyle);
+        event.stopPropagation();
+        return true;
+    }
+
     const attrAliasElement = hasClosestByClassName(event.target, "protyle-attr--alias");
     if (attrAliasElement) {
         if (!isM && isOnlyMeta(event)) {
