@@ -9,5 +9,12 @@ dev-electron:
 
 install-app:
 	cd app && pnpm build:app
+	rm -rf /mnt/c/Users/InEas/AppData/Local/Programs/SiYuan/resources/stage/build/app-bak
 	mv /mnt/c/Users/InEas/AppData/Local/Programs/SiYuan/resources/stage/build/app /mnt/c/Users/InEas/AppData/Local/Programs/SiYuan/resources/stage/build/app-bak
 	cp -r /root/projects/siyuan/app/stage/build/app /mnt/c/Users/InEas/AppData/Local/Programs/SiYuan/resources/stage/build/app
+
+install-desktop:
+	cd app && pnpm build:desktop
+	rm -rf /mnt/c/Users/InEas/AppData/Local/Programs/SiYuan/resources/stage/build/desktop-bak
+	mv /mnt/c/Users/InEas/AppData/Local/Programs/SiYuan/resources/stage/build/desktop /mnt/c/Users/InEas/AppData/Local/Programs/SiYuan/resources/stage/build/desktop-bak
+	cp -r /root/projects/siyuan/app/stage/build/desktop /mnt/c/Users/InEas/AppData/Local/Programs/SiYuan/resources/stage/build/desktop
