@@ -1,10 +1,11 @@
-import {hasClosestByClassName} from "../util/hasClosest";
-import {openAttr, openFileAttr} from "../../menus/commonMenuItem";
+import { hasClosestByClassName } from "../util/hasClosest";
+import { openAttr, openFileAttr } from "../../menus/commonMenuItem";
 /// #if !MOBILE
-import {openGlobalSearch} from "../../search/util";
+import { openGlobalSearch } from "../../search/util";
 /// #endif
-import {isMobile} from "../../util/functions";
-import {isOnlyMeta} from "../util/compatibility";
+import { isMobile } from "../../util/functions";
+import { isOnlyMeta } from "../util/compatibility";
+import { openFileById } from "../../editor/util";
 
 export const commonClick = (event: MouseEvent & {
     target: HTMLElement
@@ -58,7 +59,18 @@ export const commonClick = (event: MouseEvent & {
     // siyuan://blocks/20241026162411-x83o4e9
     const avMuxElement = hasClosestByClassName(event.target, "mux-av-attr-inline");
     if (avMuxElement) {
-        openAttr(avMuxElement.parentElement.parentElement, "av", protyle);
+        // 如果按住了ctrl，那么直接打开数据库页面
+        if (event.ctrlKey) {
+            if (avMuxElement.getAttribute("data-av-block-id")) {
+                openFileById({
+                    app: protyle.app,
+                    // data-av-block-id="20241026114711-d63eboc"
+                    id: avMuxElement.getAttribute("data-av-block-id"),
+                });
+            }
+        } else {
+            openAttr(avMuxElement.parentElement.parentElement, "av", protyle);
+        }
         event.stopPropagation();
         return true;
     }
