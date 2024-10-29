@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/88250/lute"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -54,9 +55,8 @@ import (
 	"github.com/siyuan-note/siyuan/kernel/util"
 )
 
-func HTML2Markdown(htmlStr string) (markdown string, withMath bool, err error) {
+func HTML2Markdown(htmlStr string, luteEngine *lute.Lute) (markdown string, withMath bool, err error) {
 	assetDirPath := filepath.Join(util.DataDir, "assets")
-	luteEngine := util.NewLute()
 	tree := luteEngine.HTML2Tree(htmlStr)
 	ast.Walk(tree.Root, func(n *ast.Node, entering bool) ast.WalkStatus {
 		if !entering {
@@ -1066,7 +1066,16 @@ func imgHtmlBlock2InlineImg(tree *parse.Tree) {
 		}
 
 		if ast.NodeHTMLBlock == n.Type {
-			htmlNodes, pErr := html.ParseFragment(bytes.NewReader(n.Tokens), &html.Node{Type: html.ElementNode})
+			tokens := bytes.TrimSpace(n.Tokens)
+			if bytes.HasPrefix(tokens, []byte("<div>")) {
+				tokens = bytes.TrimPrefix(tokens, []byte("<div>"))
+			}
+			if bytes.HasSuffix(tokens, []byte("</div>")) {
+				tokens = bytes.TrimSuffix(tokens, []byte("</div>"))
+			}
+			tokens = bytes.TrimSpace(tokens)
+
+			htmlNodes, pErr := html.ParseFragment(bytes.NewReader(tokens), &html.Node{Type: html.ElementNode})
 			if nil != pErr {
 				logging.LogErrorf("parse html block [%s] failed: %s", n.Tokens, pErr)
 				return ast.WalkContinue

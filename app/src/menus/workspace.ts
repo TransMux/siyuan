@@ -301,7 +301,7 @@ export const workspaceMenu = (app: App, rect: DOMRect) => {
                                 fetchPost("/api/system/removeWorkspaceDir", {path: item.path}, () => {
                                     confirmDialog(window.siyuan.languages.deleteOpConfirm, window.siyuan.languages.removeWorkspacePhysically.replace("${x}", item.path), () => {
                                         fetchPost("/api/system/removeWorkspaceDirPhysically", {path: item.path});
-                                    });
+                                    }, undefined, true);
                                 });
                                 return;
                             }
@@ -395,7 +395,7 @@ export const workspaceMenu = (app: App, rect: DOMRect) => {
                     if (!item.closed) {
                         submenu.push({
                             label: escapeHtml(item.name),
-                            iconHTML: unicode2Emoji(item.icon || Constants.SIYUAN_IMAGE_NOTE, "b3-menu__icon", true),
+                            iconHTML: unicode2Emoji(item.icon || window.siyuan.storage[Constants.LOCAL_IMAGES].note, "b3-menu__icon", true),
                             accelerator: window.siyuan.storage[Constants.LOCAL_DAILYNOTEID] === item.id ? window.siyuan.config.keymap.general.dailyNote.custom : "",
                             click: () => {
                                 fetchNewDailyNote(app, item.id);
@@ -503,6 +503,7 @@ export const workspaceMenu = (app: App, rect: DOMRect) => {
                 id: "safeQuit",
                 label: window.siyuan.languages.safeQuit,
                 icon: "iconQuit",
+                warning: true,
                 click: () => {
                     exportLayout({
                         errorExit: true,

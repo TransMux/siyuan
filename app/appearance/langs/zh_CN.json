@@ -108,7 +108,7 @@
   "clearContext": "清空上下文",
   "cloudStoragePurge": "清理云端存储",
   "cloudStoragePurgeConfirm": "清理云端存储会彻底删除所有未引用的快照和相关数据对象。<ul class='fn__list'><li>执行前请确保其他设备已经暂停同步</li><li>清理操作非常耗时，请确保网络稳定</li></ul> 确定现在就执行吗？",
-  "dragFill": "下拉填充数据",
+  "dragFill": "垂直拖动以填充值",
   "switchReadonly": "只读模式切换",
   "original": "原值",
   "selectRelation": "请先选择关联列",
@@ -531,6 +531,7 @@
   "syncConfGuide5": "如果数据量较大，第一次同步会比较慢，请耐心等待<br>iOS/iPad 端在同步时请勿切换应用并保持亮屏",
   "copyPlainText": "复制纯文本",
   "findInDoc": "${x} 个文档中匹配 ${y} 个块",
+  "matchDoc": "匹配到 ${x} 个文档",
   "jumpToParentNext": "跳转到父块的下一个块",
   "jumpToParentPrev": "跳转到父块的上一个块",
   "jumpToParent": "跳转到父块",
@@ -832,7 +833,7 @@
   "customSort": "自定义排序",
   "collapse": "折叠",
   "blockEmbed": "嵌入块",
-  "rowTip": "点击 <span class='ft__on-surface'>打开菜单</span><br>拖拽 <span class='ft__on-surface'>排序</span>",
+  "rowTip": "点击 <span class='ft__on-surface'>打开菜单</span><br>拖拽 <span class='ft__on-surface'>排序</span><br>⇧点击 <span class='ft__on-surface'>修改属性</span>",
   "gutterTip": "点击/⌘/ <span class='ft__on-surface'>打开菜单</span><br>⌘点击/⌥→ <span class='ft__on-surface'>聚焦</span><br>⌥点击/⌘↑ <span class='ft__on-surface'>折叠/展开</span><br>⇧点击/⌥⌘A <span class='ft__on-surface'>修改属性</span><br>拖拽 <span class='ft__on-surface'>移动位置</span><br>⌃拖拽 <span class='ft__on-surface'>重复</span><br>⌥拖拽 <span class='ft__on-surface'>生成块引用</span><br>⇧拖拽 <span class='ft__on-surface'>生成嵌入块</span>",
   "gutterTip2": "点击 <span class='ft__on-surface'>打开菜单</span><br>⇧点击 <span class='ft__on-surface'>修改属性</span>",
   "linkDistance": "链接距离",
@@ -1561,6 +1562,8 @@
     "245": "上次使用后未完成数据索引，请执行一次 [文档树 - 重建索引]。以后请使用右侧栏面板中的 [退出应用] 进行正常退出",
     "246": "文档标题不能包含 /，已经使用 _ 替换",
     "247": "文件 [%s] 大于最大限制 [%s]，已忽略上传到社区图床",
-    "248": "目标标题位于容器块中，无法作为放置点"
+    "248": "目标标题位于容器块中，无法作为放置点",
+    "249": "因配置错误导致无法存取数据，请仔细逐个核对配置项，并检查云端存储相关权限配置",
+    "250": "请求已被云端存储限流，请仔细逐个核对配置项，并检查云端存储相关权限配置"
   }
 }

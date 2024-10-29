@@ -108,7 +108,7 @@
   "clearContext": "清空上下文",
   "cloudStoragePurge": "清理雲端儲存",
   "cloudStoragePurgeConfirm": "清理雲端儲存會徹底刪除所有未引用的快照和相關資料物件。<ul class='fn__list'><li>執行前請確保其他設備已經暫停同步</li><li>清理作業非常耗時，請確保網路穩定</li></ul>確定現在就執行嗎？",
-  "dragFill": "下拉填滿資料",
+  "dragFill": "垂直拖動以填充值",
   "switchReadonly": "唯讀模式切換",
   "original": "原值",
   "selectRelation": "請先選擇關聯列",
@@ -531,6 +531,7 @@
   "syncConfGuide5": "如果資料量較大，第一次同步會比較慢，請耐心等待<br>iOS/iPad 端在同步時請勿切換應用並保持螢幕恆亮",
   "copyPlainText": "複製純文字",
   "findInDoc": "${x} 個文件中符合 ${y} 個塊",
+  "matchDoc": "匹配到 ${x} 個文檔",
   "jumpToParentNext": "跳到父塊的下一個塊",
   "jumpToParentPrev": "跳到父塊的上一個塊",
   "jumpToParent": "跳到父塊",
@@ -832,7 +833,7 @@
   "customSort": "自訂排序",
   "collapse": "摺疊",
   "blockEmbed": "嵌入塊",
-  "rowTip": "點擊 <span class='ft__on-surface'>打開菜單</span><br>拖拽 <span class='ft__on-surface'>排序</span>",
+  "rowTip": "點擊 <span class='ft__on-surface'>打開菜單</span><br>拖拽 <span class='ft__on-surface'>排序</span><br>⇧點擊 <span class='ft__on-surface'>修改屬性</span>",
   "gutterTip": "點擊/⌘/ <span class='ft__on-surface'>打開菜單</span><br>⌘點擊 <span class='ft__on-surface'>聚焦</span><br>⌥點擊/⌥→ <span class='ft__on-surface'>折疊/展開</span><br>⇧點擊/⌥⌘A <span class='ft__on-surface'>修改屬性</span><br>拖拽 <span class='ft__on-surface'>移動位置</span><br>⌃拖拽 <span class='ft__on-surface'>重複</span><br>⌥拖拽 <span class='ft__on-surface'>生成塊引用</span><br>⇧拖拽 <span class='ft__on-surface'>生成嵌入塊</span>",
   "gutterTip2": "點擊 <span class='ft__on-surface'>打開功能表</span><br>⇧點擊 <span class='ft__on-surface'>修改屬性</span>",
   "linkDistance": "連結距離",
@@ -1561,6 +1562,8 @@
     "245": "上次使用後未完成資料索引，請執行一次 [文檔樹 - 重建索引]。以後請使用右側欄面板中的 [退出應用] 進行正常退出",
     "246": "文件標題不能包含 /，已經使用 _ 替換",
     "247": "檔案 [%s] 大於最大限制 [%s]，已忽略上傳至社群圖床",
-    "248": "目標標題位於容器塊中，無法作為放置點"
+    "248": "目標標題位於容器塊中，無法作為放置點",
+    "249": "因配置錯誤導致無法存取數據，請仔細逐個核對配置項，並檢查雲端存儲相關權限配置",
+    "250": "請求已被雲端存儲限流，請仔細逐個核對配置項，並檢查雲端存儲相關權限配置"
   }
 }

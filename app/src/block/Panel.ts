@@ -14,7 +14,6 @@ import {openFileById} from "../editor/util";
 import {fetchPost} from "../util/fetch";
 import {showMessage} from "../dialog/message";
 import {App} from "../index";
-import {isMobile} from "../util/functions";
 import {resize} from "../protyle/util/resize";
 
 export class BlockPanel {
@@ -195,7 +194,7 @@ export class BlockPanel {
                     }
                     // 由于 afterCB 中高度的设定，需在之后再进行设定
                     // 49 = 16（上图标）+16（下图标）+8（padding）+9（底部距离）
-                    editor.protyle.scroll.element.parentElement.setAttribute("style", `--b3-dynamicscroll-width:${Math.min(editor.protyle.contentElement.clientHeight - 49, 200)}px;${isMobile() ? "" : "right:10px"}`);
+                    editor.protyle.scroll.element.parentElement.setAttribute("style", `--b3-dynamicscroll-width:${Math.min(editor.protyle.contentElement.clientHeight - 49, 200)}px;`);
                 }
             });
             this.editors.push(editor);
@@ -247,7 +246,7 @@ export class BlockPanel {
     <span class="fn__space fn__flex-1 resize__move"></span>${openHTML}
     <span data-type="pin" class="block__icon block__icon--show b3-tooltips b3-tooltips__sw" aria-label="${window.siyuan.languages.pin}"><svg><use xlink:href="#iconPin"></use></svg></span>
     <span class="fn__space"></span>
-    <span data-type="close" class="block__icon block__icon--show b3-tooltips b3-tooltips__sw" aria-label="${window.siyuan.languages.close}"><svg style="width: 10px"><use xlink:href="#iconClose"></use></svg></span>
+    <span data-type="close" class="block__icon block__icon--show b3-tooltips b3-tooltips__sw" aria-label="${window.siyuan.languages.close}"><svg style="width: 12px;margin: 0 1px;"><use xlink:href="#iconClose"></use></svg></span>
 </div>
 <div class="block__content">`;
         if (this.nodeIds.length === 0) {

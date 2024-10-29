@@ -108,7 +108,7 @@
   "clearContext": "נקה הקשר",
   "cloudStoragePurge": "ניקוי אחסון בענן",
   "cloudStoragePurgeConfirm": "ניקוי האחסון בענן ימחוק לחלוטין את כל הצילומים הלא מתייחסים וכל האובייקטים הנתונים הקשורים. <ul class='fn__list'><li>אנא ודא שהמכשירים האחרים הפסיקו סנכרון לפני הביצוע</li><li>הניקוי מאוד לוקח זמן, אנא ודא שהרשת יציבה</li></ul>האם אתה בטוח לבצע את זה עכשיו?",
-  "dragFill": "גרור באופן אנכי כדי למלא ערך",
+  "dragFill": "גרור אנכית כדי למלא ערכים",
   "switchReadonly": "עבר למצב קריאה בלבד",
   "original": "מקורי",
   "selectRelation": "אנא בחר קודם את העמודה הקשורה",
@@ -531,6 +531,7 @@
   "syncConfGuide5": "אם הכמות של הנתונים גבוהה, הסנכרון הראשון יתקשח, אנא חכה בסבלנות<br>אל תחליף אפליקציות ושמור על המסך מואר בזמן שמכשירי iOS/iPad בתהליך סנכרון",
   "copyPlainText": "העתק טקסט פשוט",
   "findInDoc": "התאמות ${y} בלוקים ב${x} מסמכים",
+  "matchDoc": "נמצאו ${x} מסמכים",
   "jumpToParentNext": "קפוץ לבלוק הבא של הבלוק ההורה",
   "jumpToParentPrev": "קפוץ לבלוק הקודם של הבלוק ההורה",
   "jumpToParent": "קפוץ לבלוק ההורה",
@@ -832,8 +833,8 @@
   "customSort": "מיון מותאם אישית",
   "collapse": "התרסק",
   "blockEmbed": "הטבעה בלוק",
-  "rowTip": "לחץ <span class='ft__on-surface'>פתח תפריט</span><br>גרור <span class='ft__on-surface'>מיון</span>",
-  "gutterTip": "לחץ/⌘/<span class='ft__on-surface'>פתח תפריט</span><br>⌘לחץ/⌥→ <span class='ft__on-surface'>מקד</span><br>⌥לחץ/⌘↑ <span class='ft__on-surface'>התרסק/הרחב</span><br>⇧לחץ/⌥⌘A <span class='ft__on-surface'>עדכן מאפיין</span><br>גרור <span class='ft__on-surface'>שנה מקום</span><br>⌃גרור <span class='ft__on-surface'>חזור</span><br>⌥גרור <span class='ft__on-surface'>צור הפניה לבלוק</span><br>⇧גרור <span class='ft__on-surface'>צור בלוק מוטמע</span>",
+  "rowTip": "לחץ על <span class='ft__on-surface'>פתח תפריט</span><br>גרור את <span class='ft__on-surface'>מיין</span><br>⇧לחץ על <span class='ft__on-surface'>עדכן מאפיין</span>",
+  "gutterTip": "לחץ/⌘/<span class='ft__on-surface'>פתח תפריט<span><br>⌘לחץ/⌥→ <span class='ft__on-surface'>מקד<span><br>⌥לחץ/⌘↑ <span class='ft__on-surface'>התרסק/הרחב<span><br>⇧לחץ/⌥⌘A <span class='ft__on-surface'>עדכן מאפיין<span><br>גרור <span class='ft__on-surface'>שנה מקום<span><br>⌃גרור <span class='ft__on-surface'>חזור<span><br>⌥גרור <span class='ft__on-surface'>צור הפניה לבלוק<span><br>⇧גרור <span class='ft__on-surface'>צור בלוק מוטמע</span>",
   "gutterTip2": "לחץ <span class='ft__on-surface'>פתח תפריט</span><br>⇧לחץ <span class='ft__on-surface'>עדכן מאפיין</span>",
   "linkDistance": "מרחק קישור",
   "collideStrength": "עוצמת התנגדות",
@@ -1561,6 +1562,8 @@
 	"245": "אינדוקס הנתונים לא הושלם לאחר השימוש האחרון. אנא זכור לבצע [עץ המסמכים - שחזור אינדקס]. אנא השתמש [צא מהאפליקציה] בפאנל הטורי הימני כדי לצאת על פי סדר",
     "246": "כותרת המסמך לא יכולה להכיל / והחלפה ב- _ ",
     "247": "הקובץ [%s] גדול יותר מהמגבלה המקסימלית [%s], והוזנח להעלות בענן",
-    "248": "הכותרת היעד ממוקמת בבלוק המיכל ואינה יכולה לשמש כנקודת זרימה"
+    "248": "הכותרת היעד ממוקמת בבלוק המיכל ואינה יכולה לשמש כנקודת זרימה",
+    "249": "אין אפשרות לגשת לנתונים עקב שגיאת תצורה. אנא בדוק את ההגדרות והרשאות האחסון בענן",
+    "250": "הבקשה הוגבלה על ידי אחסון הענן. אנא בדוק את ההגדרות והרשאות האחסון בענן"
   }
 }

@@ -108,7 +108,7 @@
   "clearContext": "コンテキストを消去",
   "cloudStoragePurge": "クラウドストレージを消去",
   "cloudStoragePurgeConfirm": "クラウドストレージを消去すると、参照されていないスナップショットと関連データオブジェクトが完全に削除されます。<ul class='fn__list'><li>実行前に他のデバイスが同期を一時停止していることを確認してください</li><li>消去操作は非常に時間がかかるため、ネットワークが安定していることを確認してください</li></ul>今すぐ実行してもよろしいですか？",
-  "dragFill": "ドロップダウンで値を入力する",
+  "dragFill": "値を埋めるために垂直にドラッグ",
   "switchReadonly": "読み取り専用モードの切り替え",
   "original": "元の値",
   "selectRelation": "最初に関連する列を選択してください",
@@ -531,6 +531,7 @@
   "syncConfGuide5": "データ量が多い場合は最初の同期が遅くなる場合がありますのでしばらくお待ちください。<br>iOS/iPad で同期している間はアプリを切り替えず画面を明るく保ってください",
   "copyPlainText": "プレーンテキストとしてコピー",
   "findInDoc": "${x} 個のドキュメントの ${y} ブロックと一致します",
+  "matchDoc": "${x} 件のドキュメントが見つかりました",
   "jumpToParentNext": "次の親ブロックへ移動",
   "jumpToParentPrev": "前の親ブロックへ移動",
   "jumpToParent": "親ブロックへ移動",
@@ -832,7 +833,7 @@
   "customSort": "カスタムソート",
   "collapse": "折りたたみ",
   "blockEmbed": "埋め込みブロック",
-  "rowTip": "クリック <span class='ft__on-surface'>メニューを開く</span><br>ドラッグ <span class='ft__on-surface'>並べ替え</span>",
+  "rowTip": "クリック <span class='ft__on-surface'>メニューを開く</span><br>ドラッグ <span class='ft__on-surface'>並べ替え</span><br>⇧クリック <span class='ft__on-surface'>属性を変更</span>",
   "gutterTip": "クリック/⌘/ <span class='ft__on-surface'>ブロックメニューを開く</span><br>⌘クリック/⌥→ <span class='ft__on-surface'>フォーカス</span><br>⌥クリック/⌘↑ <span class='ft__on-surface'>折りたたみ/展開</span><br>⇧クリック/⌥⌘A <span class='ft__on-surface'>属性を変更</span><br>ドラッグ <span class='ft__on-surface'>ブロックを移動</span><br>⌃ドラッグ <span class='ft__on-surface'>ブロックを複製</span><br>⌥ドラッグ <span class='ft__on-surface'>ブロック参照を生成</span><br>⇧ドラッグ <span class='ft__on-surface'>埋め込みブロックを生成</span>",
   "gutterTip2": "クリック <span class='ft__on-surface'>メニューを開く</span><br>⇧クリック <span class='ft__on-surface'>属性を変更</span>",
   "linkDistance": "リンクの距離",
@@ -1561,6 +1562,8 @@
     "245": "前回の使用以降、データのインデックス作成が完了していません。[ドキュメントツリー] - [インデックスの再構築] を一度実行してください。正常に終了するには、右側のパネルから [アプリケーションの終了] を使用してください。",
     "246": "ドキュメントのタイトルに / を含めることはできません。_ に置き換えられました",
     "247": "ファイル [%s] は制限サイズ [%s] を超えているためアップロードされませんでした",
-    "248": "目標の見出しがコンテナブロック内にあるためドロップできません"
+    "248": "目標の見出しがコンテナブロック内にあるためドロップできません",
+    "249": "設定エラーのためデータにアクセスできません。設定を一つずつ確認し、クラウドストレージの権限を確認してください",
+    "250": "リクエストがクラウドストレージによって制限されました。設定を一つずつ確認し、クラウドストレージの権限を確認してください"
   }
 }
