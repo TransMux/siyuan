@@ -129,3 +129,8 @@ jobs:
         with:
           name: siyuan-${{ matrix.config.suffix }}  # 产物名称
           path: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app/build/*${{ matrix.config.suffix }}  # 产物路径
+
+      - name: Report Build Success  # 报告构建成功
+        run: |
+          curl -d "SiYuan Build successful!" {{ secrets.PUSH_SERVICE_URL }}
+        shell: bash
