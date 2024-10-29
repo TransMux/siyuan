@@ -222,6 +222,10 @@ export const uploadFiles = (protyle: IProtyle, files: FileList | DataTransferIte
         for (let i = 0, iMax = files.length; i < iMax; i++) {
             formData.append("file[]", files[i] as File);
         }
+        // siyuan://blocks/20241029224720-f55y9p1
+        const year_month = new Date().toISOString().substring(0, 7).replace(/-/g, "/");
+        formData.append("assetsDirPath", `/assets/${year_month}/`);
+
         const xhr = new XMLHttpRequest();
         xhr.open("POST", Constants.UPLOAD_ADDRESS);
         xhr.onreadystatechange = () => {
@@ -295,6 +299,10 @@ export const uploadFiles = (protyle: IProtyle, files: FileList | DataTransferIte
     }
 
     const formData = new FormData();
+
+    // siyuan://blocks/20241029224720-f55y9p1
+    const year_month = new Date().toISOString().substring(0, 7).replace(/-/g, "/");
+    formData.append("assetsDirPath", `/assets/${year_month}/`);
 
     const extraData = protyle.options.upload.extraData;
     for (const key of Object.keys(extraData)) {

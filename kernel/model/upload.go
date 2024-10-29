@@ -23,6 +23,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/88250/gulu"
 	"github.com/88250/lute/ast"
@@ -45,6 +46,8 @@ func InsertLocalAssets(id string, assetPaths []string, isUpload bool) (succMap m
 
 	docDirLocalPath := filepath.Join(util.DataDir, bt.BoxID, path.Dir(bt.Path))
 	assetsDirPath := getAssetsDir(filepath.Join(util.DataDir, bt.BoxID), docDirLocalPath)
+	// siyuan://blocks/20241029224720-f55y9p1
+	assetsDirPath = filepath.Join(assetsDirPath, time.Now().Format("2024/08"))
 	if !gulu.File.IsExist(assetsDirPath) {
 		if err = os.MkdirAll(assetsDirPath, 0755); err != nil {
 			return
