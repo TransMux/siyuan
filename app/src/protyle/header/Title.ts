@@ -6,25 +6,26 @@ import {
     getEditorRange,
     getSelectionOffset,
 } from "../util/selection";
-import {fetchPost} from "../../util/fetch";
-import {replaceFileName, validateName} from "../../editor/rename";
-import {MenuItem} from "../../menus/Menu";
-import {openFileAttr,} from "../../menus/commonMenuItem";
-import {Constants} from "../../constants";
-import {matchHotKey} from "../util/hotKey";
-import {isMac, readText, writeText} from "../util/compatibility";
+import { fetchPost } from "../../util/fetch";
+import { replaceFileName, validateName } from "../../editor/rename";
+import { MenuItem } from "../../menus/Menu";
+import { openFileAttr, } from "../../menus/commonMenuItem";
+import { Constants } from "../../constants";
+import { matchHotKey } from "../util/hotKey";
+import { isMac, readText, writeText } from "../util/compatibility";
 import * as dayjs from "dayjs";
-import {openFileById} from "../../editor/util";
-import {setTitle} from "../../dialog/processSystem";
-import {getContenteditableElement, getNoContainerElement} from "../wysiwyg/getBlock";
-import {commonHotkey} from "../wysiwyg/commonHotkey";
-import {code160to32} from "../util/code160to32";
-import {genEmptyElement} from "../../block/util";
-import {transaction} from "../wysiwyg/transaction";
-import {hideTooltip} from "../../dialog/tooltip";
-import {commonClick} from "../wysiwyg/commonClick";
-import {openTitleMenu} from "./openTitleMenu";
-import {electronUndo} from "../undo";
+import { openFileById } from "../../editor/util";
+import { setTitle } from "../../dialog/processSystem";
+import { getContenteditableElement, getNoContainerElement } from "../wysiwyg/getBlock";
+import { commonHotkey } from "../wysiwyg/commonHotkey";
+import { code160to32 } from "../util/code160to32";
+import { genEmptyElement } from "../../block/util";
+import { transaction } from "../wysiwyg/transaction";
+import { hideTooltip } from "../../dialog/tooltip";
+import { commonClick } from "../wysiwyg/commonClick";
+import { openTitleMenu } from "./openTitleMenu";
+import { electronUndo } from "../undo";
+import { renderAVAttribute } from "../render/av/blockAttr";
 
 export class Title {
     public element: HTMLElement;
@@ -172,7 +173,7 @@ export class Title {
                 });
             } else {
                 const iconRect = iconElement.getBoundingClientRect();
-                openTitleMenu(protyle, {x: iconRect.left, y: iconRect.bottom});
+                openTitleMenu(protyle, { x: iconRect.left, y: iconRect.bottom });
             }
         });
         this.element.addEventListener("contextmenu", (event) => {
@@ -180,7 +181,7 @@ export class Title {
                 return;
             }
             if (getSelection().rangeCount === 0) {
-                openTitleMenu(protyle, {x: event.clientX, y: event.clientY});
+                openTitleMenu(protyle, { x: event.clientX, y: event.clientY });
                 return;
             }
             protyle.toolbar?.element.classList.add("fn__none");
@@ -257,7 +258,7 @@ export class Title {
                     focusByRange(range);
                 }
             }).element);
-            window.siyuan.menus.menu.popup({x: event.clientX, y: event.clientY});
+            window.siyuan.menus.menu.popup({ x: event.clientX, y: event.clientY });
         });
         /// #else
         this.element.innerHTML = '<div class="protyle-attr"></div>';
@@ -309,6 +310,7 @@ export class Title {
     }
 
     public render(protyle: IProtyle, response: IWebSocketData) {
+        debugger
         if (this.element.getAttribute("data-render") === "true") {
             return false;
         }
@@ -353,5 +355,16 @@ export class Title {
             range.selectNodeContents(this.editElement);
             focusByRange(range);
         }
+        // 在标题下方插入属性视图 siyuan://blocks/20241030002647-dqjwzgq
+        const avDocElement = document.createElement("div");
+        avDocElement.className = "mux-doc-heading-av-panel";
+        // set style
+        avDocElement.style.marginRight = "96px";
+        avDocElement.style.marginLeft = "96px";
+        avDocElement.style.transition = "margin 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+        // 渲染属性视图
+        renderAVAttribute(avDocElement, protyle.block.rootID, protyle);
+        // 插入到 this.element 的同级，但是需要是这一级的最后一个元素
+        this.element.parentElement.appendChild(avDocElement);
     }
 }
