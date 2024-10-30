@@ -364,9 +364,13 @@ export class Title {
             avDocElement.style.marginRight = "96px";
             avDocElement.style.marginLeft = "96px";
             avDocElement.style.transition = "margin 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+        } else {
+            // 修复：如果已经存在，需要先清除
+            avDocElement.innerHTML = "";
         }
         // 渲染属性视图
-        renderAVAttribute(avDocElement, protyle.block.rootID, protyle, undefined, false);
+        // 修复：这里应该是当前聚焦的 block
+        renderAVAttribute(avDocElement, protyle.block.id, protyle, undefined, false);
         // 插入到 this.element 的同级，但是需要是这一级的最后一个元素
         this.element.parentElement.appendChild(avDocElement);
     }
