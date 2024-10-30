@@ -145,7 +145,7 @@ export const genAVValueHTML = (value: IAVCellValue) => {
     return html;
 };
 
-export const renderAVAttribute = (element: HTMLElement, id: string, protyle: IProtyle, cb?: (element: HTMLElement) => void) => {
+export const renderAVAttribute = (element: HTMLElement, id: string, protyle: IProtyle, cb?: (element: HTMLElement) => void, renderAddButton?: boolean = true) => {
     fetchPost("/api/av/getAttributeViewKeys", { id }, (response) => {
         let html = "";
         response.data.forEach((table: {
@@ -197,11 +197,13 @@ class="fn__flex-1 fn__flex${["url", "text", "number", "email", "phone", "block"]
     </div>
 </div>`;
             }
-            innerHTML += `<div class="fn__hr"></div>
+            if (renderAddButton) {
+                innerHTML += `<div class="fn__hr"></div>
 <div class="fn__flex">
     <div class="fn__space"></div><div class="fn__space"></div>
     <button data-type="addColumn" class="b3-button b3-button--outline"><svg><use xlink:href="#iconAdd"></use></svg>${window.siyuan.languages.addAttr}</button>
 </div><div class="fn__hr--b"></div>`;
+            }
             html += `<div data-av-id="${table.avID}" data-node-id="${id}" data-type="NodeAttributeView">${innerHTML}</div>`;
 
             if (element.innerHTML) {
