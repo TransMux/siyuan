@@ -60,17 +60,26 @@ export const addEditorToDatabase = (protyle: IProtyle, range: Range, type?: stri
     } else {
         let targetElement: HTMLElement;
         const ids: string[] = [];
+        // [SiYuan在聚焦 / 查询属性视图的时候，针对列表，最好是针对列表项进行添加，而不是中间的段落，因为段落的块标无法选中](siyuan://blocks/20241030180132-2uc3epb)
         protyle.wysiwyg.element.querySelectorAll(".protyle-wysiwyg--select").forEach((item: HTMLElement) => {
-            if (!targetElement) {
-                targetElement = item;
+            let toBeAddItem = item;
+            if (item.parentElement.dataset.type === "NodeListItem") {
+                toBeAddItem = item.parentElement;
             }
-            ids.push(item.getAttribute("data-node-id"));
+            if (!targetElement) {
+                targetElement = toBeAddItem;
+            }
+            ids.push(toBeAddItem.getAttribute("data-node-id"));
         });
         if (!targetElement) {
             const nodeElement = hasClosestBlock(range.startContainer);
             if (nodeElement) {
-                targetElement = nodeElement;
-                ids.push(nodeElement.getAttribute("data-node-id"));
+                if (nodeElement.parentElement.dataset.type === "NodeListItem") {
+                    targetElement = nodeElement.parentElement;
+                } else {
+                    targetElement = nodeElement;
+                }
+                ids.push(targetElement.getAttribute("data-node-id"));
             }
         }
         if (!targetElement) {
