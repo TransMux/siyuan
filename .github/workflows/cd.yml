@@ -132,5 +132,6 @@ jobs:
 
       - name: Report Build Success  # 报告构建成功
         run: |
-          curl -d "SiYuan Build successful!" {{ secrets.PUSH_SERVICE_URL }}
+          curl -d "SiYuan Build successful!" "${{ secrets.PUSH_SERVICE_URL }}"
         shell: bash
+        continue-on-error: true
