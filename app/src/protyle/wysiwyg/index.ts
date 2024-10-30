@@ -2219,6 +2219,9 @@ export class WYSIWYG {
             }
 
             const blockRefElement = hasClosestByAttribute(event.target, "data-type", "block-ref");
+            // [SiYuan点击属性视图时，跳转自动聚焦](siyuan://blocks/20241030201835-grxdl7n)
+            const isInDatabase = hasClosestByAttribute(event.target, "class", "av__cell");
+
             if (blockRefElement || aLink.startsWith("siyuan://blocks/")) {
                 event.stopPropagation();
                 event.preventDefault();
@@ -2240,6 +2243,10 @@ export class WYSIWYG {
                         activeBlur();
                         hideKeyboardToolbar();
                         /// #else
+                        if (isInDatabase) {
+                            zoomIn = true;
+                        }
+                        
                         if (event.shiftKey) {
                             openFileById({
                                 app: protyle.app,
