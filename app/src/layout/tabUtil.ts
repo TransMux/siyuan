@@ -1,28 +1,30 @@
-import {Tab} from "./Tab";
-import {getInstanceById, newModelByInitData, saveLayout} from "./util";
-import {getAllModels, getAllTabs} from "./getAll";
-import {hideAllElements, hideElements} from "../protyle/ui/hideElements";
-import {pdfResize} from "../asset/renderAssets";
-import {App} from "../index";
-import {Model} from "./Model";
-import {Editor} from "../editor";
-import {Asset} from "../asset";
-import {Graph} from "./dock/Graph";
-import {Files} from "./dock/Files";
-import {Outline} from "./dock/Outline";
-import {Backlink} from "./dock/Backlink";
-import {Bookmark} from "./dock/Bookmark";
-import {Tag} from "./dock/Tag";
-import {Search} from "../search";
-import {Custom} from "./dock/Custom";
-import {newCardModel} from "../card/newCardTab";
-import {isIPad, updateHotkeyTip} from "../protyle/util/compatibility";
-import {openSearch} from "../search/spread";
-import {openRecentDocs} from "../business/openRecentDocs";
-import {openHistory} from "../history/history";
-import {newFile} from "../util/newFile";
-import {mountHelp, newNotebook} from "../util/mount";
-import {Constants} from "../constants";
+import { Tab } from "./Tab";
+import { getInstanceById, newModelByInitData, saveLayout } from "./util";
+import { getAllModels, getAllTabs } from "./getAll";
+import { hideAllElements, hideElements } from "../protyle/ui/hideElements";
+import { pdfResize } from "../asset/renderAssets";
+import { App } from "../index";
+import { Model } from "./Model";
+import { Editor } from "../editor";
+import { Asset } from "../asset";
+import { Graph } from "./dock/Graph";
+import { Files } from "./dock/Files";
+import { Outline } from "./dock/Outline";
+import { Backlink } from "./dock/Backlink";
+import { Bookmark } from "./dock/Bookmark";
+import { Tag } from "./dock/Tag";
+import { Search } from "../search";
+import { Custom } from "./dock/Custom";
+import { newCardModel } from "../card/newCardTab";
+import { isIPad, updateHotkeyTip } from "../protyle/util/compatibility";
+import { openSearch } from "../search/spread";
+import { openRecentDocs } from "../business/openRecentDocs";
+import { openHistory } from "../history/history";
+import { newFile } from "../util/newFile";
+import { mountHelp, newNotebook } from "../util/mount";
+import { Constants } from "../constants";
+import { fetchPost, fetchSyncPost } from "../util/fetch";
+import { openFileById } from "../editor/util";
 
 export const getActiveTab = (wndActive = true) => {
     const activeTabElement = document.querySelector(".layout__wnd--active .item--focus");
@@ -196,12 +198,40 @@ export const newCenterEmptyTab = (app: App) => {
         <svg class="b3-list-item__graphic"><use xlink:href="#iconHelp"></use></svg>
         <span>${window.siyuan.languages.userGuide}</span>
     </div>
+    <div class="mux-database-list"></div>
 </div>`,
         callback(tab: Tab) {
+            // 生成数据库选择
+            const databasesElement = tab.panelElement.querySelector(".mux-database-list");
+            fetchPost("/api/av/searchAttributeView", {
+                keyword: "",
+            }, (response) => {
+                let html = "";
+                response.data.results.forEach((item: {
+                    avID: string
+                    avName: string
+                    blockID: string
+                }) => {
+                    html += `<div class="b3-list-item" data-av-id="${item.avID}" data-block-id="${item.blockID}" id="database-link">
+            <svg class="b3-list-item__graphic"><use xlink:href="#iconDatabase"></use></svg>
+            <span>${item.avName}</span>
+            </div>`;
+                });
+                databasesElement.innerHTML = html;
+            });
+
             tab.panelElement.addEventListener("click", (event) => {
                 let target = event.target as HTMLElement;
                 while (target && !target.isEqualNode(tab.panelElement)) {
-                    if (target.id === "editorEmptySearch") {
+                    if (target.id === "database-link") {
+                        openFileById({
+                            app,
+                            id: target.getAttribute("data-block-id"),
+                        });
+                        event.stopPropagation();
+                        event.preventDefault();
+                        break;
+                    } else if (target.id === "editorEmptySearch") {
                         openSearch({
                             app,
                             hotkey: Constants.DIALOG_GLOBALSEARCH,
