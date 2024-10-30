@@ -5,8 +5,8 @@ import {
     hasClosestByMatchTag,
     hasTopClosestByClassName
 } from "../protyle/util/hasClosest";
-import {MenuItem} from "./Menu";
-import {focusBlock, focusByRange, focusByWbr, getEditorRange, selectAll,} from "../protyle/util/selection";
+import { MenuItem } from "./Menu";
+import { focusBlock, focusByRange, focusByWbr, getEditorRange, selectAll, } from "../protyle/util/selection";
 import {
     deleteColumn,
     deleteRow,
@@ -20,45 +20,46 @@ import {
     moveRowToUp,
     setTableAlign
 } from "../protyle/util/table";
-import {mathRender} from "../protyle/render/mathRender";
-import {transaction, updateTransaction} from "../protyle/wysiwyg/transaction";
-import {openMenu} from "./commonMenuItem";
-import {fetchPost} from "../util/fetch";
-import {Constants} from "../constants";
-import {copyPlainText, readText, setStorageVal, updateHotkeyTip, writeText} from "../protyle/util/compatibility";
-import {preventScroll} from "../protyle/scroll/preventScroll";
-import {onGet} from "../protyle/util/onGet";
-import {getAllModels} from "../layout/getAll";
-import {pasteAsPlainText, pasteEscaped, pasteText} from "../protyle/util/paste";
+import { mathRender } from "../protyle/render/mathRender";
+import { transaction, updateTransaction } from "../protyle/wysiwyg/transaction";
+import { openMenu } from "./commonMenuItem";
+import { fetchPost } from "../util/fetch";
+import { Constants } from "../constants";
+import { copyPlainText, readText, setStorageVal, updateHotkeyTip, writeText } from "../protyle/util/compatibility";
+import { preventScroll } from "../protyle/scroll/preventScroll";
+import { onGet } from "../protyle/util/onGet";
+import { getAllModels } from "../layout/getAll";
+import { pasteAsPlainText, pasteEscaped, pasteText } from "../protyle/util/paste";
 /// #if !MOBILE
-import {openFileById, updateBacklinkGraph} from "../editor/util";
-import {openGlobalSearch} from "../search/util";
-import {openNewWindowById} from "../window/openNewWindow";
+import { openFileById, updateBacklinkGraph } from "../editor/util";
+import { openGlobalSearch } from "../search/util";
+import { openNewWindowById } from "../window/openNewWindow";
 /// #endif
-import {getSearch, isMobile} from "../util/functions";
-import {removeFoldHeading} from "../protyle/util/heading";
-import {lineNumberRender} from "../protyle/render/highlightRender";
+import { getSearch, isMobile } from "../util/functions";
+import { removeFoldHeading } from "../protyle/util/heading";
+import { lineNumberRender } from "../protyle/render/highlightRender";
 import * as dayjs from "dayjs";
-import {blockRender} from "../protyle/render/blockRender";
-import {renameAsset} from "../editor/rename";
-import {electronUndo} from "../protyle/undo";
-import {pushBack} from "../mobile/util/MobileBackFoward";
-import {copyPNGByLink, exportAsset} from "./util";
-import {removeInlineType} from "../protyle/toolbar/util";
-import {alignImgCenter, alignImgLeft} from "../protyle/wysiwyg/commonHotkey";
-import {checkFold, renameTag} from "../util/noRelyPCFunction";
-import {hideElements} from "../protyle/ui/hideElements";
-import {emitOpenMenu} from "../plugin/EventBus";
-import {openMobileFileById} from "../mobile/editor";
-import {openBacklink, openGraph} from "../layout/dock/util";
-import {updateHeader} from "../protyle/render/av/row";
-import {renderAssetsPreview} from "../asset/renderAssets";
-import {upDownHint} from "../util/upDownHint";
-import {hintRenderAssets} from "../protyle/hint/extend";
-import {Menu} from "../plugin/Menu";
-import {getFirstBlock} from "../protyle/wysiwyg/getBlock";
-import {popSearch} from "../mobile/menu/search";
-import {showMessage} from "../dialog/message";
+import { blockRender } from "../protyle/render/blockRender";
+import { renameAsset } from "../editor/rename";
+import { electronUndo } from "../protyle/undo";
+import { pushBack } from "../mobile/util/MobileBackFoward";
+import { copyPNGByLink, exportAsset } from "./util";
+import { removeInlineType } from "../protyle/toolbar/util";
+import { alignImgCenter, alignImgLeft } from "../protyle/wysiwyg/commonHotkey";
+import { checkFold, renameTag } from "../util/noRelyPCFunction";
+import { hideElements } from "../protyle/ui/hideElements";
+import { emitOpenMenu } from "../plugin/EventBus";
+import { openMobileFileById } from "../mobile/editor";
+import { openBacklink, openGraph } from "../layout/dock/util";
+import { updateHeader } from "../protyle/render/av/row";
+import { renderAssetsPreview } from "../asset/renderAssets";
+import { upDownHint } from "../util/upDownHint";
+import { hintRenderAssets } from "../protyle/hint/extend";
+import { Menu } from "../plugin/Menu";
+import { getFirstBlock } from "../protyle/wysiwyg/getBlock";
+import { popSearch } from "../mobile/menu/search";
+import { showMessage } from "../dialog/message";
+import { renderAVAttribute } from "../protyle/render/av/blockAttr";
 
 const renderAssetList = (element: Element, k: string, position: IPosition, exts: string[] = []) => {
     fetchPost("/api/search/searchAsset", {
@@ -174,13 +175,13 @@ export const assetMenu = (protyle: IProtyle, position: IPosition, callback?: (ur
                 const target = event.target as HTMLElement;
                 const previousElement = hasClosestByAttribute(target, "data-type", "previous");
                 if (previousElement) {
-                    inputElement.dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowUp"}));
+                    inputElement.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowUp" }));
                     event.stopPropagation();
                     return;
                 }
                 const nextElement = hasClosestByAttribute(target, "data-type", "next");
                 if (nextElement) {
-                    inputElement.dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowDown"}));
+                    inputElement.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown" }));
                     event.stopPropagation();
                     return;
                 }
@@ -256,7 +257,7 @@ export const fileAnnotationRefMenu = (protyle: IProtyle, refElement: HTMLElement
             });
         }
     }).element);
-    window.siyuan.menus.menu.append(new MenuItem({type: "separator"}).element);
+    window.siyuan.menus.menu.append(new MenuItem({ type: "separator" }).element);
     window.siyuan.menus.menu.append(new MenuItem({
         label: `${window.siyuan.languages.turnInto} <b>${window.siyuan.languages.text}</b>`,
         icon: "iconRefresh",
@@ -339,7 +340,7 @@ export const refMenu = (protyle: IProtyle, element: HTMLElement) => {
                         // 不能使用 textContent，否则 < 会变为 &lt;
                         element.innerHTML = Lute.EscapeHTMLStr(inputElement.value);
                     } else {
-                        fetchPost("/api/block/getRefText", {id: refBlockId}, (response) => {
+                        fetchPost("/api/block/getRefText", { id: refBlockId }, (response) => {
                             element.innerHTML = response.data;
                         });
                     }
@@ -443,7 +444,7 @@ export const refMenu = (protyle: IProtyle, element: HTMLElement) => {
         }
     }).element);
     /// #endif
-    window.siyuan.menus.menu.append(new MenuItem({type: "separator"}).element);
+    window.siyuan.menus.menu.append(new MenuItem({ type: "separator" }).element);
     window.siyuan.menus.menu.append(new MenuItem({
         icon: "iconLink",
         label: window.siyuan.languages.backlinks,
@@ -466,7 +467,7 @@ export const refMenu = (protyle: IProtyle, element: HTMLElement) => {
             });
         }
     }).element);
-    window.siyuan.menus.menu.append(new MenuItem({type: "separator"}).element);
+    window.siyuan.menus.menu.append(new MenuItem({ type: "separator" }).element);
     /// #endif
     if (!protyle.disabled) {
         let submenu: IMenu[] = [];
@@ -476,7 +477,7 @@ export const refMenu = (protyle: IProtyle, element: HTMLElement) => {
                 label: window.siyuan.languages.turnToDynamic,
                 click() {
                     element.setAttribute("data-subtype", "d");
-                    fetchPost("/api/block/getRefText", {id: refBlockId}, (response) => {
+                    fetchPost("/api/block/getRefText", { id: refBlockId }, (response) => {
                         element.innerHTML = response.data;
                         nodeElement.setAttribute("updated", dayjs().format("YYYYMMDDHHmmss"));
                         updateTransaction(protyle, id, nodeElement.outerHTML, oldHTML);
@@ -861,7 +862,7 @@ export const enterBack = (protyle: IProtyle, id: string) => {
             /// #endif
         }
     } else {
-        zoomOut({protyle, id: protyle.block.parent2ID, focusId: id});
+        zoomOut({ protyle, id: protyle.block.parent2ID, focusId: id });
     }
 };
 
@@ -969,6 +970,17 @@ export const zoomOut = (options: {
             });
             updateBacklinkGraph(allModels, options.protyle);
         }
+        // siyuan://blocks/20241030171124-2fpgeo2
+        // 刷新属性面板，options.id 为聚焦块的id
+        // 获取存在的属性面板
+        const avPanelElement = options.protyle.title.element.parentElement.querySelector(".mux-doc-heading-av-panel");
+        if (avPanelElement) {
+            avPanelElement.innerHTML = "";
+            // 允许异步渲染属性视图
+            setTimeout(() => {
+                renderAVAttribute(avPanelElement as HTMLElement, options.id, options.protyle, undefined, false);
+            }, 0);
+        }
         /// #endif
     });
 };
@@ -1054,7 +1066,7 @@ export const imgMenu = (protyle: IProtyle, range: Range, assetElement: HTMLEleme
                 });
             }
         }).element);
-        window.siyuan.menus.menu.append(new MenuItem({type: "separator"}).element);
+        window.siyuan.menus.menu.append(new MenuItem({ type: "separator" }).element);
     }
     window.siyuan.menus.menu.append(new MenuItem({
         label: window.siyuan.languages.copy,
@@ -1111,7 +1123,7 @@ export const imgMenu = (protyle: IProtyle, range: Range, assetElement: HTMLEleme
                 focusByWbr(protyle.wysiwyg.element, range);
             }
         }).element);
-        window.siyuan.menus.menu.append(new MenuItem({type: "separator"}).element);
+        window.siyuan.menus.menu.append(new MenuItem({ type: "separator" }).element);
         const imagePath = imgElement.getAttribute("data-src");
         if (imagePath.startsWith("assets/")) {
             window.siyuan.menus.menu.append(new MenuItem({
@@ -1197,36 +1209,36 @@ export const imgMenu = (protyle: IProtyle, range: Range, assetElement: HTMLEleme
                     });
                 }
             },
-                genImageWidthMenu("25%", imgElement, protyle, id, nodeElement, html),
-                genImageWidthMenu("33%", imgElement, protyle, id, nodeElement, html),
-                genImageWidthMenu("50%", imgElement, protyle, id, nodeElement, html),
-                genImageWidthMenu("67%", imgElement, protyle, id, nodeElement, html),
-                genImageWidthMenu("75%", imgElement, protyle, id, nodeElement, html),
-                genImageWidthMenu("100%", imgElement, protyle, id, nodeElement, html), {
-                    type: "separator",
-                }, {
-                    iconHTML: "",
-                    type: "readonly",
-                    label: `<div style="margin: 4px 0;" aria-label="${imgElement.style.width.endsWith("px") ? imgElement.style.width : (imgElement.style.width?.replace("vw", "%") || window.siyuan.languages.default)}" class="b3-tooltips b3-tooltips__n${isMobile() ? "" : " fn__size200"}">
+            genImageWidthMenu("25%", imgElement, protyle, id, nodeElement, html),
+            genImageWidthMenu("33%", imgElement, protyle, id, nodeElement, html),
+            genImageWidthMenu("50%", imgElement, protyle, id, nodeElement, html),
+            genImageWidthMenu("67%", imgElement, protyle, id, nodeElement, html),
+            genImageWidthMenu("75%", imgElement, protyle, id, nodeElement, html),
+            genImageWidthMenu("100%", imgElement, protyle, id, nodeElement, html), {
+                type: "separator",
+            }, {
+                iconHTML: "",
+                type: "readonly",
+                label: `<div style="margin: 4px 0;" aria-label="${imgElement.style.width.endsWith("px") ? imgElement.style.width : (imgElement.style.width?.replace("vw", "%") || window.siyuan.languages.default)}" class="b3-tooltips b3-tooltips__n${isMobile() ? "" : " fn__size200"}">
     <input style="box-sizing: border-box" value="${width}" class="b3-slider fn__block" max="100" min="1" step="1" type="range">
 </div>`,
-                    bind(element) {
-                        rangeElement = element.querySelector("input");
-                        rangeElement.addEventListener("input", () => {
-                            imgElement.style.width = rangeElement.value + "vw";
-                            rangeElement.parentElement.setAttribute("aria-label", `${rangeElement.value}%`);
-                        });
-                        rangeElement.addEventListener("change", () => {
-                            nodeElement.setAttribute("updated", dayjs().format("YYYYMMDDHHmmss"));
-                            updateTransaction(protyle, id, nodeElement.outerHTML, html);
-                            window.siyuan.menus.menu.remove();
-                            focusBlock(nodeElement);
-                        });
-                    }
-                }, {
-                    type: "separator",
-                },
-                genImageWidthMenu(window.siyuan.languages.default, imgElement, protyle, id, nodeElement, html),
+                bind(element) {
+                    rangeElement = element.querySelector("input");
+                    rangeElement.addEventListener("input", () => {
+                        imgElement.style.width = rangeElement.value + "vw";
+                        rangeElement.parentElement.setAttribute("aria-label", `${rangeElement.value}%`);
+                    });
+                    rangeElement.addEventListener("change", () => {
+                        nodeElement.setAttribute("updated", dayjs().format("YYYYMMDDHHmmss"));
+                        updateTransaction(protyle, id, nodeElement.outerHTML, html);
+                        window.siyuan.menus.menu.remove();
+                        focusBlock(nodeElement);
+                    });
+                }
+            }, {
+                type: "separator",
+            },
+            genImageWidthMenu(window.siyuan.languages.default, imgElement, protyle, id, nodeElement, html),
             ]
         }).element);
         let rangeHeightElement: HTMLInputElement;
@@ -1260,44 +1272,44 @@ export const imgMenu = (protyle: IProtyle, range: Range, assetElement: HTMLEleme
                     });
                 }
             },
-                genImageHeightMenu("25%", imgElement, protyle, id, nodeElement, html),
-                genImageHeightMenu("33%", imgElement, protyle, id, nodeElement, html),
-                genImageHeightMenu("50%", imgElement, protyle, id, nodeElement, html),
-                genImageHeightMenu("67%", imgElement, protyle, id, nodeElement, html),
-                genImageHeightMenu("75%", imgElement, protyle, id, nodeElement, html),
-                genImageHeightMenu("100%", imgElement, protyle, id, nodeElement, html), {
-                    type: "separator",
-                }, {
-                    iconHTML: "",
-                    type: "readonly",
-                    label: `<div style="margin: 4px 0;" aria-label="${imgElement.style.height.endsWith("vh") ? parseInt(imgElement.style.height) + "%" : (imgElement.style.height || window.siyuan.languages.default)}" class="b3-tooltips b3-tooltips__n${isMobile() ? "" : " fn__size200"}">
+            genImageHeightMenu("25%", imgElement, protyle, id, nodeElement, html),
+            genImageHeightMenu("33%", imgElement, protyle, id, nodeElement, html),
+            genImageHeightMenu("50%", imgElement, protyle, id, nodeElement, html),
+            genImageHeightMenu("67%", imgElement, protyle, id, nodeElement, html),
+            genImageHeightMenu("75%", imgElement, protyle, id, nodeElement, html),
+            genImageHeightMenu("100%", imgElement, protyle, id, nodeElement, html), {
+                type: "separator",
+            }, {
+                iconHTML: "",
+                type: "readonly",
+                label: `<div style="margin: 4px 0;" aria-label="${imgElement.style.height.endsWith("vh") ? parseInt(imgElement.style.height) + "%" : (imgElement.style.height || window.siyuan.languages.default)}" class="b3-tooltips b3-tooltips__n${isMobile() ? "" : " fn__size200"}">
     <input style="box-sizing: border-box" value="${height}" class="b3-slider fn__block" max="100" min="1" step="1" type="range">
 </div>`,
-                    bind(element) {
-                        rangeHeightElement = element.querySelector("input");
-                        rangeHeightElement.addEventListener("input", () => {
-                            assetElement.style.width = "";
-                            imgElement.style.width = "";
-                            imgElement.style.height = rangeHeightElement.value + "vh";
-                            rangeHeightElement.parentElement.setAttribute("aria-label", `${rangeHeightElement.value}%`);
-                        });
-                        rangeHeightElement.addEventListener("change", () => {
-                            nodeElement.setAttribute("updated", dayjs().format("YYYYMMDDHHmmss"));
-                            updateTransaction(protyle, id, nodeElement.outerHTML, html);
-                            window.siyuan.menus.menu.remove();
-                            focusBlock(nodeElement);
-                        });
-                    }
-                }, {
-                    type: "separator",
-                },
-                genImageHeightMenu(window.siyuan.languages.default, imgElement, protyle, id, nodeElement, html),
+                bind(element) {
+                    rangeHeightElement = element.querySelector("input");
+                    rangeHeightElement.addEventListener("input", () => {
+                        assetElement.style.width = "";
+                        imgElement.style.width = "";
+                        imgElement.style.height = rangeHeightElement.value + "vh";
+                        rangeHeightElement.parentElement.setAttribute("aria-label", `${rangeHeightElement.value}%`);
+                    });
+                    rangeHeightElement.addEventListener("change", () => {
+                        nodeElement.setAttribute("updated", dayjs().format("YYYYMMDDHHmmss"));
+                        updateTransaction(protyle, id, nodeElement.outerHTML, html);
+                        window.siyuan.menus.menu.remove();
+                        focusBlock(nodeElement);
+                    });
+                }
+            }, {
+                type: "separator",
+            },
+            genImageHeightMenu(window.siyuan.languages.default, imgElement, protyle, id, nodeElement, html),
             ]
         }).element);
     }
     const imgSrc = imgElement.getAttribute("src");
     if (imgSrc) {
-        window.siyuan.menus.menu.append(new MenuItem({type: "separator"}).element);
+        window.siyuan.menus.menu.append(new MenuItem({ type: "separator" }).element);
         openMenu(protyle.app, imgSrc, false, false);
     }
     const dataSrc = imgElement.getAttribute("data-src");
@@ -1316,7 +1328,7 @@ export const imgMenu = (protyle: IProtyle, range: Range, assetElement: HTMLEleme
         });
     }
 
-    window.siyuan.menus.menu.popup({x: position.clientX, y: position.clientY});
+    window.siyuan.menus.menu.popup({ x: position.clientX, y: position.clientY });
     const popoverElement = hasTopClosestByClassName(protyle.element, "block__popover", true);
     window.siyuan.menus.menu.element.setAttribute("data-from", popoverElement ? popoverElement.dataset.level + "popover" : "app");
     if (!protyle.disabled) {
@@ -1465,7 +1477,7 @@ export const linkMenu = (protyle: IProtyle, linkElement: HTMLElement, focusText 
                 });
             }
         }).element);
-        window.siyuan.menus.menu.append(new MenuItem({type: "separator"}).element);
+        window.siyuan.menus.menu.append(new MenuItem({ type: "separator" }).element);
     }
     if (linkAddress) {
         openMenu(protyle.app, linkAddress, false, true);
@@ -1667,7 +1679,7 @@ export const tagMenu = (protyle: IProtyle, tagElement: HTMLElement) => {
             });
         }
     }).element);
-    window.siyuan.menus.menu.append(new MenuItem({type: "separator"}).element);
+    window.siyuan.menus.menu.append(new MenuItem({ type: "separator" }).element);
 
     window.siyuan.menus.menu.append(new MenuItem({
         label: window.siyuan.languages.search,
@@ -1696,7 +1708,7 @@ export const tagMenu = (protyle: IProtyle, tagElement: HTMLElement) => {
             renameTag(tagElement.textContent.replace(Constants.ZWSP, ""));
         }
     }).element);
-    window.siyuan.menus.menu.append(new MenuItem({type: "separator"}).element);
+    window.siyuan.menus.menu.append(new MenuItem({ type: "separator" }).element);
     window.siyuan.menus.menu.append(new MenuItem({
         label: `${window.siyuan.languages.turnInto} <b>${window.siyuan.languages.text}</b>`,
         icon: "iconRefresh",
@@ -2044,7 +2056,7 @@ export const tableMenu = (protyle: IProtyle, nodeElement: Element, cellElement: 
             updateTransaction(protyle, nodeElement.getAttribute("data-node-id"), nodeElement.outerHTML, html);
         }
     });
-    otherMenus.push({type: "separator"});
+    otherMenus.push({ type: "separator" });
     otherMenus.push({
         icon: "iconAlignLeft",
         accelerator: window.siyuan.config.keymap.editor.general.alignLeft.custom,
@@ -2195,7 +2207,7 @@ export const tableMenu = (protyle: IProtyle, nodeElement: Element, cellElement: 
     menus.push(...insertMenus);
     const other2Menus: IMenu[] = [];
     if (((!hasNone || (hasNone && !hasRowSpan && hasColSpan)) &&
-            (!previousHasNone || (previousHasNone && !previousHasRowSpan && previousHasColSpan))) ||
+        (!previousHasNone || (previousHasNone && !previousHasRowSpan && previousHasColSpan))) ||
         ((!hasNone || (hasNone && !hasRowSpan && hasColSpan)) &&
             (!nextHasNone || (nextHasNone && !nextHasRowSpan && nextHasColSpan))) ||
         (colIsPure && previousColIsPure) ||
@@ -2278,7 +2290,7 @@ export const tableMenu = (protyle: IProtyle, nodeElement: Element, cellElement: 
         });
     }
     menus.push(...removeMenus);
-    return {menus, removeMenus, insertMenus, otherMenus, other2Menus};
+    return { menus, removeMenus, insertMenus, otherMenus, other2Menus };
 };
 
 export const setFold = (protyle: IProtyle, nodeElement: Element, isOpen?: boolean, isRemove?: boolean, addLoading = true) => {
@@ -2352,11 +2364,11 @@ export const setFold = (protyle: IProtyle, nodeElement: Element, isOpen?: boolea
         transaction(protyle, [{
             action: "setAttrs",
             id,
-            data: JSON.stringify({fold: hasFold ? "" : "1"})
+            data: JSON.stringify({ fold: hasFold ? "" : "1" })
         }], [{
             action: "setAttrs",
             id,
-            data: JSON.stringify({fold: hasFold ? "1" : ""})
+            data: JSON.stringify({ fold: hasFold ? "1" : "" })
         }]);
     }
     // 折叠后，防止滚动条滚动后调用 get 请求 https://github.com/siyuan-note/siyuan/issues/2248
