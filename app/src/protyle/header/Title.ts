@@ -356,12 +356,16 @@ export class Title {
             focusByRange(range);
         }
         // 在标题下方插入属性视图 siyuan://blocks/20241030002647-dqjwzgq
-        const avDocElement = document.createElement("div");
-        avDocElement.className = "mux-doc-heading-av-panel";
-        // set style
-        avDocElement.style.marginRight = "96px";
-        avDocElement.style.marginLeft = "96px";
-        avDocElement.style.transition = "margin 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+        // 查询是否已经存在属性视图元素，避免重复渲染
+        let avDocElement = this.element.parentElement.querySelector(".mux-doc-heading-av-panel") as HTMLElement;
+        if (!avDocElement) {
+            avDocElement = document.createElement("div");
+            avDocElement.className = "mux-doc-heading-av-panel";
+            // 设置样式
+            avDocElement.style.marginRight = "96px";
+            avDocElement.style.marginLeft = "96px";
+            avDocElement.style.transition = "margin 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+        }
         // 渲染属性视图
         renderAVAttribute(avDocElement, protyle.block.rootID, protyle);
         // 插入到 this.element 的同级，但是需要是这一级的最后一个元素
