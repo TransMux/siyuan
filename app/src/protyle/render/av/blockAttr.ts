@@ -1,16 +1,16 @@
-import {fetchPost} from "../../../util/fetch";
-import {addCol, getColIconByType} from "./col";
-import {escapeAttr} from "../../../util/escape";
+import { fetchPost } from "../../../util/fetch";
+import { addCol, getColIconByType } from "./col";
+import { escapeAttr } from "../../../util/escape";
 import * as dayjs from "dayjs";
-import {popTextCell, updateCellsValue} from "./cell";
-import {hasClosestBlock, hasClosestByAttribute, hasClosestByClassName} from "../../util/hasClosest";
-import {unicode2Emoji} from "../../../emoji";
-import {transaction} from "../../wysiwyg/transaction";
-import {openMenuPanel} from "./openMenuPanel";
-import {uploadFiles} from "../../upload";
-import {openLink} from "../../../editor/openLink";
-import {editAssetItem} from "./asset";
-import {previewImage} from "../../preview/image";
+import { popTextCell, updateCellsValue } from "./cell";
+import { hasClosestBlock, hasClosestByAttribute, hasClosestByClassName } from "../../util/hasClosest";
+import { unicode2Emoji } from "../../../emoji";
+import { transaction } from "../../wysiwyg/transaction";
+import { openMenuPanel } from "./openMenuPanel";
+import { uploadFiles } from "../../upload";
+import { openLink } from "../../../editor/openLink";
+import { editAssetItem } from "./asset";
+import { previewImage } from "../../preview/image";
 
 const genAVRollupHTML = (value: IAVCellValue) => {
     let html = "";
@@ -146,7 +146,7 @@ export const genAVValueHTML = (value: IAVCellValue) => {
 };
 
 export const renderAVAttribute = (element: HTMLElement, id: string, protyle: IProtyle, cb?: (element: HTMLElement) => void) => {
-    fetchPost("/api/av/getAttributeViewKeys", {id}, (response) => {
+    fetchPost("/api/av/getAttributeViewKeys", { id }, (response) => {
         let html = "";
         response.data.forEach((table: {
             keyValues: {
@@ -165,7 +165,7 @@ export const renderAVAttribute = (element: HTMLElement, id: string, protyle: IPr
                     id: string,
                     blockID: string,
                     type: TAVCol & IAVCellValue
-                }  []
+                }[]
             }[],
             blockIDs: string[],
             avID: string
@@ -176,7 +176,14 @@ export const renderAVAttribute = (element: HTMLElement, id: string, protyle: IPr
     <svg class="block__logoicon"><use xlink:href="#iconDatabase"></use></svg><span>${table.avName || window.siyuan.languages.database}</span>
     <div class="fn__flex-1"></div>
 </div>`;
-            table.keyValues?.forEach(item => {
+            // siyuan://blocks/20241030141818-poymuxo
+            for (let i = 0; i < table.keyValues.length; i++) {
+                // 排除主键类型
+                const item = table.keyValues[i];
+                if (item.key.type === "block") {
+                    continue;
+                }
+
                 innerHTML += `<div class="block__icons av__row" data-id="${id}" data-col-id="${item.key.id}">
     <div class="block__icon" draggable="true"><svg><use xlink:href="#iconDrag"></use></svg></div>
     <div class="block__logo ariaLabel fn__pointer" data-type="editCol" data-position="parentW" aria-label="${escapeAttr(item.key.name)}">
@@ -189,7 +196,7 @@ class="fn__flex-1 fn__flex${["url", "text", "number", "email", "phone", "block"]
         ${genAVValueHTML(item.values[0])}
     </div>
 </div>`;
-            });
+            }
             innerHTML += `<div class="fn__hr"></div>
 <div class="fn__flex">
     <div class="fn__space"></div><div class="fn__space"></div>
