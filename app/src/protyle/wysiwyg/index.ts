@@ -1,4 +1,4 @@
-import {getTextStar, paste, pasteText} from "../util/paste";
+import { getTextStar, paste, pasteText } from "../util/paste";
 import {
     hasClosestBlock,
     hasClosestByAttribute,
@@ -15,10 +15,10 @@ import {
     getSelectionOffset, setFirstNodeRange,
     setLastNodeRange,
 } from "../util/selection";
-import {Constants} from "../../constants";
-import {isMobile} from "../../util/functions";
-import {genEmptyElement} from "../../block/util";
-import {previewDocImage} from "../preview/image";
+import { Constants } from "../../constants";
+import { isMobile } from "../../util/functions";
+import { genEmptyElement } from "../../block/util";
+import { previewDocImage } from "../preview/image";
 import {
     contentMenu,
     enterBack,
@@ -31,8 +31,8 @@ import {
     zoomOut
 } from "../../menus/protyle";
 import * as dayjs from "dayjs";
-import {dropEvent} from "../util/editorCommonEvent";
-import {input} from "./input";
+import { dropEvent } from "../util/editorCommonEvent";
+import { input } from "./input";
 import {
     getContenteditableElement,
     getNextBlock,
@@ -41,44 +41,44 @@ import {
     hasPreviousSibling,
     isNotEditBlock
 } from "./getBlock";
-import {transaction, updateTransaction} from "./transaction";
-import {hideElements} from "../ui/hideElements";
+import { transaction, updateTransaction } from "./transaction";
+import { hideElements } from "../ui/hideElements";
 /// #if !BROWSER
-import {ipcRenderer} from "electron";
+import { ipcRenderer } from "electron";
 /// #endif
-import {getEnableHTML, removeEmbed} from "./removeEmbed";
-import {keydown} from "./keydown";
-import {openMobileFileById} from "../../mobile/editor";
-import {removeBlock} from "./remove";
-import {highlightRender} from "../render/highlightRender";
-import {openAttr} from "../../menus/commonMenuItem";
-import {blockRender} from "../render/blockRender";
+import { getEnableHTML, removeEmbed } from "./removeEmbed";
+import { keydown } from "./keydown";
+import { openMobileFileById } from "../../mobile/editor";
+import { removeBlock } from "./remove";
+import { highlightRender } from "../render/highlightRender";
+import { openAttr } from "../../menus/commonMenuItem";
+import { blockRender } from "../render/blockRender";
 /// #if !MOBILE
-import {getAllModels} from "../../layout/getAll";
-import {pushBack} from "../../util/backForward";
-import {openFileById} from "../../editor/util";
-import {openGlobalSearch} from "../../search/util";
+import { getAllModels } from "../../layout/getAll";
+import { pushBack } from "../../util/backForward";
+import { openFileById } from "../../editor/util";
+import { openGlobalSearch } from "../../search/util";
 /// #else
-import {popSearch} from "../../mobile/menu/search";
+import { popSearch } from "../../mobile/menu/search";
 /// #endif
-import {BlockPanel} from "../../block/Panel";
-import {isInIOS, isOnlyMeta, readText} from "../util/compatibility";
-import {MenuItem} from "../../menus/Menu";
-import {fetchPost} from "../../util/fetch";
-import {onGet} from "../util/onGet";
-import {setTableAlign} from "../util/table";
-import {countBlockWord, countSelectWord} from "../../layout/status";
-import {showMessage} from "../../dialog/message";
-import {getBacklinkHeadingMore, loadBreadcrumb} from "./renderBacklink";
-import {removeSearchMark} from "../toolbar/util";
-import {activeBlur, hideKeyboardToolbar} from "../../mobile/util/keyboardToolbar";
-import {commonClick} from "./commonClick";
-import {avClick, avContextmenu, updateAVName} from "../render/av/action";
-import {selectRow, stickyRow, updateHeader} from "../render/av/row";
-import {showColMenu} from "../render/av/col";
-import {openViewMenu} from "../render/av/view";
-import {avRender} from "../render/av/render";
-import {checkFold} from "../../util/noRelyPCFunction";
+import { BlockPanel } from "../../block/Panel";
+import { isInIOS, isOnlyMeta, readText } from "../util/compatibility";
+import { MenuItem } from "../../menus/Menu";
+import { fetchPost } from "../../util/fetch";
+import { onGet } from "../util/onGet";
+import { setTableAlign } from "../util/table";
+import { countBlockWord, countSelectWord } from "../../layout/status";
+import { showMessage } from "../../dialog/message";
+import { getBacklinkHeadingMore, loadBreadcrumb } from "./renderBacklink";
+import { removeSearchMark } from "../toolbar/util";
+import { activeBlur, hideKeyboardToolbar } from "../../mobile/util/keyboardToolbar";
+import { commonClick } from "./commonClick";
+import { avClick, avContextmenu, updateAVName } from "../render/av/action";
+import { selectRow, stickyRow, updateHeader } from "../render/av/row";
+import { showColMenu } from "../render/av/col";
+import { openViewMenu } from "../render/av/view";
+import { avRender } from "../render/av/render";
+import { checkFold } from "../../util/noRelyPCFunction";
 import {
     addDragFill,
     dragFillCellsValue,
@@ -88,10 +88,10 @@ import {
     getTypeByCellElement,
     updateCellsValue
 } from "../render/av/cell";
-import {openEmojiPanel, unicode2Emoji} from "../../emoji";
-import {openLink} from "../../editor/openLink";
-import {mathRender} from "../render/mathRender";
-import {editAssetItem} from "../render/av/asset";
+import { openEmojiPanel, unicode2Emoji } from "../../emoji";
+import { openLink } from "../../editor/openLink";
+import { mathRender } from "../render/mathRender";
+import { editAssetItem } from "../render/av/asset";
 
 export class WYSIWYG {
     public lastHTMLs: { [key: string]: string } = {};
@@ -1163,7 +1163,7 @@ export class WYSIWYG {
                                 }
                             }
                         }).element);
-                        window.siyuan.menus.menu.append(new MenuItem({type: "separator"}).element);
+                        window.siyuan.menus.menu.append(new MenuItem({ type: "separator" }).element);
                         window.siyuan.menus.menu.append(new MenuItem({
                             icon: "iconAlignLeft",
                             accelerator: window.siyuan.config.keymap.editor.general.alignLeft.custom,
@@ -1247,7 +1247,7 @@ export class WYSIWYG {
                                 }
                             }
                         }).element);
-                        window.siyuan.menus.menu.append(new MenuItem({type: "separator"}).element);
+                        window.siyuan.menus.menu.append(new MenuItem({ type: "separator" }).element);
                         window.siyuan.menus.menu.append(new MenuItem({
                             icon: "iconCopy",
                             accelerator: "⌘C",
@@ -1311,7 +1311,7 @@ export class WYSIWYG {
                                 }
                             }
                         }).element);
-                        window.siyuan.menus.menu.popup({x: mouseUpEvent.clientX - 8, y: mouseUpEvent.clientY - 16});
+                        window.siyuan.menus.menu.popup({ x: mouseUpEvent.clientX - 8, y: mouseUpEvent.clientY - 16 });
                     }
                 }
 
@@ -1664,7 +1664,7 @@ export class WYSIWYG {
                 // 多选块
                 hideElements(["util"], protyle);
                 protyle.gutter.renderMenu(protyle, selectElements[0]);
-                window.siyuan.menus.menu.popup({x, y});
+                window.siyuan.menus.menu.popup({ x, y });
                 return;
             }
             const target = event.detail.target || event.target as HTMLElement;
@@ -1677,7 +1677,7 @@ export class WYSIWYG {
                 /// #if MOBILE
                 window.siyuan.menus.menu.fullscreen();
                 /// #else
-                window.siyuan.menus.menu.popup({x, y});
+                window.siyuan.menus.menu.popup({ x, y });
                 /// #endif
                 return false;
             }
@@ -1737,7 +1737,7 @@ export class WYSIWYG {
             const avTabHeaderElement = hasClosestByClassName(target, "item");
             if (nodeElement.classList.contains("av") && avTabHeaderElement) {
                 if (avTabHeaderElement.classList.contains("item--focus")) {
-                    openViewMenu({protyle, blockElement: nodeElement, element: avTabHeaderElement});
+                    openViewMenu({ protyle, blockElement: nodeElement, element: avTabHeaderElement });
                 } else {
                     nodeElement.removeAttribute("data-render");
                     avRender(nodeElement, protyle, () => {
@@ -1812,7 +1812,7 @@ export class WYSIWYG {
             ) {
                 if ((!isMobile() || protyle.toolbar?.element.classList.contains("fn__none")) && !nodeElement.classList.contains("av")) {
                     contentMenu(protyle, nodeElement);
-                    window.siyuan.menus.menu.popup({x, y: y + 13, h: 26});
+                    window.siyuan.menus.menu.popup({ x, y: y + 13, h: 26 });
                     protyle.toolbar?.element.classList.add("fn__none");
                     if (nodeElement.classList.contains("table")) {
                         nodeElement.querySelector(".table__select").removeAttribute("style");
@@ -1826,7 +1826,7 @@ export class WYSIWYG {
                 /// #if MOBILE
                 window.siyuan.menus.menu.fullscreen();
                 /// #else
-                window.siyuan.menus.menu.popup({x, y});
+                window.siyuan.menus.menu.popup({ x, y });
                 /// #endif
                 protyle.toolbar?.element.classList.add("fn__none");
             }
@@ -1896,7 +1896,7 @@ export class WYSIWYG {
                     window.siyuan.menus.menu.remove();
                 }
             }
-        }, {passive: true});
+        }, { passive: true });
 
         let overAttr = false;
         this.element.addEventListener("mouseover", (event: MouseEvent & { target: Element }) => {
@@ -2114,7 +2114,7 @@ export class WYSIWYG {
 
             // https://github.com/siyuan-note/siyuan/issues/8918
             if ((event.key === "ArrowLeft" || event.key === "ArrowRight" ||
-                    event.key === "Alt" || event.key === "Shift") &&    // 选中后 alt+shift+arrowRight 会导致光标和选中块不一致
+                event.key === "Alt" || event.key === "Shift") &&    // 选中后 alt+shift+arrowRight 会导致光标和选中块不一致
                 nodeElement && !nodeElement.classList.contains("protyle-wysiwyg--select")) {
                 const selectElements = Array.from(protyle.wysiwyg.element.querySelectorAll(".protyle-wysiwyg--select"));
                 let containRange = false;
@@ -2222,7 +2222,10 @@ export class WYSIWYG {
             // [SiYuan点击属性视图时，跳转自动聚焦](siyuan://blocks/20241030201835-grxdl7n)
             const isInDatabase = hasClosestByAttribute(event.target, "class", "av__cell");
 
-            if (blockRefElement || aLink.startsWith("siyuan://blocks/")) {
+            // https://x.transmux.top/j/20241031103213-j817ond
+            const isTransmuxUrl = aLink.startsWith("https://x.transmux.top/j/");
+
+            if (blockRefElement || aLink.startsWith("siyuan://blocks/") || isTransmuxUrl) {
                 event.stopPropagation();
                 event.preventDefault();
                 hideElements(["dialog", "toolbar"], protyle);
@@ -2232,6 +2235,8 @@ export class WYSIWYG {
                         refBlockId = blockRefElement.getAttribute("data-id");
                     } else if (aElement) {
                         refBlockId = aLink.substring(16, 38);
+                    } else if (isTransmuxUrl) {
+                        refBlockId = aLink.substring(25, 47);
                     }
                     checkFold(refBlockId, (zoomIn, action, isRoot) => {
                         // 块引用跳转后需要短暂高亮目标块 https://github.com/siyuan-note/siyuan/issues/11542
@@ -2246,7 +2251,7 @@ export class WYSIWYG {
                         if (isInDatabase) {
                             zoomIn = true;
                         }
-                        
+
                         if (event.shiftKey) {
                             openFileById({
                                 app: protyle.app,
@@ -2255,7 +2260,7 @@ export class WYSIWYG {
                                 action,
                                 zoomIn
                             });
-                            window.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape"}));
+                            window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
                         } else if (event.altKey) {
                             openFileById({
                                 app: protyle.app,
@@ -2534,7 +2539,7 @@ export class WYSIWYG {
                     } else if (event.shiftKey && !protyle.disabled) {
                         openAttr(actionElement.parentElement, "bookmark", protyle);
                     } else if (ctrlIsPressed) {
-                        zoomOut({protyle, id: actionId});
+                        zoomOut({ protyle, id: actionId });
                     } else {
                         if (actionElement.classList.contains("protyle-action--task")) {
                             if (!protyle.disabled) {
@@ -2553,7 +2558,7 @@ export class WYSIWYG {
                             if (protyle.block.showAll && protyle.block.id === actionId) {
                                 enterBack(protyle, actionId);
                             } else {
-                                zoomOut({protyle, id: actionId});
+                                zoomOut({ protyle, id: actionId });
                             }
                         }
                     }
