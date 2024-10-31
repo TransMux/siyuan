@@ -999,8 +999,8 @@ app.whenReady().then(() => {
             trafficLightPosition: {x: 8, y: 13},
             width: Math.floor(data.width || mainScreen.size.width * 0.7),
             height: Math.floor(data.height || mainScreen.size.height * 0.9),
-            minWidth: 493,
-            minHeight: 376,
+            minWidth: 250,
+            minHeight: 100, // https://x.transmux.top/j/20241101013714-6d97iu1
             fullscreenable: true,
             frame: "darwin" === process.platform,
             icon: path.join(appDir, "stage", "icon-large.png"),
