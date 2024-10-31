@@ -2224,8 +2224,9 @@ export class WYSIWYG {
 
             // https://x.transmux.top/j/20241031103213-j817ond
             const isTransmuxUrl = aLink.startsWith("https://x.transmux.top/j/");
+            const isSiYuanUrl = aLink.startsWith("siyuan://blocks/");
 
-            if (blockRefElement || aLink.startsWith("siyuan://blocks/") || isTransmuxUrl) {
+            if (blockRefElement || isSiYuanUrl || isTransmuxUrl) {
                 event.stopPropagation();
                 event.preventDefault();
                 hideElements(["dialog", "toolbar"], protyle);
@@ -2233,7 +2234,7 @@ export class WYSIWYG {
                     let refBlockId: string;
                     if (blockRefElement) {
                         refBlockId = blockRefElement.getAttribute("data-id");
-                    } else if (aElement) {
+                    } else if (isSiYuanUrl) {
                         refBlockId = aLink.substring(16, 38);
                     } else if (isTransmuxUrl) {
                         refBlockId = aLink.substring(25, 47);
