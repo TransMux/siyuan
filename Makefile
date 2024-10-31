@@ -18,3 +18,7 @@ install-desktop:
 	rm -rf /mnt/c/Users/InEas/AppData/Local/Programs/SiYuan/resources/stage/build/desktop-bak
 	mv /mnt/c/Users/InEas/AppData/Local/Programs/SiYuan/resources/stage/build/desktop /mnt/c/Users/InEas/AppData/Local/Programs/SiYuan/resources/stage/build/desktop-bak
 	cp -r /root/projects/siyuan/app/stage/build/desktop /mnt/c/Users/InEas/AppData/Local/Programs/SiYuan/resources/stage/build/desktop
+
+install:
+	make install-app
+	make install-desktop
