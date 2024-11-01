@@ -129,6 +129,12 @@ export const initAnno = (element: HTMLElement, pdf: any) => {
     element.addEventListener("click", (event) => {
         let processed = false;
         let target = event.target as HTMLElement;
+        // https://x.transmux.top/j/20241101235609-iject66
+        if (target.classList.contains("mux-pdf-text-annotation")) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+        }
         if (typeof event.detail === "string") {
             window.siyuan.storage[Constants.LOCAL_PDFTHEME].annoColor = event.detail === "0" ?
                 (window.siyuan.storage[Constants.LOCAL_PDFTHEME].annoColor || "var(--b3-pdf-background1)")
@@ -686,7 +692,7 @@ height: ${Math.abs(bounds[1] - bounds[3])}px"></div>`;
             html += `<div style="color: red;
 ${renderSide}: 0px;
 top:${Math.min(bounds[1], bounds[3])}px;
-height: ${Math.abs(bounds[1] - bounds[3])}px">dummy text 你好</div>`;
+height: ${Math.abs(bounds[1] - bounds[3])}px" class="mux-pdf-text-annotation">dummy text 你好</div>`;
         }
     });
     rectsElement.insertAdjacentHTML("beforeend", html + "</div>");
