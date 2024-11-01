@@ -1,4 +1,4 @@
-import { fetchPost } from "../util/fetch";
+import { fetchPost, fetchSyncPost } from "../util/fetch";
 import { setPosition } from "../util/setPosition";
 import { hasClosestByAttribute, hasClosestByClassName } from "../protyle/util/hasClosest";
 import { setStorageVal, writeText } from "../protyle/util/compatibility";
@@ -669,7 +669,7 @@ const showHighlight = (selected: IPdfAnno, pdf: any, hl?: boolean) => {
     }
     let html = `<div class="pdf__rect popover__block" data-node-id="${selected.id}" data-relations="${selected.ids || ""}" data-mode="${selected.mode}">`;
     let drawingFirstBlock = true;
-    selected.coords.forEach((rect) => {
+    selected.coords.forEach(async (rect) => {
         const bounds = viewport.convertToViewportRectangle(rect);
         const width = Math.abs(bounds[0] - bounds[2]);
         if (width <= 0) {
@@ -687,13 +687,31 @@ height: ${Math.abs(bounds[1] - bounds[3])}px"></div>`;
         // https://x.transmux.top/j/20241101171348-lxkddbp
         if (drawingFirstBlock) {
             drawingFirstBlock = false;
+
+            // 获取标注块以及标注文本 https://x.transmux.top/j/20241102000728-ev9r3iw
+            const refBlockData = (await fetchSyncPost("/api/block/getRefIDsByFileAnnotationID", {
+                id: selected.id
+            })).data;
+            if (!refBlockData.refTexts || refBlockData.refTexts.length === 0) {
+                return;
+            }
+            // 寻找 refBlockData.refTexts 中第一个不等于 selected.content 的 下标
+            const annotationIndex = refBlockData.refTexts.findIndex((text: string) => text !== selected.content);
+            // 如果标注文本是没有修改过的，那么不渲染
+            if (annotationIndex === -1) {
+                return;
+            }
+
+            const annotationText = refBlockData.refTexts[annotationIndex];
+            const annotationID = refBlockData.refIDs[annotationIndex];
+
             const renderSide = Math.min(bounds[0], bounds[2]) > pageWidth / 2 ? "right" : "left";
             // https://x.transmux.top/j/20241102000219-i6iftd1
             const textTop = Math.min(bounds[1], bounds[3]) - (Math.abs(bounds[1] - bounds[3]) / 3);
             html += `<div style="color: red;
 ${renderSide}: 0px;
 top:${textTop}px;
-height: ${Math.abs(bounds[1] - bounds[3])}px; font-size: calc(var(--scale-factor)*8.97px);" class="mux-pdf-text-annotation">dummy text HHHHHHHHHHHHHHHHH你好HHHHHHHHHHHHHHHHH你好</div>`; // https://x.transmux.top/j/20241102000155-zm6abru
+height: ${Math.abs(bounds[1] - bounds[3])}px; font-size: calc(var(--scale-factor)*8.97px);" class="mux-pdf-text-annotation" data-node-id="${annotationID}">${annotationText}</div>`; // https://x.transmux.top/j/20241102000155-zm6abru
         }
     });
     rectsElement.insertAdjacentHTML("beforeend", html + "</div>");
