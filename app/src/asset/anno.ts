@@ -1,12 +1,12 @@
-import {fetchPost} from "../util/fetch";
-import {setPosition} from "../util/setPosition";
-import {hasClosestByAttribute, hasClosestByClassName} from "../protyle/util/hasClosest";
-import {setStorageVal, writeText} from "../protyle/util/compatibility";
-import {getAllModels} from "../layout/getAll";
-import {focusByRange} from "../protyle/util/selection";
-import {Constants} from "../constants";
-import {Dialog} from "../dialog";
-import {showMessage} from "../dialog/message";
+import { fetchPost } from "../util/fetch";
+import { setPosition } from "../util/setPosition";
+import { hasClosestByAttribute, hasClosestByClassName } from "../protyle/util/hasClosest";
+import { setStorageVal, writeText } from "../protyle/util/compatibility";
+import { getAllModels } from "../layout/getAll";
+import { focusByRange } from "../protyle/util/selection";
+import { Constants } from "../constants";
+import { Dialog } from "../dialog";
+import { showMessage } from "../dialog/message";
 
 export const initAnno = (element: HTMLElement, pdf: any) => {
     getConfig(pdf);
@@ -440,7 +440,7 @@ const getHightlightCoordsByRange = (pdf: any, color: string) => {
         startSelected.push(
             startViewport.convertToPdfPoint(r.left - startPageRect.x,
                 r.top - startPageRect.y).concat(startViewport.convertToPdfPoint(r.right - startPageRect.x,
-                r.bottom - startPageRect.y)),
+                    r.bottom - startPageRect.y)),
         );
     });
 
@@ -456,7 +456,7 @@ const getHightlightCoordsByRange = (pdf: any, color: string) => {
             endSelected.push(
                 endViewport.convertToPdfPoint(r.left - endPageRect.x,
                     r.top - endPageRect.y).concat(endViewport.convertToPdfPoint(r.right - endPageRect.x,
-                    r.bottom - endPageRect.y)),
+                        r.bottom - endPageRect.y)),
             );
         });
     }
@@ -487,7 +487,7 @@ const getHightlightCoordsByRange = (pdf: any, color: string) => {
             index: endIndex,
             positions: endSelected,
         });
-        results.push({index: endIndex, coords: endSelected, id, color, content, type: "text", mode: "text"});
+        results.push({ index: endIndex, coords: endSelected, id, color, content, type: "text", mode: "text" });
     }
     if (pages.length === 0) {
         return;
@@ -519,16 +519,16 @@ const getHightlightCoordsByRect = (pdf: any, color: string, rectResizeElement: H
     const startSelected = startViewport.convertToPdfPoint(
         rect.left - startPageRect.x,
         rect.top - startPageRect.y).concat(startViewport.convertToPdfPoint(rect.right - startPageRect.x,
-        rect.bottom - startPageRect.y));
+            rect.bottom - startPageRect.y));
 
     const pages: {
         index: number
         positions: number[]
     }[] = [
-        {
-            index: startPage.id - 1,
-            positions: [startSelected],
-        }];
+            {
+                index: startPage.id - 1,
+                positions: [startSelected],
+            }];
 
     const id = Lute.NewNodeID();
     const content = `${pdf.appConfig.file.replace(location.origin, "").substr(8).replace(/-\d{14}-\w{7}.pdf$/, "")}-P${startPage.id}-${id}`;
@@ -555,7 +555,7 @@ const getHightlightCoordsByRect = (pdf: any, color: string, rectResizeElement: H
             const endSelected = endViewport.convertToPdfPoint(
                 rect.left - endPageRect.x,
                 rect.top - endPageRect.y).concat(endViewport.convertToPdfPoint(rect.right - endPageRect.x,
-                rect.bottom - endPageRect.y));
+                    rect.bottom - endPageRect.y));
             pages.push({
                 index: endPage.id - 1,
                 positions: [endSelected],
@@ -591,7 +591,7 @@ const mergeRects = (range: Range) => {
             return;
         }
         if (typeof lastTop === "undefined" || Math.abs(lastTop - item.top) > 4) {
-            mergedRects.push({left: item.left, top: item.top, right: item.right, bottom: item.bottom});
+            mergedRects.push({ left: item.left, top: item.top, right: item.right, bottom: item.bottom });
             lastTop = item.top;
         } else {
             mergedRects[mergedRects.length - 1].right = item.right;
@@ -650,13 +650,20 @@ const showHighlight = (selected: IPdfAnno, pdf: any, hl?: boolean) => {
         return;
     }
 
-    const viewport = page.viewport.clone({rotation: 0}); // rotation https://github.com/siyuan-note/siyuan/issues/9831
+    const viewport = page.viewport.clone({ rotation: 0 }); // rotation https://github.com/siyuan-note/siyuan/issues/9831
+    // https://x.transmux.top/j/20241101233646-e9dtudj
+    const pageWidth = page.viewport.width;
+    // const pageWidth = page.canvas.width;
+    // const pageWidth = page.viewport.rawDims.width;
+
     let rectsElement = textLayerElement.querySelector(".pdf__rects");
     if (!rectsElement) {
         textLayerElement.insertAdjacentHTML("beforeend", "<div class='pdf__rects'></div>");
         rectsElement = textLayerElement.querySelector(".pdf__rects");
     }
     let html = `<div class="pdf__rect popover__block" data-node-id="${selected.id}" data-relations="${selected.ids || ""}" data-mode="${selected.mode}">`;
+
+    let drawingFirstBlock = true;
     selected.coords.forEach((rect) => {
         const bounds = viewport.convertToViewportRectangle(rect);
         const width = Math.abs(bounds[0] - bounds[2]);
@@ -672,6 +679,15 @@ left:${Math.min(bounds[0], bounds[2])}px;
 top:${Math.min(bounds[1], bounds[3])}px;
 width:${width}px;
 height: ${Math.abs(bounds[1] - bounds[3])}px"></div>`;
+        // https://x.transmux.top/j/20241101171348-lxkddbp
+        if (drawingFirstBlock) {
+            drawingFirstBlock = false;
+            const renderSide = Math.min(bounds[0], bounds[2]) > pageWidth / 2 ? "right" : "left";
+            html += `<div style="color: red;
+${renderSide}: 0px;
+top:${Math.min(bounds[1], bounds[3])}px;
+height: ${Math.abs(bounds[1] - bounds[3])}px">dummy text 你好</div>`;
+        }
     });
     rectsElement.insertAdjacentHTML("beforeend", html + "</div>");
     rectsElement.lastElementChild.setAttribute("data-content", selected.content);
@@ -736,7 +752,7 @@ const copyAnno = (idPath: string, fileName: string, pdf: any) => {
 
 const getCaptureCanvas = async (pdfObj: any, pageNumber: number) => {
     const pdfPage = await pdfObj.pdfDocument.getPage(pageNumber);
-    const viewport = pdfPage.getViewport({scale: 1.5 * pdfObj.pdfViewer.currentScale * window.pdfjsLib.PixelsPerInch.PDF_TO_CSS_UNITS});
+    const viewport = pdfPage.getViewport({ scale: 1.5 * pdfObj.pdfViewer.currentScale * window.pdfjsLib.PixelsPerInch.PDF_TO_CSS_UNITS });
     const canvas = document.createElement("canvas");
     canvas.width = Math.floor(viewport.width);
     canvas.height = Math.floor(viewport.height);
