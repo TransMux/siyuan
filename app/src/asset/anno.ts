@@ -668,7 +668,6 @@ const showHighlight = (selected: IPdfAnno, pdf: any, hl?: boolean) => {
         rectsElement = textLayerElement.querySelector(".pdf__rects");
     }
     let html = `<div class="pdf__rect popover__block" data-node-id="${selected.id}" data-relations="${selected.ids || ""}" data-mode="${selected.mode}">`;
-
     let drawingFirstBlock = true;
     selected.coords.forEach((rect) => {
         const bounds = viewport.convertToViewportRectangle(rect);
@@ -689,10 +688,12 @@ height: ${Math.abs(bounds[1] - bounds[3])}px"></div>`;
         if (drawingFirstBlock) {
             drawingFirstBlock = false;
             const renderSide = Math.min(bounds[0], bounds[2]) > pageWidth / 2 ? "right" : "left";
+            // https://x.transmux.top/j/20241102000219-i6iftd1
+            const textTop = Math.min(bounds[1], bounds[3]) - (Math.abs(bounds[1] - bounds[3]) / 3);
             html += `<div style="color: red;
 ${renderSide}: 0px;
-top:${Math.min(bounds[1], bounds[3])}px;
-height: ${Math.abs(bounds[1] - bounds[3])}px; font-size: calc(var(--scale-factor)*8.97px);" class="mux-pdf-text-annotation">dummy text 你好</div>`; // https://x.transmux.top/j/20241102000155-zm6abru
+top:${textTop}px;
+height: ${Math.abs(bounds[1] - bounds[3])}px; font-size: calc(var(--scale-factor)*8.97px);" class="mux-pdf-text-annotation">dummy text HHHHHHHHHHHHHHHHH你好HHHHHHHHHHHHHHHHH你好</div>`; // https://x.transmux.top/j/20241102000155-zm6abru
         }
     });
     rectsElement.insertAdjacentHTML("beforeend", html + "</div>");
