@@ -12,10 +12,16 @@ export const openLink = (protyle: IProtyle, aLink: string, event?: MouseEvent, c
     let linkAddress = Lute.UnEscapeHTMLStr(aLink);
     let pdfParams;
     if (isLocalPath(linkAddress) && !linkAddress.startsWith("file://") && linkAddress.indexOf(".pdf") > -1) {
+        // 'assets/TimeSHAP-20241101231634-l2o2bus.pdf/20241101231643-i7bx8o4'
+        // 'assets/2024/11/TimeSHAP-20241101231634-l2o2bus.pdf/20241101231643-i7bx8o4'
         const pdfAddress = linkAddress.split("/");
         if (pdfAddress.length === 3 && pdfAddress[0] === "assets" && pdfAddress[1].endsWith(".pdf") && /\d{14}-\w{7}/.test(pdfAddress[2])) {
             linkAddress = `assets/${pdfAddress[1]}`;
             pdfParams = pdfAddress[2];
+            // https://x.transmux.top/j/20241102005057-ntx95xy
+        } else if (pdfAddress.length === 5 && pdfAddress[0] === "assets" && pdfAddress[3].endsWith(".pdf") && /\d{14}-\w{7}/.test(pdfAddress[4])) {
+            linkAddress = `assets/${pdfAddress[1]}/${pdfAddress[2]}/${pdfAddress[3]}`;
+            pdfParams = pdfAddress[4];
         } else {
             pdfParams = parseInt(getSearch("page", linkAddress));
             linkAddress = linkAddress.split("?page")[0];

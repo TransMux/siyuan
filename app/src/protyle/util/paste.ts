@@ -506,7 +506,28 @@ export const paste = async (protyle: IProtyle, event: (ClipboardEvent | DragEven
                     }
                 }
             }
-            const textPlainDom = protyle.lute.Md2BlockDOM(textPlain);
+            let textPlainDom: string;
+            debugger
+            if (isFileAnnotation(textPlain)) {
+                console.log("Patching lute processing logic for temp solution of multi-layer assets", textPlain);
+                const assetBackup: Record<string, string> = {};
+
+                textPlain = textPlain.replace(/assets\/(\d{4})\/(\d{2})\/(.*?) /g, (match, year, month, fileName) => {
+                    const placeholder = `assets/${year}@${month}@${fileName}`;
+                    assetBackup[placeholder] = `assets/${year}/${month}/${fileName}`;
+                    return placeholder + " ";
+                });
+
+                // 将处理过的 textPlain 转换
+                textPlainDom = protyle.lute.Md2BlockDOM(textPlain);
+
+                // 恢复assets/...内容
+                Object.keys(assetBackup).forEach((placeholder) => {
+                    textPlainDom = textPlainDom.replace(new RegExp(placeholder, "g"), assetBackup[placeholder]);
+                });
+            } else {
+                textPlainDom = protyle.lute.Md2BlockDOM(textPlain);
+            }
             insertHTML(textPlainDom, protyle, false, false, true);
             filterClipboardHint(protyle, textPlain);
         }
