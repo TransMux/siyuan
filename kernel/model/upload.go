@@ -47,7 +47,9 @@ func InsertLocalAssets(id string, assetPaths []string, isUpload bool) (succMap m
 	docDirLocalPath := filepath.Join(util.DataDir, bt.BoxID, path.Dir(bt.Path))
 	assetsDirPath := getAssetsDir(filepath.Join(util.DataDir, bt.BoxID), docDirLocalPath)
 	// siyuan://blocks/20241029224720-f55y9p1
-	assetsDirPath = filepath.Join(assetsDirPath, time.Now().Format("2024/08"))
+	// https://x.transmux.top/j/20241101115104-er0buaa
+	timeString := time.Now().Format("2006/01")
+	assetsDirPath = filepath.Join(assetsDirPath, timeString)
 	if !gulu.File.IsExist(assetsDirPath) {
 		if err = os.MkdirAll(assetsDirPath, 0755); err != nil {
 			return
@@ -103,7 +105,7 @@ func InsertLocalAssets(id string, assetPaths []string, isUpload bool) (succMap m
 				return
 			}
 			f.Close()
-			succMap[baseName] = "assets/" + fName
+			succMap[baseName] = "assets/" + timeString + "/" + fName
 		}
 	}
 	IncSync()
