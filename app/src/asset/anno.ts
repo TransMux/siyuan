@@ -7,6 +7,7 @@ import { focusByRange } from "../protyle/util/selection";
 import { Constants } from "../constants";
 import { Dialog } from "../dialog";
 import { showMessage } from "../dialog/message";
+import { openFileById } from "../editor/util";
 
 export const initAnno = (element: HTMLElement, pdf: any) => {
     getConfig(pdf);
@@ -133,6 +134,10 @@ export const initAnno = (element: HTMLElement, pdf: any) => {
         if (target.classList.contains("mux-pdf-text-annotation")) {
             event.preventDefault();
             event.stopPropagation();
+            // https://x.transmux.top/j/20241102000728-ev9r3iw
+            // 获取data-node-id
+            const annotationBlockID = target.getAttribute("data-node-id");
+            window.open(`siyuan://blocks/${annotationBlockID}`, "_blank");
             return;
         }
         if (typeof event.detail === "string") {
