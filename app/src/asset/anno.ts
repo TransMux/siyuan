@@ -7,7 +7,6 @@ import { focusByRange } from "../protyle/util/selection";
 import { Constants } from "../constants";
 import { Dialog } from "../dialog";
 import { showMessage } from "../dialog/message";
-import { openFileById } from "../editor/util";
 
 export const initAnno = (element: HTMLElement, pdf: any) => {
     getConfig(pdf);
