@@ -22,8 +22,11 @@ import { onlyProtyleCommand } from "./protyle";
 import { globalCommand } from "./global";
 import { getDisplayName, getNotebookName, getTopPaths, movePathTo, moveToPath, pathPosix } from "../../../util/pathName";
 import { hintMoveBlock } from "../../../protyle/hint/extend";
-import { fetchSyncPost } from "../../../util/fetch";
+import { fetchPost, fetchSyncPost } from "../../../util/fetch";
 import { focusByRange } from "../../../protyle/util/selection";
+import { unicode2Emoji } from "../../../emoji";
+import { escapeHtml } from "../../../util/escape";
+import { openFileById } from "../../../editor/util";
 
 export const commandPanel = (app: App) => {
     const range = getSelection().rangeCount > 0 ? getSelection().getRangeAt(0) : undefined;
@@ -33,8 +36,7 @@ export const commandPanel = (app: App) => {
         title: window.siyuan.languages.commandPanel,
         content: `<div class="fn__flex-column">
     <div class="b3-form__icon search__header" style="border-top: 0;border-bottom: 1px solid var(--b3-theme-surface-lighter);">
-        <svg class="b3-form__icon-icon"><use xlink:href="#iconSearch"></use></svg>
-        <input class="b3-text-field b3-text-field--text" style="padding-left: 32px !important;">
+        <input class="b3-text-field b3-text-field--text" style="padding-left: 8px !important;">
     </div>
     <ul class="b3-list b3-list--background search__list" id="commands"></ul>
     <div class="search__tip">
@@ -52,7 +54,9 @@ export const commandPanel = (app: App) => {
     });
     dialog.element.setAttribute("data-key", Constants.DIALOG_COMMANDPANEL);
     const listElement = dialog.element.querySelector("#commands");
-    let html = "";
+
+    // https://x.transmux.top/j/20241101223108-o9zjabn
+    let commandHtml = "";
     Object.keys(window.siyuan.config.keymap.general).forEach((key) => {
         let keys;
         /// #if MOBILE
@@ -73,33 +77,59 @@ export const commandPanel = (app: App) => {
         /// #endif
         /// #endif
         if (keys.includes(key)) {
-            html += `<li class="b3-list-item" data-command="${key}">
+            commandHtml += `<li class="b3-list-item" data-command="${key}">
     <span class="b3-list-item__text">${window.siyuan.languages[key]}</span>
     <span class="b3-list-item__meta${isMobile() ? " fn__none" : ""}">${updateHotkeyTip(window.siyuan.config.keymap.general[key].custom)}</span>
 </li>`;
         }
     });
-    listElement.insertAdjacentHTML("beforeend", html);
-    app.plugins.forEach(plugin => {
-        plugin.commands.forEach(command => {
-            const liElement = document.createElement("li");
-            liElement.classList.add("b3-list-item");
-            liElement.innerHTML = `<span class="b3-list-item__text">${plugin.displayName}: ${command.langText || plugin.i18n[command.langKey]}</span>
-<span class="b3-list-item__meta${isMobile() ? " fn__none" : ""}">${updateHotkeyTip(command.customHotkey)}</span>`;
-            liElement.addEventListener("click", (event) => {
-                if (command.callback) {
-                    // 传递 event 给回调函数，不然拿不到里面的数据，TODO：有没有一个更好的方法？其他情况下不传也挺奇怪的
-                    command.callback(event);
-                } else if (command.globalCallback) {
-                    command.globalCallback();
-                }
-                dialog.destroy();
-                event.preventDefault();
+
+    // https://x.transmux.top/j/20241101223108-o9zjabn
+    let recentDocsHtml = "";
+    let index = 0;
+    fetchPost("/api/storage/getRecentDocs", {}, (response) => {
+        const data: { rootID: string, icon: string, title: string }[] = response.data
+        data.forEach((item) => {
+            recentDocsHtml += `<li data-index="${index}" data-node-id="${item.rootID}" data-command="openDoc" class="b3-list-item${index === 0 ? " b3-list-item--focus" : ""}">
+${unicode2Emoji(item.icon || window.siyuan.storage[Constants.LOCAL_IMAGES].file, "b3-list-item__graphic", true)}
+<span class="b3-list-item__text">${escapeHtml(item.title)}</span>
+</li>`;
+            index++;
+        });
+        dialog.element.addEventListener("click", (event) => {
+            const liElement = hasClosestByClassName(event.target as HTMLElement, "b3-list-item");
+            if (liElement) {
+                dialog.element.querySelector(".b3-list-item--focus").classList.remove("b3-list-item--focus");
+                liElement.classList.add("b3-list-item--focus");
+                window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
                 event.stopPropagation();
-            });
-            listElement.insertAdjacentElement("beforeend", liElement);
+                event.preventDefault();
+            }
         });
     });
+
+    // 默认是在命令界面
+    listElement.insertAdjacentHTML("beforeend", commandHtml);
+    //     app.plugins.forEach(plugin => {
+    //         plugin.commands.forEach(command => {
+    //             liElement.innerHTML = `<li class="b3-list-item">
+    // <span class="b3-list-item__text">${plugin.displayName}: ${command.langText || plugin.i18n[command.langKey]}</span>
+    // <span class="b3-list-item__meta${isMobile() ? " fn__none" : ""}">${updateHotkeyTip(command.customHotkey)}</span>
+    // </li>`;
+    //             liElement.addEventListener("click", (event) => {
+    //                 if (command.callback) {
+    //                     // 传递 event 给回调函数，不然拿不到里面的数据，TODO：有没有一个更好的方法？其他情况下不传也挺奇怪的
+    //                     command.callback(event);
+    //                 } else if (command.globalCallback) {
+    //                     command.globalCallback();
+    //                 }
+    //                 dialog.destroy();
+    //                 event.preventDefault();
+    //                 event.stopPropagation();
+    //             });
+    //             listElement.insertAdjacentElement("beforeend", liElement);
+    //         });
+    //     });
 
     if (listElement.childElementCount === 0) {
         const liElement = document.createElement("li");
@@ -115,18 +145,32 @@ export const commandPanel = (app: App) => {
 
     const inputElement = dialog.element.querySelector(".b3-text-field") as HTMLInputElement;
     inputElement.focus();
+    inputElement.value = ">";
+
+    // 切换模式 https://x.transmux.top/j/20241101230411-mn6vqw8
+    let currentMode: "command" | "recentDoc" = "command";
+
     listElement.addEventListener("click", (event: KeyboardEvent) => {
         const liElement = hasClosestByClassName(event.target as HTMLElement, "b3-list-item");
         if (liElement) {
             const command = liElement.getAttribute("data-command");
             if (command) {
-                execByCommand({ command, app, previousRange: range });
+                // https://x.transmux.top/j/20241101230411-mn6vqw8
+                if (command === "openDoc") {
+                    openFileById({
+                        app,
+                        id: liElement.getAttribute("data-node-id")
+                    });
+                } else {
+                    execByCommand({ command, app, previousRange: range });
+                }
                 dialog.destroy();
                 event.preventDefault();
                 event.stopPropagation();
             }
         }
     });
+
     inputElement.addEventListener("keydown", (event: KeyboardEvent) => {
         event.stopPropagation();
         if (event.isComposing) {
@@ -141,7 +185,15 @@ export const commandPanel = (app: App) => {
             if (currentElement) {
                 const command = currentElement.getAttribute("data-command");
                 if (command) {
-                    execByCommand({ command, app, previousRange: range });
+                    // https://x.transmux.top/j/20241101230411-mn6vqw8
+                    if (command === "openDoc") {
+                        openFileById({
+                            app,
+                            id: currentElement.getAttribute("data-node-id")
+                        });
+                    } else {
+                        execByCommand({ command, app, previousRange: range });
+                    }
                 } else {
                     // siyuan://blocks/20241025231614-ui1r5ui
                     currentElement.dispatchEvent(new CustomEvent("click", {
@@ -162,12 +214,24 @@ export const commandPanel = (app: App) => {
             return;
         }
         event.stopPropagation();
+        const newMode = inputElement.value.startsWith(">") ? "command" : "recentDoc";
+        if (newMode !== currentMode) {
+            currentMode = newMode;
+            // 切换模式
+            if (newMode === "recentDoc") {
+                listElement.innerHTML = recentDocsHtml;
+            } else {
+                listElement.innerHTML = commandHtml;
+                listElement.firstElementChild.classList.add("b3-list-item--focus");
+            }
+        }
         filterList(inputElement, listElement);
     });
 };
 
 const filterList = (inputElement: HTMLInputElement, listElement: Element) => {
-    const inputValue = inputElement.value.toLowerCase();
+    // 如果[0]是>，那么把它去除
+    const inputValue = inputElement.value.toLowerCase().replace(/^>/, "");
     listElement.querySelector(".b3-list-item--focus")?.classList.remove("b3-list-item--focus");
     let hasFocus = false;
     Array.from(listElement.children).forEach((element: HTMLElement) => {
