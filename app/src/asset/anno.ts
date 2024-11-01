@@ -692,7 +692,7 @@ height: ${Math.abs(bounds[1] - bounds[3])}px"></div>`;
             html += `<div style="color: red;
 ${renderSide}: 0px;
 top:${Math.min(bounds[1], bounds[3])}px;
-height: ${Math.abs(bounds[1] - bounds[3])}px" class="mux-pdf-text-annotation">dummy text 你好</div>`;
+height: ${Math.abs(bounds[1] - bounds[3])}px; font-size: calc(var(--scale-factor)*8.97px);" class="mux-pdf-text-annotation">dummy text 你好</div>`; // https://x.transmux.top/j/20241102000155-zm6abru
         }
     });
     rectsElement.insertAdjacentHTML("beforeend", html + "</div>");
