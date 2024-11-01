@@ -673,6 +673,10 @@ const showHighlight = (selected: IPdfAnno, pdf: any, hl?: boolean) => {
     }
     let html = `<div class="pdf__rect popover__block" data-node-id="${selected.id}" data-relations="${selected.ids || ""}" data-mode="${selected.mode}">`;
     let drawingFirstBlock = true;
+    // 先插入一个占位元素，后面更新这个占位元素，因为有await
+    // https://x.transmux.top/j/20241102014153-2b62z3d
+    const annotationPlaceholder = document.createElement("div");
+
     selected.coords.forEach(async (rect) => {
         const bounds = viewport.convertToViewportRectangle(rect);
         const width = Math.abs(bounds[0] - bounds[2]);
@@ -712,13 +716,14 @@ height: ${Math.abs(bounds[1] - bounds[3])}px"></div>`;
             const renderSide = Math.min(bounds[0], bounds[2]) > pageWidth / 2 ? "right" : "left";
             // https://x.transmux.top/j/20241102000219-i6iftd1
             const textTop = Math.min(bounds[1], bounds[3]) - (Math.abs(bounds[1] - bounds[3]) / 3);
-            html += `<div style="color: red;
+            annotationPlaceholder.outerHTML = `<div style="color: red;
 ${renderSide}: 0px;
 top:${textTop}px;
 height: ${Math.abs(bounds[1] - bounds[3])}px; font-size: calc(var(--scale-factor)*8.97px);" class="mux-pdf-text-annotation" data-node-id="${annotationID}">${annotationText}</div>`; // https://x.transmux.top/j/20241102000155-zm6abru
         }
     });
     rectsElement.insertAdjacentHTML("beforeend", html + "</div>");
+    rectsElement.lastElementChild.appendChild(annotationPlaceholder);
     rectsElement.lastElementChild.setAttribute("data-content", selected.content);
     if (hl) {
         hlPDFRect(rectsElement, selected.id);

@@ -507,7 +507,6 @@ export const paste = async (protyle: IProtyle, event: (ClipboardEvent | DragEven
                 }
             }
             let textPlainDom: string;
-            debugger
             if (isFileAnnotation(textPlain)) {
                 console.log("Patching lute processing logic for temp solution of multi-layer assets", textPlain);
                 const assetBackup: Record<string, string> = {};
