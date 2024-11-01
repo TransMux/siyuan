@@ -1,4 +1,4 @@
-import {hasClosestByTag, hasTopClosestByTag} from "../../protyle/util/hasClosest";
+import {hasClosestByClassName, hasClosestByTag, hasTopClosestByTag} from "../../protyle/util/hasClosest";
 import {escapeHtml} from "../../util/escape";
 import {Model} from "../../layout/Model";
 import {Constants} from "../../constants";
@@ -91,7 +91,7 @@ export class MobileFiles extends Model {
     <svg data-type="sort" class="toolbar__icon${window.siyuan.config.readonly ? " fn__none" : ""}"><use xlink:href="#iconSort"></use></svg>
 </div>
 <div class="fn__flex-1"></div>
-<ul class="b3-list b3-list--background fn__flex-column" style="min-height: auto;transition: var(--b3-transition)">
+<ul class="b3-list b3-list--background fn__flex-column" style="min-height: auto;height:42px;transition: height  .2s cubic-bezier(0, 0, .2, 1) 0ms">
     <li class="b3-list-item" data-type="toggle">
         <span class="b3-list-item__toggle">
             <svg class="b3-list-item__arrow"><use xlink:href="#iconRight"></use></svg>
@@ -158,14 +158,15 @@ export class MobileFiles extends Model {
                     event.stopPropagation();
                     break;
                 } else if (type === "toggle") {
-                    if (this.closeElement.classList.contains("fn__flex-1")) {
+                    const svgElement = target.querySelector("svg")
+                    if (svgElement.classList.contains("b3-list-item__arrow--open")) {
+                        this.closeElement.style.height = "42px"
+                        svgElement.classList.remove("b3-list-item__arrow--open");
                         this.closeElement.lastElementChild.classList.add("fn__none");
-                        this.closeElement.classList.remove("fn__flex-1");
-                        target.querySelector("svg").classList.remove("b3-list-item__arrow--open");
                     } else {
+                        this.closeElement.style.height = "40%"
+                        svgElement.classList.add("b3-list-item__arrow--open");
                         this.closeElement.lastElementChild.classList.remove("fn__none");
-                        this.closeElement.classList.add("fn__flex-1");
-                        target.querySelector("svg").classList.add("b3-list-item__arrow--open");
                     }
                     event.stopPropagation();
                     event.preventDefault();
@@ -321,12 +322,15 @@ export class MobileFiles extends Model {
         if (!init) {
             return;
         }
-        if (html === "") {
-            this.closeElement.lastElementChild.classList.remove("fn__none");
-            this.closeElement.classList.add("fn__flex-1");
-        } else {
+        const svgElement = this.closeElement.querySelector("svg")
+        if (html !== "") {
+            this.closeElement.style.height = "30px";
+            svgElement.classList.remove("b3-list-item__arrow--open");
             this.closeElement.lastElementChild.classList.add("fn__none");
-            this.closeElement.classList.remove("fn__flex-1");
+        } else {
+            this.closeElement.style.height = "40%";
+            svgElement.classList.add("b3-list-item__arrow--open");
+            this.closeElement.lastElementChild.classList.remove("fn__none");
         }
     }
 
@@ -524,18 +528,33 @@ export class MobileFiles extends Model {
     }
 
     private onLsHTML(data: { files: IFile[], box: string, path: string }) {
+        if (data.files.length === 0) {
+            return;
+        }
+        const liElement = this.element.querySelector(`ul[data-url="${data.box}"] li[data-path="${data.path}"]`);
+        if (!liElement) {
+            return;
+        }
         let fileHTML = "";
         data.files.forEach((item: IFile) => {
             fileHTML += this.genFileHTML(item);
         });
-        if (fileHTML === "") {
-            return;
-        }
-        const liElement = this.element.querySelector(`ul[data-url="${data.box}"] li[data-path="${data.path}"]`);
         let nextElement = liElement.nextElementSibling;
         if (nextElement && nextElement.tagName === "UL") {
             // 文件展开时，刷新
-            nextElement.remove();
+            const tempElement = document.createElement("template");
+            tempElement.innerHTML = fileHTML;
+            // 保持文件夹展开状态
+            nextElement.querySelectorAll(":scope > .b3-list-item > .b3-list-item__toggle> .b3-list-item__arrow--open").forEach(item => {
+                const openLiElement = hasClosestByClassName(item, "b3-list-item")
+                if (openLiElement) {
+                    const tempOpenLiElement = tempElement.content.querySelector(`.b3-list-item[data-node-id="${openLiElement.getAttribute("data-node-id")}"]`)
+                    tempOpenLiElement.after(openLiElement.nextElementSibling);
+                    tempOpenLiElement.querySelector(".b3-list-item__arrow").classList.add("b3-list-item__arrow--open");
+                }
+            });
+            nextElement.innerHTML = tempElement.innerHTML;
+            return;
         }
         liElement.querySelector(".b3-list-item__arrow").classList.add("b3-list-item__arrow--open");
         liElement.insertAdjacentHTML("afterend", `<ul class="file-tree__sliderDown">${fileHTML}</ul>`);

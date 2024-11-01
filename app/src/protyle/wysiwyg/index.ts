@@ -437,7 +437,7 @@ export class WYSIWYG {
                 // https://github.com/siyuan-note/siyuan/issues/3026
                 hideElements(["select"], protyle);
             }
-            const target = event.target as HTMLElement;
+            let target = event.target as HTMLElement;
             if (hasClosestByClassName(target, "protyle-action") ||
                 (hasClosestByClassName(target, "av__cell--header") && !hasClosestByClassName(target, "av__widthdrag"))) {
                 return;
@@ -565,7 +565,8 @@ export class WYSIWYG {
                     documentSelf.onselect = null;
                     if (lastCellElement) {
                         dragFillCellsValue(protyle, nodeElement, originData, originCellIds);
-                        addDragFill(lastCellElement);
+                        const allActiveCellsElement = nodeElement.querySelectorAll(".av__cell--active");
+                        addDragFill(allActiveCellsElement[allActiveCellsElement.length - 1]);
                     }
                     return false;
                 };
@@ -700,6 +701,10 @@ export class WYSIWYG {
             }
             // table cell select
             let tableBlockElement: HTMLElement | false;
+            const targetCellElemet = hasClosestByMatchTag(target, "TH") || hasClosestByMatchTag(target, "TD");
+            if (targetCellElemet) {
+                target = targetCellElemet;
+            }
             if (target.tagName === "TH" || target.tagName === "TD" || target.firstElementChild?.tagName === "TABLE" || target.classList.contains("table__resize") || target.classList.contains("table__select")) {
                 tableBlockElement = hasClosestBlock(target);
                 if (tableBlockElement) {
@@ -781,10 +786,16 @@ export class WYSIWYG {
             });
             const needScroll = ["IMG", "VIDEO", "AUDIO"].includes(target.tagName) || target.classList.contains("img");
             documentSelf.onmousemove = (moveEvent: MouseEvent) => {
-                const moveTarget = moveEvent.target as HTMLElement;
+                let moveTarget: boolean | HTMLElement = moveEvent.target as HTMLElement;
                 // table cell select
                 if (!protyle.disabled && tableBlockElement && tableBlockElement.contains(moveTarget) && !hasClosestByClassName(tableBlockElement, "protyle-wysiwyg__embed")) {
-                    if ((moveTarget.tagName === "TH" || moveTarget.tagName === "TD") && !moveTarget.isSameNode(target) && (!moveCellElement || !moveCellElement.isSameNode(moveTarget))) {
+                    if (moveTarget.classList.contains("table__select")) {
+                        moveTarget.classList.add("fn__none");
+                        const pointElement = document.elementFromPoint(moveEvent.clientX, moveEvent.clientY);
+                        moveTarget.classList.remove("fn__none");
+                        moveTarget = hasClosestByMatchTag(pointElement, "TH") || hasClosestByMatchTag(pointElement, "TD");
+                    }
+                    if (moveTarget && (moveTarget.tagName === "TH" || moveTarget.tagName === "TD") && (!moveCellElement || !moveCellElement.isSameNode(moveTarget))) {
                         // @ts-ignore
                         tableBlockElement.firstElementChild.style.webkitUserModify = "read-only";
                         let width = target.offsetLeft + target.clientWidth - moveTarget.offsetLeft;
@@ -1467,6 +1478,7 @@ export class WYSIWYG {
                 const scrollLeft = nodeElement.firstElementChild.scrollLeft;
                 const tableSelectElement = nodeElement.querySelector(".table__select") as HTMLElement;
                 html = "<table>";
+                tableSelectElement.removeAttribute("style");
                 const oldHTML = nodeElement.outerHTML;
                 nodeElement.setAttribute("updated", dayjs().format("YYYYMMDDHHmmss"));
                 nodeElement.querySelectorAll("th, td").forEach((item: HTMLTableCellElement) => {

@@ -209,15 +209,22 @@ const processTable = (range: Range, html: string, protyle: IProtyle, blockElemen
     const scrollLeft = blockElement.firstElementChild.scrollLeft;
     const tableSelectElement = blockElement.querySelector(".table__select") as HTMLElement;
     let index = 0;
-    const oldHTML = blockElement.outerHTML;
-    blockElement.setAttribute("updated", dayjs().format("YYYYMMDDHHmmss"));
+    const matchCellsElement: HTMLTableCellElement[] = [];
     blockElement.querySelectorAll("th, td").forEach((item: HTMLTableCellElement) => {
         if (!item.classList.contains("fn__none") &&
             item.offsetLeft + 6 > tableSelectElement.offsetLeft + scrollLeft && item.offsetLeft + item.clientWidth - 6 < tableSelectElement.offsetLeft + scrollLeft + tableSelectElement.clientWidth &&
             item.offsetTop + 6 > tableSelectElement.offsetTop && item.offsetTop + item.clientHeight - 6 < tableSelectElement.offsetTop + tableSelectElement.clientHeight &&
             cellElements.length > index) {
-            item.innerHTML = cellElements[index].innerHTML;
+            matchCellsElement.push(item);
             index++;
+        }
+    });
+    tableSelectElement.removeAttribute("style");
+    const oldHTML = blockElement.outerHTML;
+    blockElement.setAttribute("updated", dayjs().format("YYYYMMDDHHmmss"));
+    matchCellsElement.forEach((item, matchIndex) => {
+        item.innerHTML = cellElements[matchIndex].innerHTML;
+        if (matchIndex === matchCellsElement.length - 1) {
             setLastNodeRange(item, range, false);
         }
     });

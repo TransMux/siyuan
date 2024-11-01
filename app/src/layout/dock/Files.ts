@@ -16,7 +16,12 @@ import {mountHelp, newNotebook} from "../../util/mount";
 import {confirmDialog} from "../../dialog/confirmDialog";
 import {isNotCtrl, isOnlyMeta, setStorageVal, updateHotkeyTip} from "../../protyle/util/compatibility";
 import {openFileById} from "../../editor/util";
-import {hasClosestByAttribute, hasClosestByTag, hasTopClosestByTag} from "../../protyle/util/hasClosest";
+import {
+    hasClosestByAttribute,
+    hasClosestByClassName,
+    hasClosestByTag,
+    hasTopClosestByTag
+} from "../../protyle/util/hasClosest";
 import {isTouchDevice} from "../../util/functions";
 import {App} from "../../index";
 import {refreshFileTree} from "../../dialog/processSystem";
@@ -115,7 +120,7 @@ export class Files extends Model {
     <span data-type="min" class="block__icon b3-tooltips b3-tooltips__sw" aria-label="${window.siyuan.languages.min} ${updateHotkeyTip(window.siyuan.config.keymap.general.closeTab.custom)}"><svg><use xlink:href='#iconMin'></use></svg></span>
 </div>
 <div class="fn__flex-1"></div>
-<ul class="b3-list fn__flex-column" style="min-height: auto;transition: var(--b3-transition)">
+<ul class="b3-list fn__flex-column" style="min-height: auto;height:30px;transition: height  .2s cubic-bezier(0, 0, .2, 1) 0ms">
     <li class="b3-list-item" data-type="toggle">
         <span class="b3-list-item__toggle">
             <svg class="b3-list-item__arrow"><use xlink:href="#iconRight"></use></svg>
@@ -145,14 +150,15 @@ export class Files extends Model {
                     });
                     break;
                 } else if (type === "toggle") {
-                    if (this.closeElement.classList.contains("fn__flex-1")) {
+                    const svgElement = target.querySelector("svg")
+                    if (svgElement.classList.contains("b3-list-item__arrow--open")) {
+                        this.closeElement.style.height = "30px"
+                        svgElement.classList.remove("b3-list-item__arrow--open");
                         this.closeElement.lastElementChild.classList.add("fn__none");
-                        this.closeElement.classList.remove("fn__flex-1");
-                        target.querySelector("svg").classList.remove("b3-list-item__arrow--open");
                     } else {
+                        this.closeElement.style.height = "40%"
+                        svgElement.classList.add("b3-list-item__arrow--open");
                         this.closeElement.lastElementChild.classList.remove("fn__none");
-                        this.closeElement.classList.add("fn__flex-1");
-                        target.querySelector("svg").classList.add("b3-list-item__arrow--open");
                     }
                     window.siyuan.menus.menu.remove();
                     event.stopPropagation();
@@ -724,7 +730,7 @@ export class Files extends Model {
 </li>`;
         } else {
             return `<ul class="b3-list b3-list--background" data-url="${item.id}" data-sort="${item.sort}" data-sortmode="${item.sortMode}">
-<li class="b3-list-item b3-list-item--hide-action" draggable="true" data-type="navigation-root" data-path="/">
+<li class="b3-list-item b3-list-item--hide-action" ${window.siyuan.config.fileTree.sort === 6 ? 'draggable="true"' : ""} data-type="navigation-root" data-path="/">
     <span class="b3-list-item__toggle b3-list-item__toggle--hl">
         <svg class="b3-list-item__arrow"><use xlink:href="#iconRight"></use></svg>
     </span>
@@ -769,12 +775,15 @@ export class Files extends Model {
         if (!init) {
             return;
         }
-        if (html === "") {
-            this.closeElement.lastElementChild.classList.remove("fn__none");
-            this.closeElement.classList.add("fn__flex-1");
-        } else {
+        const svgElement = this.closeElement.querySelector("svg")
+        if (html !== "") {
+            this.closeElement.style.height = "30px";
+            svgElement.classList.remove("b3-list-item__arrow--open");
             this.closeElement.lastElementChild.classList.add("fn__none");
-            this.closeElement.classList.remove("fn__flex-1");
+        } else {
+            this.closeElement.style.height = "40%";
+            svgElement.classList.add("b3-list-item__arrow--open");
+            this.closeElement.lastElementChild.classList.remove("fn__none");
         }
     }
 
@@ -920,34 +929,43 @@ export class Files extends Model {
                 emojiElement.innerHTML = unicode2Emoji(window.siyuan.storage[Constants.LOCAL_IMAGES].folder);
             }
             const arrowElement = newElement.querySelector(".b3-list-item__arrow");
-            if (arrowElement.classList.contains("b3-list-item__arrow--open")) {
-                arrowElement.classList.remove("b3-list-item__arrow--open");
-                if (newElement.nextElementSibling && newElement.nextElementSibling.tagName === "UL") {
-                    newElement.nextElementSibling.remove();
-                }
-                if (response.callback !== Constants.CB_MOVE_NOLIST) {
-                    this.getLeaf(newElement, response.data.toNotebook);
-                }
+            if (arrowElement.classList.contains("b3-list-item__arrow--open") && response.callback !== Constants.CB_MOVE_NOLIST) {
+                this.getLeaf(newElement, response.data.toNotebook, true);
             }
         }
     }
 
     private onLsHTML(data: { files: IFile[], box: string, path: string }, scrollTop?: number) {
-        let fileHTML = "";
-        data.files.forEach((item: IFile) => {
-            fileHTML += this.genFileHTML(item);
-        });
-        if (fileHTML === "") {
+        if (data.files.length === 0) {
             return;
         }
         const liElement = this.element.querySelector(`ul[data-url="${data.box}"] li[data-path="${data.path}"]`);
         if (!liElement) {
             return;
         }
+        let fileHTML = "";
+        data.files.forEach((item: IFile) => {
+            fileHTML += this.genFileHTML(item);
+        });
         let nextElement = liElement.nextElementSibling;
         if (nextElement && nextElement.tagName === "UL") {
             // 文件展开时，刷新
-            nextElement.remove();
+            const tempElement = document.createElement("template");
+            tempElement.innerHTML = fileHTML;
+            // 保持文件夹展开状态
+            nextElement.querySelectorAll(":scope > .b3-list-item > .b3-list-item__toggle> .b3-list-item__arrow--open").forEach(item => {
+                const openLiElement = hasClosestByClassName(item, "b3-list-item")
+                if (openLiElement) {
+                    const tempOpenLiElement = tempElement.content.querySelector(`.b3-list-item[data-node-id="${openLiElement.getAttribute("data-node-id")}"]`)
+                    tempOpenLiElement.after(openLiElement.nextElementSibling);
+                    tempOpenLiElement.querySelector(".b3-list-item__arrow").classList.add("b3-list-item__arrow--open");
+                }
+            });
+            nextElement.innerHTML = tempElement.innerHTML;
+            if (typeof scrollTop === "number") {
+                this.element.scroll({top: scrollTop, behavior: "smooth"});
+            }
+            return;
         }
         liElement.querySelector(".b3-list-item__arrow").classList.add("b3-list-item__arrow--open");
         liElement.insertAdjacentHTML("afterend", `<ul class="file-tree__sliderDown">${fileHTML}</ul>`);
@@ -1020,9 +1038,9 @@ export class Files extends Model {
         }
     }
 
-    public getLeaf(liElement: Element, notebookId: string) {
+    public getLeaf(liElement: Element, notebookId: string, focusUpdate = false) {
         const toggleElement = liElement.querySelector(".b3-list-item__arrow");
-        if (toggleElement.classList.contains("b3-list-item__arrow--open")) {
+        if (toggleElement.classList.contains("b3-list-item__arrow--open") && !focusUpdate) {
             toggleElement.classList.remove("b3-list-item__arrow--open");
             liElement.nextElementSibling?.remove();
             this.getOpenPaths();
@@ -1202,3 +1220,4 @@ aria-label="${escapeHtml(ariaLabel)}">${getDisplayName(item.name, true, true)}</
         return window.siyuan.menus.menu;
     }
 }
+
