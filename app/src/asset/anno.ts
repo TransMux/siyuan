@@ -407,6 +407,8 @@ const showToolbar = (element: HTMLElement, range: Range, target?: HTMLElement) =
         translateElement.value = range.toString();
         translateText(translateElement.value).then((result) => {
             translateElement.value = result;
+            // https://x.transmux.top/j/20241102172534-dmknlgc
+            translateElement.style.height = translateElement.scrollHeight + "px";
         });
         return;
     }
@@ -419,6 +421,8 @@ const showToolbar = (element: HTMLElement, range: Range, target?: HTMLElement) =
     // 设置翻译
     translateText(target.dataset.content).then((result) => {
         translateElement.value = result;
+        // https://x.transmux.top/j/20241102172534-dmknlgc
+        translateElement.style.height = translateElement.scrollHeight + "px";
     });
 };
 
