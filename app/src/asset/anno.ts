@@ -399,6 +399,10 @@ const showToolbar = (element: HTMLElement, range: Range, target?: HTMLElement) =
         const rect = rects[rects.length - 1];
         setPosition(utilElement, rect.left, rect.bottom);
         rectElement = null;
+
+        // https://x.transmux.top/j/20241102123909-78qtwua
+        const translateElement = utilElement.querySelector(".pdf__util__mux__translate") as HTMLTextAreaElement;
+        translateElement.value = range.toString();
         return;
     }
     rectElement = target;
