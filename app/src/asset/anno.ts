@@ -408,6 +408,7 @@ const showToolbar = (element: HTMLElement, range: Range, target?: HTMLElement) =
         translateText(translateElement.value).then((result) => {
             translateElement.value = result;
             // https://x.transmux.top/j/20241102172534-dmknlgc
+            translateElement.style.height = "auto";
             translateElement.style.height = translateElement.scrollHeight + "px";
         });
         return;
@@ -422,6 +423,7 @@ const showToolbar = (element: HTMLElement, range: Range, target?: HTMLElement) =
     translateText(target.dataset.content).then((result) => {
         translateElement.value = result;
         // https://x.transmux.top/j/20241102172534-dmknlgc
+        translateElement.style.height = "auto";
         translateElement.style.height = translateElement.scrollHeight + "px";
     });
 };
