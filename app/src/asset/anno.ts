@@ -799,7 +799,13 @@ const copyAnno = (idPath: string, fileName: string, pdf: any) => {
                 });
             });
         } else {
-            writeText(`<<${idPath} "${content}">>`);
+            // 复制的时候，使用textarea中的内容
+            const translateElement = pdf.appConfig.appContainer.querySelector(".pdf__util__mux__translate") as HTMLTextAreaElement;
+            if (translateElement && translateElement.value) {
+                writeText(`<<${idPath} "${translateElement.value}">>`);
+            } else {
+                writeText(`<<${idPath} "${content}">>`);
+            }
         }
     }, Constants.TIMEOUT_DBLCLICK);
 };
