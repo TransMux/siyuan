@@ -446,6 +446,7 @@ export class Asset extends Model {
             <svg class="b3-menu__icon"><use xlink:href="#iconTrashcan"></use></svg>
             <span class="b3-menu__label">${window.siyuan.languages.remove}</span>
         </button>
+        <textarea id="mux-pdf-selection-translate" class="b3-text-field fn__block pdf__util__mux__translate" style="resize: vertical; margin-top: 8px;"></textarea>
       </div>
       <div class="fn__none">
         <input id="editorFreeTextFontSize">

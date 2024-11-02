@@ -45,6 +45,14 @@
       display: none;
     }
 
+    .pdf__util__mux__translate {
+      display: none;
+    }
+
+    &--hide .pdf__util__mux__translate {
+      display: block;
+    }
+
     .b3-menu__item:hover {
       background-color: var(--b3-list-hover);
     }

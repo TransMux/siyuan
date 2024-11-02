@@ -139,6 +139,11 @@ export const initAnno = (element: HTMLElement, pdf: any) => {
             window.open(`siyuan://blocks/${annotationBlockID}`, "_blank");
             return;
         }
+        if (target.classList.contains("pdf__util__mux__translate")) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+        }
         if (typeof event.detail === "string") {
             window.siyuan.storage[Constants.LOCAL_PDFTHEME].annoColor = event.detail === "0" ?
                 (window.siyuan.storage[Constants.LOCAL_PDFTHEME].annoColor || "var(--b3-pdf-background1)")
