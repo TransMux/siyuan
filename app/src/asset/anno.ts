@@ -7,6 +7,7 @@ import { focusByRange } from "../protyle/util/selection";
 import { Constants } from "../constants";
 import { Dialog } from "../dialog";
 import { showMessage } from "../dialog/message";
+import { translateText } from "../protyle/util/mux/translate";
 
 export const initAnno = (element: HTMLElement, pdf: any) => {
     getConfig(pdf);
@@ -402,7 +403,11 @@ const showToolbar = (element: HTMLElement, range: Range, target?: HTMLElement) =
 
         // https://x.transmux.top/j/20241102123909-78qtwua
         const translateElement = utilElement.querySelector(".pdf__util__mux__translate") as HTMLTextAreaElement;
+        // https://x.transmux.top/j/20241102123919-980m43m
         translateElement.value = range.toString();
+        translateText(translateElement.value).then((result) => {
+            translateElement.value = result;
+        });
         return;
     }
     rectElement = target;
