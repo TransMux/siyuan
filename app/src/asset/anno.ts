@@ -393,6 +393,8 @@ const showToolbar = (element: HTMLElement, range: Range, target?: HTMLElement) =
 
     const utilElement = element.querySelector(".pdf__util") as HTMLElement;
     utilElement.classList.remove("fn__none");
+    // https://x.transmux.top/j/20241102123909-78qtwua
+    const translateElement = utilElement.querySelector(".pdf__util__mux__translate") as HTMLTextAreaElement;
 
     if (range) {
         utilElement.classList.add("pdf__util--hide");
@@ -401,8 +403,6 @@ const showToolbar = (element: HTMLElement, range: Range, target?: HTMLElement) =
         setPosition(utilElement, rect.left, rect.bottom);
         rectElement = null;
 
-        // https://x.transmux.top/j/20241102123909-78qtwua
-        const translateElement = utilElement.querySelector(".pdf__util__mux__translate") as HTMLTextAreaElement;
         // https://x.transmux.top/j/20241102123919-980m43m
         translateElement.value = range.toString();
         translateText(translateElement.value).then((result) => {
@@ -410,10 +410,15 @@ const showToolbar = (element: HTMLElement, range: Range, target?: HTMLElement) =
         });
         return;
     }
+    // 选中已有的标注 https://x.transmux.top/j/20241102165258-ltqvdsx
     rectElement = target;
     utilElement.classList.remove("pdf__util--hide");
     const targetRect = target.firstElementChild.getBoundingClientRect();
     setPosition(utilElement, targetRect.left, targetRect.top + targetRect.height + 4);
+    // 设置翻译
+    translateText(target.dataset.content).then((result) => {
+        translateElement.value = result;
+    });
 };
 
 const getHightlightCoordsByRange = (pdf: any, color: string) => {
