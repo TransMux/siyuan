@@ -413,7 +413,8 @@ const showToolbar = (element: HTMLElement, range: Range, target?: HTMLElement) =
     // 选中已有的标注 https://x.transmux.top/j/20241102165258-ltqvdsx
     rectElement = target;
     utilElement.classList.remove("pdf__util--hide");
-    const targetRect = target.firstElementChild.getBoundingClientRect();
+    // https://x.transmux.top/j/20241102165817-9eunfgk
+    const targetRect = target.children[target.children.length - 2].getBoundingClientRect();
     setPosition(utilElement, targetRect.left, targetRect.top + targetRect.height + 4);
     // 设置翻译
     translateText(target.dataset.content).then((result) => {
