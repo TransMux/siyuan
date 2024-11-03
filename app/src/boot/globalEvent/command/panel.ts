@@ -28,6 +28,40 @@ import { unicode2Emoji } from "../../../emoji";
 import { escapeHtml } from "../../../util/escape";
 import { openFileById } from "../../../editor/util";
 
+// https://x.transmux.top/j/20241103163805-hj20chp
+const commandKeyToLabel: { [key: string]: string } = {
+    addToDatabase: "add selected to database",
+    fileTree: "open file tree",
+    outline: "open outline",
+    bookmark: "open bookmark",
+    tag: "open tag",
+    dailyNote: "open daily note",
+    inbox: "open inbox",
+    backlinks: "open backlinks",
+    dataHistory: "open data history",
+    editReadonly: "edit readonly",
+    lockScreen: "lock screen",
+    selectOpen1: "focus current tab",
+    closeAll: "close all tabs",
+    closeLeft: "close left tabs",
+    closeOthers: "close other tabs",
+    closeRight: "close right tabs",
+    closeUnmodified: "close unmodified tabs",
+    config: "open settings",
+    goToTab1: "goto tab 1",
+    goToTab2: "goto tab 2",
+    goToTab3: "goto tab 3",
+    goToTab4: "goto tab 4",
+    goToTab5: "goto tab 5",
+    goToTab6: "goto tab 6",
+    goToTab7: "goto tab 7",
+    goToTab8: "goto tab 8",
+    goToTab9: "goto tab 9",
+    toggleWin: "hide window",
+    move: "move selected block to..."
+};
+
+
 export const commandPanel = (app: App) => {
     const range = getSelection().rangeCount > 0 ? getSelection().getRangeAt(0) : undefined;
     const dialog = new Dialog({
@@ -57,32 +91,37 @@ export const commandPanel = (app: App) => {
 
     // https://x.transmux.top/j/20241101223108-o9zjabn
     let commandHtml = "";
+    let keys;
+    /// #if MOBILE
+    keys = ["addToDatabase", "fileTree", "outline", "bookmark", "tag", "dailyNote", "inbox", "backlinks",
+        "dataHistory", "editReadonly", "enter", "enterBack", "globalSearch", "lockScreen", "mainMenu", "move",
+        "newFile", "recentDocs", "replace", "riffCard", "search", "selectOpen1", "syncNow"];
+    /// #else
+    keys = ["addToDatabase", "fileTree", "outline", "bookmark", "tag", "dailyNote", "inbox", "backlinks",
+        "graphView", "globalGraph", "closeAll", "closeLeft", "closeOthers", "closeRight", "closeTab",
+        "closeUnmodified", "config", "dataHistory", "editReadonly", "enter", "enterBack", "globalSearch", "goBack",
+        "goForward", "goToEditTabNext", "goToEditTabPrev", "goToTab1", "goToTab2", "goToTab3", "goToTab4",
+        "goToTab5", "goToTab6", "goToTab7", "goToTab8", "goToTab9", "goToTabNext", "goToTabPrev", "lockScreen",
+        "mainMenu", "move", "newFile", "recentDocs", "replace", "riffCard", "search", "selectOpen1", "syncNow",
+        "splitLR", "splitMoveB", "splitMoveR", "splitTB", "tabToWindow", "stickSearch", "toggleDock", "unsplitAll",
+        "unsplit"];
+    /// #if !BROWSER
+    keys.push("toggleWin");
+    /// #endif
+    /// #endif
     Object.keys(window.siyuan.config.keymap.general).forEach((key) => {
-        let keys;
-        /// #if MOBILE
-        keys = ["addToDatabase", "fileTree", "outline", "bookmark", "tag", "dailyNote", "inbox", "backlinks",
-            "dataHistory", "editReadonly", "enter", "enterBack", "globalSearch", "lockScreen", "mainMenu", "move",
-            "newFile", "recentDocs", "replace", "riffCard", "search", "selectOpen1", "syncNow"];
-        /// #else
-        keys = ["addToDatabase", "fileTree", "outline", "bookmark", "tag", "dailyNote", "inbox", "backlinks",
-            "graphView", "globalGraph", "closeAll", "closeLeft", "closeOthers", "closeRight", "closeTab",
-            "closeUnmodified", "config", "dataHistory", "editReadonly", "enter", "enterBack", "globalSearch", "goBack",
-            "goForward", "goToEditTabNext", "goToEditTabPrev", "goToTab1", "goToTab2", "goToTab3", "goToTab4",
-            "goToTab5", "goToTab6", "goToTab7", "goToTab8", "goToTab9", "goToTabNext", "goToTabPrev", "lockScreen",
-            "mainMenu", "move", "newFile", "recentDocs", "replace", "riffCard", "search", "selectOpen1", "syncNow",
-            "splitLR", "splitMoveB", "splitMoveR", "splitTB", "tabToWindow", "stickSearch", "toggleDock", "unsplitAll",
-            "unsplit"];
-        /// #if !BROWSER
-        keys.push("toggleWin");
-        /// #endif
-        /// #endif
-        if (keys.includes(key)) {
+        if (keys.includes(key) && commandKeyToLabel[key]) {
             commandHtml += `<li class="b3-list-item" data-command="${key}">
-    <span class="b3-list-item__text">${window.siyuan.languages[key]}</span>
+    <span class="b3-list-item__text">${window.siyuan.languages[key]} (${commandKeyToLabel[key]})</span>
     <span class="b3-list-item__meta${isMobile() ? " fn__none" : ""}">${updateHotkeyTip(window.siyuan.config.keymap.general[key].custom)}</span>
 </li>`;
         }
     });
+
+    // https://x.transmux.top/j/20241103170133-bvx9q0c
+    commandHtml += `<li class="b3-list-item" data-command="openDoc" data-node-id="20241102120403-mp3vfh4">
+    <span class="b3-list-item__text">打开主页 (open homepage)</span>
+</li>`;
 
     // https://x.transmux.top/j/20241101223108-o9zjabn
     let recentDocsHtml = "";
