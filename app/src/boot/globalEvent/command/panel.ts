@@ -123,6 +123,11 @@ export const commandPanel = (app: App) => {
     <span class="b3-list-item__text">打开主页 (open homepage)</span>
 </li>`;
 
+    // 重载当前窗口，特别是在分屏需要更新主窗口修改的时候
+    commandHtml += `<li class="b3-list-item" data-command="reload">
+    <span class="b3-list-item__text">重新加载当前窗口 (reload current window)</span>
+</li>`;
+
     // https://x.transmux.top/j/20241101223108-o9zjabn
     let recentDocsHtml = "";
     let index = 0;
@@ -200,6 +205,8 @@ ${unicode2Emoji(item.icon || window.siyuan.storage[Constants.LOCAL_IMAGES].file,
                         app,
                         id: liElement.getAttribute("data-node-id")
                     });
+                } else if (command === "reload") {
+                    window.location.reload();
                 } else {
                     execByCommand({ command, app, previousRange: range });
                 }
@@ -230,6 +237,8 @@ ${unicode2Emoji(item.icon || window.siyuan.storage[Constants.LOCAL_IMAGES].file,
                             app,
                             id: currentElement.getAttribute("data-node-id")
                         });
+                    } else if (command === "reload") {
+                        window.location.reload();
                     } else {
                         execByCommand({ command, app, previousRange: range });
                     }
