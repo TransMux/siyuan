@@ -323,7 +323,8 @@ ${unicode2Emoji(emoji.unicode)}</button>`;
     private genSearchHTML(protyle: IProtyle, searchElement: HTMLInputElement, nodeElement: false | HTMLElement, oldValue: string, source: THintSource) {
         this.element.lastElementChild.innerHTML = '<div class="ft__center"><img style="height:32px;width:32px;" src="/stage/loading-pure.svg"></div>';
         fetchPost("/api/search/searchRefBlock", {
-            k: searchElement.value,
+            // https://x.transmux.top/j/20241101152241-xd5257k
+            k: searchElement.value.trim(), // 去除 search key 两边的空格
             id: nodeElement ? nodeElement.getAttribute("data-node-id") : protyle.block.parentID,
             beforeLen: Math.floor((Math.max(protyle.element.clientWidth / 2, 320) - 58) / 28.8),
             rootID: source === "av" ? "" : protyle.block.rootID,
