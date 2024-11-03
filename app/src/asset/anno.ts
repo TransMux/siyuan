@@ -741,11 +741,12 @@ height: ${Math.abs(bounds[1] - bounds[3])}px"></div>`;
 
             const renderSide = Math.min(bounds[0], bounds[2]) > pageWidth / 2 ? "right" : "left";
             // https://x.transmux.top/j/20241102000219-i6iftd1
-            const textTop = Math.min(bounds[1], bounds[3]) - (Math.abs(bounds[1] - bounds[3]) / 3);
+            // 样式调整：https://x.transmux.top/j/20241103231905-igs4n7k
+            const textTop = Math.min(bounds[1], bounds[3]) - (Math.abs(bounds[1] - bounds[3]) / 3.8);
             annotationPlaceholder.outerHTML = `<div style="color: red;
-${renderSide}: 0px;
+${renderSide}: 10px;
 top:${textTop}px;
-height: ${Math.abs(bounds[1] - bounds[3])}px; font-size: calc(var(--scale-factor)*8.97px);" class="mux-pdf-text-annotation" data-node-id="${annotationID}">${annotationText}</div>`; // https://x.transmux.top/j/20241102000155-zm6abru
+height: ${Math.abs(bounds[1] - bounds[3])}px; font-size: calc(var(--scale-factor)*8px);" class="mux-pdf-text-annotation" data-node-id="${annotationID}">${annotationText}</div>`; // https://x.transmux.top/j/20241102000155-zm6abru
         }
     });
     rectsElement.insertAdjacentHTML("beforeend", html + "</div>");
