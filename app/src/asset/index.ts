@@ -24,6 +24,9 @@ export class Asset extends Model {
     public pdfObject: any;
 
     constructor(options: { app: App, tab: Tab, path: string, page?: number | string }) {
+        // mux-text-annotation 点击事件需要打开文档，但是没有app，只能从这里临时飞线了
+        // @ts-ignore
+        window._app = options.app;
         super({app: options.app, id: options.tab.id});
         if (window.siyuan.config.fileTree.openFilesUseCurrentTab) {
             options.tab.headElement.classList.add("item--unupdate");

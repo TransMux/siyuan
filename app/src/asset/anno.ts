@@ -8,6 +8,7 @@ import { Constants } from "../constants";
 import { Dialog } from "../dialog";
 import { showMessage } from "../dialog/message";
 import { translateText } from "../protyle/util/mux/translate";
+import { openFileById } from "../editor/util";
 
 export const initAnno = (element: HTMLElement, pdf: any) => {
     getConfig(pdf);
@@ -137,7 +138,12 @@ export const initAnno = (element: HTMLElement, pdf: any) => {
             // https://x.transmux.top/j/20241102000728-ev9r3iw
             // 获取data-node-id
             const annotationBlockID = target.getAttribute("data-node-id");
-            window.open(`siyuan://blocks/${annotationBlockID}`, "_blank");
+            // mux-text-annotation 点击事件需要打开文档，但是没有app，只能暂时飞过来了
+            openFileById({
+                // @ts-ignore
+                app: window._app,
+                id: annotationBlockID,
+            });
             return;
         }
         if (target.classList.contains("pdf__util__mux__translate")) {
