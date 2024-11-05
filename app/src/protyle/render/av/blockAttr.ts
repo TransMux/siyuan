@@ -321,6 +321,9 @@ class="fn__flex-1 fn__flex${["url", "text", "number", "email", "phone", "block"]
             });
             element.addEventListener("click", (event) => {
                 openEdit(protyle, element, event);
+                // https://x.transmux.top/j/20241105132235-xxwvst1 副作用有待观察
+                event.stopPropagation();
+                event.preventDefault();
             });
             element.addEventListener("contextmenu", (event) => {
                 openEdit(protyle, element, event);
