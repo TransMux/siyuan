@@ -27,6 +27,9 @@ import { focusByRange } from "../../../protyle/util/selection";
 import { unicode2Emoji } from "../../../emoji";
 import { escapeHtml } from "../../../util/escape";
 import { openFileById } from "../../../editor/util";
+/// #if !BROWSER
+import { ipcRenderer } from "electron";
+/// #endif
 
 // https://x.transmux.top/j/20241103163805-hj20chp
 const commandKeyToLabel: { [key: string]: string } = {
@@ -128,6 +131,13 @@ export const commandPanel = (app: App) => {
     <span class="b3-list-item__text">重新加载当前窗口 (reload current window)</span>
 </li>`;
 
+    // 打开开发者工具
+    /// #if !BROWSER
+    commandHtml += `<li class="b3-list-item" data-command="openDevTools">
+    <span class="b3-list-item__text">打开开发者工具 (open developer tools)</span>
+</li>`;
+    /// #endif
+
     // https://x.transmux.top/j/20241101223108-o9zjabn
     let recentDocsHtml = "";
     let index = 0;
@@ -207,6 +217,8 @@ ${unicode2Emoji(item.icon || window.siyuan.storage[Constants.LOCAL_IMAGES].file,
                     });
                 } else if (command === "reload") {
                     window.location.reload();
+                } else if (command === "openDevTools") {
+                    ipcRenderer.send(Constants.SIYUAN_CMD, "openDevTools")
                 } else {
                     execByCommand({ command, app, previousRange: range });
                 }
@@ -239,6 +251,8 @@ ${unicode2Emoji(item.icon || window.siyuan.storage[Constants.LOCAL_IMAGES].file,
                         });
                     } else if (command === "reload") {
                         window.location.reload();
+                    } else if (command === "openDevTools") {
+                        ipcRenderer.send(Constants.SIYUAN_CMD, "openDevTools")
                     } else {
                         execByCommand({ command, app, previousRange: range });
                     }
