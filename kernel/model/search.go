@@ -767,6 +767,20 @@ func FindReplace(keyword, replacement string, replaceTypes map[string]bool, ids 
 								n.TextMarkBlockRefSubtype = "s"
 							}
 						}
+					} else if n.IsTextMarkType("file-annotation-ref") {
+						if !replaceTypes["fileAnnotationRef"] {
+							return ast.WalkContinue
+						}
+
+						if 0 == method {
+							if strings.Contains(n.TextMarkTextContent, keyword) {
+								n.TextMarkTextContent = strings.ReplaceAll(n.TextMarkTextContent, keyword, replacement)
+							}
+						} else if 3 == method {
+							if nil != r && r.MatchString(n.TextMarkTextContent) {
+								n.TextMarkTextContent = r.ReplaceAllString(n.TextMarkTextContent, replacement)
+							}
+						}
 					}
 				}
 				return ast.WalkContinue
@@ -830,17 +844,19 @@ func replaceTextNode(text *ast.Node, method int, keyword string, replacement str
 				newContent = bytes.ReplaceAll(text.Tokens, []byte(keyword), []byte(replacement))
 			}
 		} else {
-			// 当搜索结果中的文本元素包含大小写混合时替换失败
-			// Replace fails when search results contain mixed case in text elements https://github.com/siyuan-note/siyuan/issues/9171
-			keywords := strings.Split(keyword, " ")
-			// keyword 可能是 "foo Foo" 使用空格分隔的大小写命中情况，这里统一转换小写后去重
-			if 0 < len(keywords) {
-				var lowerKeywords []string
-				for _, k := range keywords {
-					lowerKeywords = append(lowerKeywords, strings.ToLower(k))
+			if "" != strings.TrimSpace(keyword) {
+				// 当搜索结果中的文本元素包含大小写混合时替换失败
+				// Replace fails when search results contain mixed case in text elements https://github.com/siyuan-note/siyuan/issues/9171
+				keywords := strings.Split(keyword, " ")
+				// keyword 可能是 "foo Foo" 使用空格分隔的大小写命中情况，这里统一转换小写后去重
+				if 0 < len(keywords) {
+					var lowerKeywords []string
+					for _, k := range keywords {
+						lowerKeywords = append(lowerKeywords, strings.ToLower(k))
+					}
+					lowerKeywords = gulu.Str.RemoveDuplicatedElem(lowerKeywords)
+					keyword = strings.Join(lowerKeywords, " ")
 				}
-				lowerKeywords = gulu.Str.RemoveDuplicatedElem(lowerKeywords)
-				keyword = strings.Join(lowerKeywords, " ")
 			}
 
 			if bytes.Contains(bytes.ToLower(text.Tokens), []byte(keyword)) {
@@ -945,7 +961,7 @@ func FullTextSearchBlock(query string, boxes, paths []string, types map[string]b
 		typeFilter := buildTypeFilter(types)
 		boxFilter := buildBoxesFilter(boxes)
 		pathFilter := buildPathsFilter(paths)
-		if 2 > len(strings.Split(query, " ")) {
+		if 2 > len(strings.Split(strings.TrimSpace(query), " ")) {
 			blocks, matchedBlockCount, matchedRootCount = fullTextSearchByQuerySyntax(query, boxFilter, pathFilter, typeFilter, ignoreFilter, orderByClause, beforeLen, page, pageSize)
 		} else {
 			docMode = true // 文档全文搜索模式 https://github.com/siyuan-note/siyuan/issues/10584
@@ -1304,7 +1320,12 @@ func fullTextSearchByRegexp(exp, boxFilter, pathFilter, typeFilter, ignoreFilter
 	fieldFilter := fieldRegexp(exp)
 	stmt := "SELECT * FROM `blocks` WHERE " + fieldFilter + " AND type IN " + typeFilter
 	stmt += boxFilter + pathFilter + ignoreFilter + " " + orderBy
-	regex := regexp.MustCompile(exp)
+	regex, err := regexp.Compile(exp)
+	if nil != err {
+		util.PushErrMsg(err.Error(), 5000)
+		return
+	}
+
 	blocks := sql.SelectBlocksRegex(stmt, regex, Conf.Search.Name, Conf.Search.Alias, Conf.Search.Memo, Conf.Search.IAL, page, pageSize)
 	ret = fromSQLBlocks(&blocks, "", beforeLen)
 	if 1 > len(ret) {
@@ -1329,7 +1350,6 @@ func fullTextSearchCountByRegexp(exp, boxFilter, pathFilter, typeFilter, ignoreF
 }
 
 func fullTextSearchByFTS(query, boxFilter, pathFilter, typeFilter, ignoreFilter, orderBy string, beforeLen, page, pageSize int) (ret []*Block, matchedBlockCount, matchedRootCount int) {
-	start := time.Now()
 	query = stringQuery(query)
 	table := "blocks_fts" // 大小写敏感
 	if !Conf.Search.CaseSensitive {
@@ -1355,7 +1375,6 @@ func fullTextSearchByFTS(query, boxFilter, pathFilter, typeFilter, ignoreFilter,
 	}
 
 	matchedBlockCount, matchedRootCount = fullTextSearchCountByFTS(query, boxFilter, pathFilter, typeFilter, ignoreFilter)
-	logging.LogInfof("time cost [fts]: %v", time.Since(start))
 	return
 }
 
@@ -1460,7 +1479,10 @@ func highlightByRegexp(query, typeFilter, id string) (ret []string) {
 	fieldFilter := fieldRegexp(query)
 	stmt := "SELECT * FROM `blocks` WHERE " + fieldFilter + " AND type IN " + typeFilter
 	stmt += " AND root_id = '" + id + "'"
-	regex := regexp.MustCompile(query)
+	regex, _ := regexp.Compile(query)
+	if nil == regex {
+		return
+	}
 	sqlBlocks := sql.SelectBlocksRegex(stmt, regex, Conf.Search.Name, Conf.Search.Alias, Conf.Search.Memo, Conf.Search.IAL, 1, 256)
 	for _, block := range sqlBlocks {
 		keyword := gulu.Str.SubstringsBetween(block.Content, search.SearchMarkLeft, search.SearchMarkRight)

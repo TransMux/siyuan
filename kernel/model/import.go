@@ -360,6 +360,25 @@ func ImportSY(zipPath, boxID, toPath string) (err error) {
 		logging.LogErrorf("remove temp storage av dir failed: %s", removeErr)
 	}
 
+	// 清理一些冗余的数据
+	avDir := filepath.Join(util.DataDir, "storage", "av")
+	for _, tree := range trees {
+		ast.Walk(tree.Root, func(n *ast.Node, entering bool) ast.WalkStatus {
+			if !entering {
+				return ast.WalkContinue
+			}
+
+			ial := parse.IAL2Map(n.KramdownIAL)
+			avIDs := strings.Split(ial[av.NodeAttrNameAvs], ",")
+			for _, avID := range avIDs {
+				if !filelock.IsExist(filepath.Join(avDir, avID+".json")) {
+					n.RemoveIALAttr(av.NodeAttrNameAvs)
+				}
+			}
+			return ast.WalkContinue
+		})
+	}
+
 	// 写回 .sy
 	for _, tree := range trees {
 		util.PushEndlessProgress(Conf.language(73) + " " + fmt.Sprintf(Conf.language(70), tree.Root.IALAttr("title")))
@@ -1162,6 +1181,8 @@ func reassignIDUpdated(tree *parse.Tree, rootID, updated string) {
 		n.SetIALAttr("id", n.ID)
 		if "" != updated {
 			n.SetIALAttr("updated", updated)
+			n.ID = updated + "-" + gulu.Rand.String(7)
+			n.SetIALAttr("id", n.ID)
 		} else {
 			n.SetIALAttr("updated", util.TimeFromID(n.ID))
 		}

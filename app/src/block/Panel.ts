@@ -27,6 +27,8 @@ export class BlockPanel {
     public y: number;
     private isBacklink: boolean;
     public editors: Protyle[] = [];
+    private observerResize: ResizeObserver;
+    private observerLoad: IntersectionObserver;
 
     // x,y 和 targetElement 二选一必传
     constructor(options: {
@@ -135,12 +137,7 @@ export class BlockPanel {
             }
         });
         /// #if !MOBILE
-        moveResize(this.element, (type: string) => {
-            if (type !== "move") {
-                this.editors.forEach(item => {
-                    resize(item.protyle);
-                });
-            }
+        moveResize(this.element, () => {
             const pinElement = this.element.firstElementChild.querySelector('[data-type="pin"]');
             pinElement.setAttribute("aria-label", window.siyuan.languages.unpin);
             pinElement.querySelector("use").setAttribute("xlink:href", "#iconUnpin");
@@ -202,6 +199,8 @@ export class BlockPanel {
     }
 
     public destroy() {
+        this.observerResize?.disconnect();
+        this.observerLoad?.disconnect();
         window.siyuan.blockPanels.find((item, index) => {
             if (item.id === this.id) {
                 window.siyuan.blockPanels.splice(index, 1);
@@ -260,7 +259,17 @@ export class BlockPanel {
             html += '</div><div class="resize__rd"></div><div class="resize__ld"></div><div class="resize__lt"></div><div class="resize__rt"></div><div class="resize__r"></div><div class="resize__d"></div><div class="resize__t"></div><div class="resize__l"></div>';
         }
         this.element.innerHTML = html;
-        const observer = new IntersectionObserver((e) => {
+        let resizeTimeout: number;
+        this.observerResize = new ResizeObserver(() => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = window.setTimeout(() => {
+                this.editors.forEach(item => {
+                    resize(item.protyle);
+                });
+            }, Constants.TIMEOUT_TRANSITION);
+        });
+        this.observerResize.observe(this.element);
+        this.observerLoad = new IntersectionObserver((e) => {
             e.forEach(item => {
                 if (item.isIntersecting && item.target.innerHTML === "") {
                     this.initProtyle(item.target as HTMLElement);
@@ -319,7 +328,7 @@ export class BlockPanel {
                     this.element.style.zIndex = (++window.siyuan.zIndex).toString();
                 } : undefined);
             } else {
-                observer.observe(item);
+                this.observerLoad.observe(item);
             }
         });
         if (this.targetElement) {
