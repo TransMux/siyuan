@@ -183,6 +183,13 @@ export const setPadding = (protyle: IProtyle) => {
         /// #else
         protyle.title.element.style.margin = `5px ${right}px 0 ${left}px`;
         /// #endif
+        // https://x.transmux.top/j/20241116175553-4nnye2h
+        // find class="mux-doc-heading-av-panel" element
+        const muxDocHeadingAvPanelElement = protyle.title.element.parentElement.querySelector(".mux-doc-heading-av-panel") as HTMLElement;
+        if (muxDocHeadingAvPanelElement) {
+            muxDocHeadingAvPanelElement.style.marginRight = `${right}px`;
+            muxDocHeadingAvPanelElement.style.marginLeft = `${left}px`;
+        }
     }
     if (window.siyuan.config.editor.displayBookmarkIcon) {
         const editorAttrElement = document.getElementById("editorAttr");
