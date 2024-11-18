@@ -17,7 +17,7 @@ import { hideElements } from "../ui/hideElements";
 import { avRender } from "../render/av/render";
 import { cellScrollIntoView, getCellText } from "../render/av/cell";
 import { getContenteditableElement } from "../wysiwyg/getBlock";
-import { modifyPasteContent } from "./mux/paste";
+import { modifyPasteContent, parseSiyuanInternalLink } from "./mux/paste";
 
 export const getTextStar = (blockElement: HTMLElement) => {
     const dataType = blockElement.dataset.type;
@@ -349,6 +349,16 @@ export const paste = async (protyle: IProtyle, event: (ClipboardEvent | DragEven
 
     // 我的粘贴事件处理逻辑
     [textPlain, textHTML, siyuanHTML] = modifyPasteContent(textPlain, textHTML, siyuanHTML);
+
+    // 新的剪贴板处理逻辑
+    // 优先级 1：解析思源内部链接，如果是内部链接的话，抓取其锚文本，转换为 block-ref
+    debugger
+    const step1Result = await parseSiyuanInternalLink(textPlain);
+    if (step1Result.matched) {
+        textPlain = step1Result.content;
+        textHTML = "";
+        siyuanHTML = "";
+    }
 
     // 处理插件的粘贴事件
     if (protyle && protyle.app && protyle.app.plugins) {

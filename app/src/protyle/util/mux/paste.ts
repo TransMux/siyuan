@@ -1,3 +1,5 @@
+import { fetchSyncPost } from "../../../util/fetch";
+
 function extractBilibiliWatchLaterInfo(textContent: string) {
     // 定义特征值
     const featureValue = "-赤羽Eirc-稍后再看-哔哩哔哩视频";
@@ -98,4 +100,46 @@ export function modifyPasteContent(textContent: string, textHTML: string, siyuan
     }
 
     return [textContent, textHTML, siyuanHTML];
+}
+
+// 优先级 1：解析思源内部链接，如果是内部链接的话，抓取其锚文本，转换为 block-ref
+export async function parseSiyuanInternalLink(content: string) {
+    const urlPattern = /https:\/\/x\.transmux\.top\/j\/(\d{14}-[a-zA-Z0-9]{7})/g;
+
+    // 替换逻辑：检查是否在 markdown 的括号中，否则提取 ID
+    let result = content;
+    const matches = [...content.matchAll(urlPattern)]; // 使用展开运算符确保可重复遍历
+
+    // 使用 Promise.all 并行处理
+    const replacements = await Promise.all(
+        matches.map(async (match) => {
+            const [fullMatch, id] = match;
+
+            // 检查是否在 markdown 括号中
+            if (content.includes(`(${fullMatch})`)) {
+                // 如果已经在括号中，跳过处理
+                return null;
+            }
+
+            // 异步获取 plainText
+            const plainText = await fetchSyncPost("/api/block/getRefText", { id });
+
+            // 返回替换结果
+            return { fullMatch, replacement: `[${plainText.data}](https://x.transmux.top/j/${id})` };
+        })
+    );
+
+    // 应用替换到结果
+    for (const replacement of replacements) {
+        if (replacement) {
+            const { fullMatch, replacement: newText } = replacement;
+            result = result.replace(fullMatch, newText);
+        }
+    }
+
+    // 返回处理结果
+    return {
+        matched: result !== content,
+        content: result,
+    };
 }
