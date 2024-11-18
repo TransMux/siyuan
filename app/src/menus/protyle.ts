@@ -981,7 +981,6 @@ export const zoomOut = (options: {
         // 获取存在的属性面板
         const avPanelElement = options.protyle.title.element.parentElement.querySelector(".mux-doc-heading-av-panel");
         if (avPanelElement) {
-            avPanelElement.innerHTML = "";
             // 允许异步渲染属性视图
             setTimeout(() => {
                 renderAVAttribute(avPanelElement as HTMLElement, options.id, options.protyle, undefined, false);
