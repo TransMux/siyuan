@@ -1775,7 +1775,7 @@ export class WYSIWYG {
             protyle.toolbar.range = getEditorRange(protyle.element);
 
             if (target.tagName === "SPAN" && !isNotEditBlock(nodeElement)) { // https://ld246.com/article/1665141518103
-                let types = protyle.toolbar.getCurrentType(protyle.toolbar.range);
+                let types = target.getAttribute("data-type")?.split(" ") || [];
                 if (types.length === 0) {
                     // https://github.com/siyuan-note/siyuan/issues/8960
                     types = (target.dataset.type || "").split(" ");
@@ -2177,7 +2177,7 @@ export class WYSIWYG {
             if (backlinkBreadcrumbItemElement) {
                 const breadcrumbId = backlinkBreadcrumbItemElement.getAttribute("data-id");
                 if (breadcrumbId) {
-                    if (ctrlIsPressed) {
+                    if (ctrlIsPressed && !event.shiftKey && !event.altKey) {
                         checkFold(breadcrumbId, (zoomIn) => {
                             openFileById({
                                 app: protyle.app,
@@ -2386,9 +2386,9 @@ export class WYSIWYG {
             }
 
             const tagElement = hasClosestByAttribute(event.target, "data-type", "tag");
-            if (tagElement && !event.altKey) {
+            if (tagElement && !event.altKey && !event.shiftKey) {
                 /// #if !MOBILE
-                openGlobalSearch(protyle.app, `#${tagElement.textContent}#`, !ctrlIsPressed);
+                openGlobalSearch(protyle.app, `#${tagElement.textContent}#`, !ctrlIsPressed, {method: 0});
                 hideElements(["dialog"]);
                 /// #else
                 popSearch(protyle.app, {
@@ -2629,7 +2629,9 @@ export class WYSIWYG {
                         emojiElement.insertAdjacentHTML("afterend", "<wbr>");
                         const oldHTML = nodeElement.outerHTML;
                         let emojiHTML;
-                        if (unicode.indexOf(".") > -1) {
+                        if (unicode.startsWith("api/icon/getDynamicIcon")) {
+                            emojiHTML = `<img class="emoji" src="${unicode}"/>`;
+                        } else if (unicode.indexOf(".") > -1) {
                             const emojiList = unicode.split(".");
                             emojiHTML = `<img alt="${emojiList[0]}" class="emoji" src="/emojis/${unicode}" title="${emojiList[0]}">`;
                         } else {
@@ -2639,7 +2641,7 @@ export class WYSIWYG {
                         hideElements(["dialog"]);
                         updateTransaction(protyle, nodeElement.getAttribute("data-node-id"), nodeElement.outerHTML, oldHTML);
                         focusByWbr(nodeElement, range);
-                    });
+                    }, emojiElement);
                 }
                 return;
             }
@@ -2780,7 +2782,7 @@ export class WYSIWYG {
                 focusByRange(range);
             }
 
-            if (ctrlIsPressed && range.toString() === "") {
+            if (ctrlIsPressed && range.toString() === "" && !event.shiftKey && !event.altKey) {
                 let ctrlElement = hasClosestBlock(event.target);
                 if (ctrlElement) {
                     const embedBlockElement = isInEmbedBlock(ctrlElement);
