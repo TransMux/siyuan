@@ -208,7 +208,15 @@ class="fn__flex-1 fn__flex${["url", "text", "number", "email", "phone", "block"]
 
             if (element.innerHTML) {
                 // 防止 blockElement 找不到
-                element.querySelector(`div[data-node-id="${id}"][data-av-id="${table.avID}"]`).innerHTML = innerHTML;
+                // 如果之前存在面板，但是这一次更新的不一样，那就直接覆盖整个面板！
+                // 但是估计在一个块存在多个数据库的时候会出问题，先这样写着！
+                // https://x.transmux.top/j/20240926172003-5cpj91l
+                const existingAvElement = element.querySelector(`div[data-node-id="${id}"][data-av-id="${table.avID}"]`) as HTMLElement;
+                if (existingAvElement) {
+                    existingAvElement.innerHTML = innerHTML;
+                } else {
+                    element.innerHTML = html;
+                }
             }
         });
         if (element.innerHTML === "") {
