@@ -338,6 +338,13 @@ class="fn__flex-1 fn__flex${["url", "text", "number", "email", "phone", "block"]
             });
             element.innerHTML = html;
         }
+        if (!html) {
+            // https://x.transmux.top/j/20241119171726-luan5oy
+            element.innerHTML = "";
+            const newElement = element.cloneNode(true) as HTMLElement;
+            element.parentNode.replaceChild(newElement, element);
+            return;
+        }
         element.querySelectorAll(".b3-text-field--text").forEach((item: HTMLInputElement) => {
             item.addEventListener("change", () => {
                 let value;
