@@ -3,7 +3,8 @@ import {
     hasClosestByClassName,
     hasClosestByMatchTag,
     hasClosestByTag,
-    hasTopClosestByClassName, isInEmbedBlock
+    hasTopClosestByClassName,
+    isInEmbedBlock
 } from "../util/hasClosest";
 import { getIconByType } from "../../editor/getIcon";
 import { enterBack, iframeMenu, setFold, tableMenu, videoMenu, zoomOut } from "../../menus/protyle";
@@ -12,6 +13,7 @@ import { copySubMenu, openAttr, openFileAttr, openWechatNotify } from "../../men
 import {
     copyPlainText,
     isInAndroid,
+    isInHarmony,
     isMac,
     isOnlyMeta,
     openByMobile,
@@ -21,7 +23,8 @@ import {
 import {
     transaction,
     turnsIntoOneTransaction,
-    turnsIntoTransaction, turnsOneInto,
+    turnsIntoTransaction,
+    turnsOneInto,
     updateBatchTransaction,
     updateTransaction
 } from "../wysiwyg/transaction";
@@ -65,6 +68,7 @@ import { openNewWindowById } from "../../window/openNewWindow";
 import {openFileById} from "../../editor/util";
 /// #endif
 import {checkFold} from "../../util/noRelyPCFunction";
+import {copyTextByType} from "../toolbar/util";
 
 export class Gutter {
     public element: HTMLElement;
@@ -763,20 +767,7 @@ export class Gutter {
                 }
             }).element);
         }
-        const copyMenu: IMenu[] = [{
-            id: "copy",
-            iconHTML: "",
-            label: window.siyuan.languages.copy,
-            accelerator: "⌘C",
-            click() {
-                if (isNotEditBlock(selectsElement[0])) {
-                    focusBlock(selectsElement[0]);
-                } else {
-                    focusByRange(getEditorRange(selectsElement[0]));
-                }
-                document.execCommand("copy");
-            }
-        }, {
+        const copyMenu: IMenu[] = (copySubMenu(Array.from(selectsElement).map(item => item.getAttribute("data-node-id")), true, selectsElement[0]) as IMenu[]).concat([{
             id: "copyPlainText",
             iconHTML: "",
             label: window.siyuan.languages.copyPlainText,
@@ -790,6 +781,19 @@ export class Gutter {
                 focusBlock(selectsElement[0]);
             }
         }, {
+            id: "copy",
+            iconHTML: "",
+            label: window.siyuan.languages.copy,
+            accelerator: "⌘C",
+            click() {
+                if (isNotEditBlock(selectsElement[0])) {
+                    focusBlock(selectsElement[0]);
+                } else {
+                    focusByRange(getEditorRange(selectsElement[0]));
+                }
+                document.execCommand("copy");
+            }
+        }, {
             id: "duplicate",
             iconHTML: "",
             label: window.siyuan.languages.duplicate,
@@ -798,10 +802,20 @@ export class Gutter {
             click() {
                 duplicateBlock(selectsElement, protyle);
             }
-        }];
+        }]);
+        copyMenu.splice(4, 1, {
+            id: "copyHPath",
+            iconHTML: "",
+            label: window.siyuan.languages.copyHPath,
+            accelerator: window.siyuan.config.keymap.editor.general.copyHPath.custom,
+            click: () => {
+                copyTextByType([selectsElement[0].getAttribute("data-node-id")], "hPath");
+                focusBlock(selectsElement[0]);
+            }
+        });
         const copyTextRefMenu = this.genCopyTextRef(selectsElement);
         if (copyTextRefMenu) {
-            copyMenu.splice(2, 0, copyTextRefMenu);
+            copyMenu.splice(7, 0, copyTextRefMenu);
         }
         window.siyuan.menus.menu.append(new MenuItem({
             id: "copy",
@@ -1278,7 +1292,7 @@ export class Gutter {
             }).element);
         }
 
-        const copyMenu = (copySubMenu(id, true, nodeElement) as IMenu[]).concat([{
+        const copyMenu = (copySubMenu([id], true, nodeElement) as IMenu[]).concat([{
             id: "copyPlainText",
             iconHTML: "",
             label: window.siyuan.languages.copyPlainText,
@@ -1665,6 +1679,8 @@ export class Gutter {
                     fetchPost("/api/block/getHeadingChildrenDOM", { id }, (response) => {
                         if (isInAndroid()) {
                             window.JSAndroid.writeHTMLClipboard(protyle.lute.BlockDOM2StdMd(response.data).trimEnd(), response.data + Constants.ZWSP);
+                        } else if (isInHarmony()) {
+                            window.JSHarmony.writeHTMLClipboard(protyle.lute.BlockDOM2StdMd(response.data).trimEnd(), response.data + Constants.ZWSP);
                         } else {
                             writeText(response.data + Constants.ZWSP);
                         }
@@ -1679,6 +1695,8 @@ export class Gutter {
                     fetchPost("/api/block/getHeadingChildrenDOM", { id }, (response) => {
                         if (isInAndroid()) {
                             window.JSAndroid.writeHTMLClipboard(protyle.lute.BlockDOM2StdMd(response.data).trimEnd(), response.data + Constants.ZWSP);
+                        } else if (isInHarmony()) {
+                            window.JSHarmony.writeHTMLClipboard(protyle.lute.BlockDOM2StdMd(response.data).trimEnd(), response.data + Constants.ZWSP);
                         } else {
                             writeText(response.data + Constants.ZWSP);
                         }

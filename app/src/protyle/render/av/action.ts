@@ -43,8 +43,9 @@ export const avClick = (protyle: IProtyle, event: MouseEvent & { target: HTMLEle
     if (!blockElement) {
         return false;
     }
+
     const loadMoreElement = hasClosestByAttribute(event.target, "data-type", "av-load-more");
-    if (loadMoreElement) {
+    if (loadMoreElement && !hasClosestByAttribute(event.target, "data-type", "set-page-size")) {
         (blockElement.querySelector(".av__row--footer") as HTMLElement).style.transform = "";
         blockElement.removeAttribute("data-render");
         blockElement.dataset.pageSize = (parseInt(blockElement.dataset.pageSize) + parseInt(blockElement.querySelector('[data-type="set-page-size"]').getAttribute("data-size"))).toString();
@@ -228,7 +229,7 @@ export const avClick = (protyle: IProtyle, event: MouseEvent & { target: HTMLEle
             event.stopPropagation();
             return true;
         } else if (target.classList.contains("av__calc")) {
-            openCalcMenu(protyle, target);
+            openCalcMenu(protyle, target, undefined, event.clientX - 64);
             event.preventDefault();
             event.stopPropagation();
             return true;

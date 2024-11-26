@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -479,6 +480,7 @@ func BlocksWordCount(ids []string) (ret *util.BlockStatResult) {
 		ret.ImageCount += imgCnt
 		ret.RefCount += refCnt
 	}
+	ret.BlockCount = len(ids)
 	return
 }
 
@@ -490,9 +492,18 @@ func StatTree(id string) (ret *util.BlockStatResult) {
 		return
 	}
 
+	blockCount := 0
 	var databaseBlockNodes []*ast.Node
 	ast.Walk(tree.Root, func(n *ast.Node, entering bool) ast.WalkStatus {
-		if !entering || ast.NodeAttributeView != n.Type {
+		if !entering {
+			return ast.WalkContinue
+		}
+
+		if n.IsBlock() {
+			blockCount++
+		}
+
+		if ast.NodeAttributeView != n.Type {
 			return ast.WalkContinue
 		}
 
@@ -584,6 +595,7 @@ func StatTree(id string) (ret *util.BlockStatResult) {
 		LinkCount:  linkCnt,
 		ImageCount: imgCnt,
 		RefCount:   refCnt,
+		BlockCount: blockCount,
 	}
 }
 
@@ -1461,11 +1473,11 @@ func MoveDocs(fromPaths []string, toBoxID, toPath string, callback interface{}) 
 
 func countSubDocs(box, p string) (ret int) {
 	p = strings.TrimSuffix(p, ".sy")
-	_ = filepath.Walk(filepath.Join(util.DataDir, box, p), func(path string, info os.FileInfo, err error) error {
+	_ = filelock.Walk(filepath.Join(util.DataDir, box, p), func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if info.IsDir() {
+		if d.IsDir() {
 			return nil
 		}
 		if strings.HasSuffix(path, ".sy") {
@@ -2153,6 +2165,48 @@ func (box *Box) addMinSort(parentPath, id string) {
 	fullSortIDs[id] = sortVal
 
 	data, err = gulu.JSON.MarshalJSON(fullSortIDs)
+	if err != nil {
+		logging.LogErrorf("marshal sort conf failed: %s", err)
+		return
+	}
+	if err = filelock.WriteFile(confPath, data); err != nil {
+		logging.LogErrorf("write sort conf failed: %s", err)
+		return
+	}
+}
+
+func (box *Box) addSort(previousID, id string) {
+	confDir := filepath.Join(util.DataDir, box.ID, ".siyuan")
+	if err := os.MkdirAll(confDir, 0755); err != nil {
+		logging.LogErrorf("create conf dir failed: %s", err)
+		return
+	}
+	confPath := filepath.Join(confDir, "sort.json")
+	fullSortIDs := map[string]int{}
+	var data []byte
+	if filelock.IsExist(confPath) {
+		data, err := filelock.ReadFile(confPath)
+		if err != nil {
+			logging.LogErrorf("read sort conf failed: %s", err)
+			return
+		}
+
+		if err = gulu.JSON.UnmarshalJSON(data, &fullSortIDs); err != nil {
+			logging.LogErrorf("unmarshal sort conf failed: %s", err)
+		}
+	}
+
+	sortVal := 0
+	previousSortVal, ok := fullSortIDs[previousID]
+	if !ok {
+		sortVal++
+	} else {
+		sortVal = previousSortVal + 1
+	}
+
+	fullSortIDs[id] = sortVal
+
+	data, err := gulu.JSON.MarshalJSON(fullSortIDs)
 	if err != nil {
 		logging.LogErrorf("marshal sort conf failed: %s", err)
 		return

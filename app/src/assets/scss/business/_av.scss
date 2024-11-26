@@ -188,6 +188,7 @@
         overflow: hidden;
         font-size: 75%;
         white-space: nowrap;
+        line-height: 1.625em;
         cursor: pointer;
 
         &[data-dtype="lineNumber"] {
@@ -485,7 +486,6 @@
         line-height: 20px;
         padding: 0 4px;
         font-size: 12px;
-        font-family: var(--b3-font-family-emoji);
         align-self: center;
         opacity: 1;
       }
