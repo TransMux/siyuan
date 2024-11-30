@@ -671,14 +671,13 @@ export class WYSIWYG {
                 const dragHeight = dragElement.clientHeight;
                 documentSelf.onmousemove = (moveEvent: MouseEvent) => {
                     if (dragElement.tagName === "IMG") {
-                        dragElement.parentElement.parentElement.style.width = "";
                         dragElement.style.height = "";
                     }
                     if (moveEvent.clientX > x - dragWidth + 8 && moveEvent.clientX < mostRight) {
                         if ((dragElement.tagName === "IMG" && !dragElement.parentElement.parentElement.style.minWidth && nodeElement.style.textAlign !== "center") || !isCenter) {
-                            dragElement.style.width = Math.max(17, dragWidth + (moveEvent.clientX - x)) + "px";
+                            dragElement.parentElement.style.width = Math.max(17, dragWidth + (moveEvent.clientX - x)) + "px";
                         } else {
-                            dragElement.style.width = Math.max(17, dragWidth + (moveEvent.clientX - x) * 2) + "px";
+                            dragElement.parentElement.style.width = Math.max(17, dragWidth + (moveEvent.clientX - x) * 2) + "px";
                         }
                     }
                     if (dragElement.tagName !== "IMG") {
@@ -772,11 +771,11 @@ export class WYSIWYG {
             }
 
             // 多选节点
-            let x = event.clientX;
+            let clentX = event.clientX;
             if (event.clientX > mostRight) {
-                x = mostRight;
+                clentX = mostRight;
             } else if (event.clientX < mostLeft) {
-                x = mostLeft;
+                clentX = mostLeft;
             }
             const mostTop = rect.top + (protyle.options.render.breadcrumb ? protyle.breadcrumb.element.parentElement.clientHeight : 0);
 
@@ -880,7 +879,7 @@ export class WYSIWYG {
                 let newLeft = 0;
                 let newWidth = 0;
                 let newHeight = 0;
-                if (moveEvent.clientX < x) {
+                if (moveEvent.clientX < clentX) {
                     if (moveEvent.clientX < mostLeft) {
                         // 向左越界
                         newLeft = mostLeft;
@@ -888,16 +887,16 @@ export class WYSIWYG {
                         // 向左
                         newLeft = moveEvent.clientX;
                     }
-                    newWidth = x - newLeft;
+                    newWidth = clentX - newLeft;
                 } else {
                     if (moveEvent.clientX > mostRight) {
                         // 向右越界
-                        newLeft = x;
+                        newLeft = clentX;
                         newWidth = mostRight - newLeft;
                     } else {
                         // 向右
-                        newLeft = x;
-                        newWidth = moveEvent.clientX - x;
+                        newLeft = clentX;
+                        newWidth = moveEvent.clientX - clentX;
                     }
                 }
 
@@ -2009,6 +2008,15 @@ export class WYSIWYG {
         let isComposition = false; // for iPhone
         this.element.addEventListener("compositionstart", (event) => {
             isComposition = true;
+            // 微软双拼由于 focusByRange 导致无法输入文字，因此不再 keydown 中记录了，但 keyup 会记录拼音字符，因此使用 isComposition 阻止 keyup 记录。
+            // 但搜狗输入法选中后继续输入不走 keydown，isComposition 阻止了 keyup 记录，因此需在此记录。
+            const range = getEditorRange(protyle.wysiwyg.element);
+            const nodeElement = hasClosestBlock(range.startContainer);
+            if (!isMac() && nodeElement) {
+                range.insertNode(document.createElement("wbr"));
+                protyle.wysiwyg.lastHTMLs[nodeElement.getAttribute("data-node-id")] = nodeElement.outerHTML;
+                nodeElement.querySelector("wbr").remove();
+            }
             event.stopPropagation();
         });
 
@@ -2086,8 +2094,10 @@ export class WYSIWYG {
                 event.key !== "Meta" && event.key !== "Alt" && event.key !== "Control" && event.key !== "CapsLock" &&
                 !event.ctrlKey && !event.shiftKey && !event.metaKey && !event.altKey &&
                 !/^F\d{1,2}$/.test(event.key)) {
-                // 搜狗输入法不走 keydown，需重新记录历史状态
+                // 搜狗输入法不走 keydown，没有选中字符后不走 compositionstart，需重新记录历史状态
                 if (!isMac() && nodeElement &&
+                    // 微软双拼 keyup 会记录拼音字符，因此在 compositionstart 记录
+                    !isComposition &&
                     (typeof protyle.wysiwyg.lastHTMLs[nodeElement.getAttribute("data-node-id")] === "undefined" || range.toString() !== "" || !this.preventKeyup)) {
                     range.insertNode(document.createElement("wbr"));
                     protyle.wysiwyg.lastHTMLs[nodeElement.getAttribute("data-node-id")] = nodeElement.outerHTML;

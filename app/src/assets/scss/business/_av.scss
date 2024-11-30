@@ -29,7 +29,7 @@
     background: var(--b3-border-color);
     border-radius: var(--b3-border-radius);
 
-    &:after {
+    &::after {
       content: " ";
       border-radius: var(--b3-border-radius);
       position: absolute;
@@ -125,14 +125,28 @@
     position: relative;
     font-size: 87.5%;
 
+    &.dragover__top,
     &.dragover__bottom {
-      border-bottom-color: var(--b3-theme-primary-lighter);
+      box-shadow: none !important;
+    }
+
+    &.dragover__top::after,
+    &.dragover__bottom::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background-color: var(--b3-theme-primary-lighter);
       z-index: 3;
     }
 
-    &.dragover__top {
-      z-index: 3;
-      box-shadow: 0 -3px 0 var(--b3-theme-primary-lighter), inset 0 2px 0 var(--b3-theme-primary-lighter) !important;
+    &.dragover__top::after {
+      top: -2.5px;
+    }
+
+    &.dragover__bottom::after {
+      bottom: -2.5px;
     }
 
     &:hover [data-type="block-more"] {

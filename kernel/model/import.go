@@ -67,6 +67,7 @@ func HTML2Markdown(htmlStr string, luteEngine *lute.Lute) (markdown string, with
 }
 
 func HTML2Tree(htmlStr string, luteEngine *lute.Lute) (tree *parse.Tree, withMath bool) {
+	htmlStr = util.RemoveInvalid(htmlStr)
 	assetDirPath := filepath.Join(util.DataDir, "assets")
 	tree = luteEngine.HTML2Tree(htmlStr)
 	ast.Walk(tree.Root, func(n *ast.Node, entering bool) ast.WalkStatus {
@@ -621,6 +622,7 @@ func ImportData(zipPath string) (err error) {
 	lockSync()
 	defer unlockSync()
 
+	logging.LogInfof("import data from [%s]", zipPath)
 	baseName := filepath.Base(zipPath)
 	ext := filepath.Ext(baseName)
 	baseName = strings.TrimSuffix(baseName, ext)
@@ -655,6 +657,7 @@ func ImportData(zipPath string) (err error) {
 		return
 	}
 
+	logging.LogInfof("import data from [%s] done", zipPath)
 	IncSync()
 	FullReindex()
 	return
@@ -757,7 +760,7 @@ func ImportFromLocalPath(boxID, localPath string, toPath string) (err error) {
 				targetPaths[curRelPath] = targetPath
 			} else {
 				targetPath = targetPaths[curRelPath]
-				id = strings.TrimSuffix(path.Base(targetPath), ".sy")
+				id = util.GetTreeID(targetPath)
 			}
 
 			if d.IsDir() {
