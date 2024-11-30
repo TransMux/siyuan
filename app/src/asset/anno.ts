@@ -140,7 +140,8 @@ export const initAnno = (element: HTMLElement, pdf: any) => {
             // 获取data-node-id
             const annotationBlockID = target.getAttribute("data-node-id");
             // mux-text-annotation 点击事件需要打开文档，但是没有app，只能暂时飞过来了
-            openFileById({
+            // 刚刚插入的可能不存在
+            annotationBlockID && openFileById({
                 // @ts-ignore
                 app: window._app,
                 id: annotationBlockID,
@@ -195,10 +196,12 @@ export const initAnno = (element: HTMLElement, pdf: any) => {
                     });
                 } else {
                     // 选中文字标注
+                    const translateElement = pdf.appConfig.appContainer.querySelector(".pdf__util__mux__translate") as HTMLTextAreaElement;
                     const coords = getHightlightCoordsByRange(pdf, color);
                     if (coords) {
                         coords.forEach((item, index) => {
-                            const newElement = showHighlight(item, pdf);
+                            // 添加标注直接添加翻译
+                            const newElement = showHighlight(item, pdf, undefined, translateElement.value);
                             if (index === 0) {
                                 rectElement = newElement;
                                 copyAnno(`${pdf.appConfig.file.replace(location.origin, "").substr(1)}/${rectElement.getAttribute("data-node-id")}`,
@@ -686,7 +689,7 @@ export const getHighlight = (element: HTMLElement) => {
     });
 };
 
-const showHighlight = (selected: IPdfAnno, pdf: any, hl?: boolean) => {
+const showHighlight = (selected: IPdfAnno, pdf: any, hl?: boolean, annotationTextOuter?: string) => {
     const pageIndex = selected.index;
     const page = pdf.pdfViewer.getPageView(pageIndex);
     const textLayerElement = page.textLayer.div;
@@ -730,31 +733,42 @@ height: ${Math.abs(bounds[1] - bounds[3])}px"></div>`;
         if (drawingFirstBlock) {
             drawingFirstBlock = false;
 
-            // 获取标注块以及标注文本 https://x.transmux.top/j/20241102000728-ev9r3iw
-            const refBlockData = (await fetchSyncPost("/api/block/getRefIDsByFileAnnotationID", {
-                id: selected.id
-            })).data;
-            if (!refBlockData.refTexts || refBlockData.refTexts.length === 0) {
-                return;
-            }
-            // 寻找 refBlockData.refTexts 中第一个不等于 selected.content 的 下标
-            const annotationIndex = refBlockData.refTexts.findIndex((text: string) => text !== selected.content);
-            // 如果标注文本是没有修改过的，那么不渲染
-            if (annotationIndex === -1) {
-                return;
-            }
-
-            const annotationText = refBlockData.refTexts[annotationIndex];
-            const annotationID = refBlockData.refIDs[annotationIndex];
-
             const renderSide = Math.min(bounds[0], bounds[2]) > pageWidth / 2 ? "right" : "left";
             // https://x.transmux.top/j/20241102000219-i6iftd1
             // 样式调整：https://x.transmux.top/j/20241103231905-igs4n7k
             const textTop = Math.min(bounds[1], bounds[3]) - (Math.abs(bounds[1] - bounds[3]) / 3.8);
-            annotationPlaceholder.outerHTML = `<div style="color: red;
+
+            if (annotationTextOuter) {
+                // await 100ms, 修改outerHTML需要挂载dom
+                await new Promise(resolve => setTimeout(resolve, 100));
+                // 第一次标注的时候直接赋值，无法等待数据库插入查询
+                annotationPlaceholder.outerHTML = `<div style="color: blue;
+${renderSide}: 10px;
+top:${textTop}px;
+height: ${Math.abs(bounds[1] - bounds[3])}px; font-size: calc(var(--scale-factor)*8px);" class="mux-pdf-text-annotation">${annotationTextOuter}</div>`;
+            } else {
+                // 获取标注块以及标注文本 https://x.transmux.top/j/20241102000728-ev9r3iw
+                const refBlockData = (await fetchSyncPost("/api/block/getRefIDsByFileAnnotationID", {
+                    id: selected.id
+                })).data;
+                if (!refBlockData.refTexts || refBlockData.refTexts.length === 0) {
+                    return;
+                }
+                // 寻找 refBlockData.refTexts 中第一个不等于 selected.content 的 下标
+                const annotationIndex = refBlockData.refTexts.findIndex((text: string) => text !== selected.content);
+                // 如果标注文本是没有修改过的，那么不渲染
+                if (annotationIndex === -1) {
+                    return;
+                }
+                
+                const annotationText = refBlockData.refTexts[annotationIndex];
+                const annotationID = refBlockData.refIDs[annotationIndex];
+                
+                annotationPlaceholder.outerHTML = `<div style="color: red;
 ${renderSide}: 10px;
 top:${textTop}px;
 height: ${Math.abs(bounds[1] - bounds[3])}px; font-size: calc(var(--scale-factor)*8px);" class="mux-pdf-text-annotation" data-node-id="${annotationID}">${annotationText}</div>`; // https://x.transmux.top/j/20241102000155-zm6abru
+            }
         }
     });
     rectsElement.insertAdjacentHTML("beforeend", html + "</div>");
