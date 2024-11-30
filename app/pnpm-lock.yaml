@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@electron/remote':
         specifier: ^2.1.2
-        version: 2.1.2(electron@32.2.2)
+        version: 2.1.2(electron@32.2.5)
       translate:
         specifier: ^3.0.1
         version: 3.0.1

@@ -15,6 +15,8 @@ import {fetchPost} from "../util/fetch";
 import {setStorageVal, updateHotkeyTip} from "../protyle/util/compatibility";
 import {App} from "../index";
 import {clearOBG} from "../layout/dock/util";
+import { openFileById } from "../editor/util";
+import { showMessage } from "../dialog/message";
 
 export class Asset extends Model {
     public path: string;
@@ -288,6 +290,9 @@ export class Asset extends Model {
                 <input type="number" id="pageNumber" class="toolbarField pageNumber b3-text-field" value="1" size="4" min="1" autocomplete="off">
                 <span id="numPages"></span>
                 <div class="fn__flex-1"></div>
+                <!-- https://x.transmux.top/j/20241130230724-5m71mlx -->
+                <input id="muxPdfInsertBlock" class="toolbarField b3-text-field" autocomplete="off" placeholder="插入块id">
+                <div class="fn__flex-1"></div>
                 <span id="scaleSelectContainer" class="dropdownToolbarButton">
                   <select id="scaleSelect" class="b3-select">
                     <option id="pageAutoOption" value="auto" selected="selected">${window.siyuan.languages.pageScaleAuto}</option>
@@ -474,6 +479,28 @@ export class Asset extends Model {
     <div id="printContainer"></div>`;
             const localPDF = window.siyuan.storage[Constants.LOCAL_PDFTHEME];
             const pdfTheme = window.siyuan.config.appearance.mode === 0 ? localPDF.light : localPDF.dark;
+            // 处理pdf插入元素事件 https://x.transmux.top/j/20241130230724-5m71mlx
+            const insertBlockElement = document.getElementById("muxPdfInsertBlock") as HTMLInputElement;
+            if (insertBlockElement) {
+              insertBlockElement.addEventListener("keydown", (event: KeyboardEvent) => {
+                  // enter: 存储当前值到 annotationInsertBlockId
+                  if (event.key === "Enter") {
+                      // remove leading https://x.transmux.top/j/
+                      insertBlockElement.value = insertBlockElement.value.replace(/^https:\/\/x\.transmux\.top\/j\//, "");
+                      // 提示
+                      showMessage("设置成功", 1000);
+                  }
+                  // Ctrl + Enter: 打开块
+                  if (event.key === "Enter" && event.ctrlKey) {
+                      if (insertBlockElement.value) {
+                        openFileById({
+                              app: this.app,
+                              id: insertBlockElement.value,
+                          });
+                      }
+                  }
+              });
+            }
             const darkElement = this.element.querySelector("#pdfDark");
             const lightElement = this.element.querySelector("#pdfLight");
             if (pdfTheme === "dark") {

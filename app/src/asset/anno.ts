@@ -9,6 +9,7 @@ import { Dialog } from "../dialog";
 import { showMessage } from "../dialog/message";
 import { translateText } from "../protyle/util/mux/translate";
 import { openFileById } from "../editor/util";
+import { muxInsertAnnotationAfterBlock } from "../util/mux";
 
 export const initAnno = (element: HTMLElement, pdf: any) => {
     getConfig(pdf);
@@ -193,6 +194,7 @@ export const initAnno = (element: HTMLElement, pdf: any) => {
                         data: JSON.stringify(config),
                     });
                 } else {
+                    // 选中文字标注
                     const coords = getHightlightCoordsByRange(pdf, color);
                     if (coords) {
                         coords.forEach((item, index) => {
@@ -805,6 +807,7 @@ const copyAnno = (idPath: string, fileName: string, pdf: any) => {
                     const imageName = content + ".png";
                     formData.append("file[]", blob, imageName);
                     formData.append("skipIfDuplicated", "true");
+                    // TODO：支持自动插入图片
                     fetchPost(Constants.UPLOAD_ADDRESS, formData, (response) => {
                         writeText(`<<${idPath} "${content}">>
 ![](${response.data.succMap[imageName]})`);
@@ -814,10 +817,20 @@ const copyAnno = (idPath: string, fileName: string, pdf: any) => {
         } else {
             // 复制的时候，使用textarea中的内容
             const translateElement = pdf.appConfig.appContainer.querySelector(".pdf__util__mux__translate") as HTMLTextAreaElement;
+            let annotationString = "";
             if (translateElement && translateElement.value) {
-                writeText(`<<${idPath} "${translateElement.value}">>`);
+                annotationString = translateElement.value;
             } else {
-                writeText(`<<${idPath} "${content}">>`);
+                annotationString = content;
+            }
+            writeText(`<<${idPath} "${annotationString}">>`);
+            // https://x.transmux.top/j/20241130230724-5m71mlx
+            const insertBlockElement = pdf.appConfig.appContainer.querySelector("#muxPdfInsertBlock") as HTMLInputElement;
+            if (insertBlockElement?.value) {
+                // insert block after this block
+                muxInsertAnnotationAfterBlock(insertBlockElement.value, idPath, annotationString, (newBlockId: string) => {
+                    insertBlockElement.value = newBlockId;
+                });
             }
         }
     }, Constants.TIMEOUT_DBLCLICK);
