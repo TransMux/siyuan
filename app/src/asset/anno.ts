@@ -736,7 +736,7 @@ height: ${Math.abs(bounds[1] - bounds[3])}px"></div>`;
             const renderSide = Math.min(bounds[0], bounds[2]) > pageWidth / 2 ? "right" : "left";
             // https://x.transmux.top/j/20241102000219-i6iftd1
             // 样式调整：https://x.transmux.top/j/20241103231905-igs4n7k
-            const textTop = Math.min(bounds[1], bounds[3]) - (Math.abs(bounds[1] - bounds[3]) / 3.8);
+            const textTop = Math.min(bounds[1], bounds[3]) - (Math.abs(bounds[1] - bounds[3]) / 6);
 
             if (annotationTextOuter) {
                 // await 100ms, 修改outerHTML需要挂载dom
