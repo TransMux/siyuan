@@ -164,7 +164,13 @@ const renderPDF = async (id: string) => {
           padding-bottom: 16px;
           margin: 0 16px 16px 16px;
         }
-        
+
+        @media print {
+            #action {
+                display: none !important;
+            }
+        }
+
         .b3-label:last-child {
             border-bottom: none;
         }
