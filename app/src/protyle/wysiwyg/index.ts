@@ -2360,6 +2360,7 @@ export class WYSIWYG {
             if (fileElement && range.toString() === "") {
                 event.stopPropagation();
                 event.preventDefault();
+                // https://x.transmux.top/j/20241201141055-8cj3073 所有点击都会通过这里
                 openLink(protyle, fileElement.getAttribute("data-id"), event, ctrlIsPressed);
                 return;
             }

@@ -35,8 +35,9 @@ export const openLink = (protyle: IProtyle, aLink: string, event?: MouseEvent, c
             (!linkAddress.endsWith(".pdf") ||
                 (linkAddress.endsWith(".pdf") && !linkAddress.startsWith("file://")))
         ) {
+            // https://x.transmux.top/j/20241201141042-wcuvofb 修改默认操作
             if (event && event.altKey) {
-                openAsset(protyle.app, linkAddress, pdfParams);
+                openAsset(protyle.app, linkAddress, pdfParams, "right");
             } else if (event && event.shiftKey) {
                 /// #if !BROWSER
                 openBy(linkAddress, "app");
@@ -50,7 +51,7 @@ export const openLink = (protyle: IProtyle, aLink: string, event?: MouseEvent, c
                 openByMobile(linkAddress);
                 /// #endif
             } else {
-                openAsset(protyle.app, linkAddress, pdfParams, "right");
+                // openAsset(protyle.app, linkAddress, pdfParams, "right");
             }
         } else {
             /// #if !BROWSER
