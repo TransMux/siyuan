@@ -1475,6 +1475,14 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
             return;
         }
 
+        // Mux 快捷键触发 优先级较高
+        if (matchHotKey(window.siyuan.config.keymap.mux.copyAsTransMux.custom, event)) {
+            console.log("快捷键触发：copyAsTransMux")
+            event.preventDefault();
+            event.stopPropagation();
+            return true;
+        }
+
         if (matchHotKey(window.siyuan.config.keymap.editor.list.checkToggle.custom, event)) {
             const taskItemElement = hasClosestByAttribute(range.startContainer, "data-subtype", "t");
             if (!taskItemElement) {

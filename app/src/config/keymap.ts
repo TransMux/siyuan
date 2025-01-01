@@ -154,6 +154,13 @@ export const keymap = {
     <div class="b3-list b3-list--border b3-list--background">
         <div class="b3-list-item b3-list-item--narrow toggle">
             <span class="b3-list-item__toggle b3-list-item__toggle--hl"><svg class="b3-list-item__arrow"><use xlink:href="#iconRight"></use></svg></span>
+            <span class="b3-list-item__text ft__on-surface">Mux Toolkit</span>
+        </div>
+        <div class="fn__none b3-list__panel">${keymap._genItem(window.siyuan.config.keymap.mux, "general")}</div>
+    </div>
+    <div class="b3-list b3-list--border b3-list--background">
+        <div class="b3-list-item b3-list-item--narrow toggle">
+            <span class="b3-list-item__toggle b3-list-item__toggle--hl"><svg class="b3-list-item__arrow"><use xlink:href="#iconRight"></use></svg></span>
             <span class="b3-list-item__text ft__on-surface">${window.siyuan.languages.general}</span>
         </div>
         <div class="fn__none b3-list__panel">${keymap._genItem(window.siyuan.config.keymap.general, "general")}</div>

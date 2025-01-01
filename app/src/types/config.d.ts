@@ -805,9 +805,17 @@ declare namespace Config {
      * SiYuan keymap related configuration
      */
     export interface IKeymap {
+        mux: IKeymapMux;
         editor: IKeymapEditor;
         general: IKeymapGeneral;
         plugin: IKeymapPlugin;
+    }
+
+    /**
+     * Mux All Keymaps
+     */
+    export interface IKeymapMux extends IKeys {
+        copyAsTransMux: IKey;
     }
 
     /**
