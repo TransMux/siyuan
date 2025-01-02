@@ -65,14 +65,6 @@ export const about = {
 </label>
 <label class="b3-label fn__flex">
     <div class="fn__flex-1">
-        ${window.siyuan.languages.about9}
-        <div class="b3-label__text">${window.siyuan.languages.about10}</div>
-    </div>
-    <div class="fn__space"></div>
-    <input class="b3-switch fn__flex-center" id="uploadErrLog" type="checkbox"${window.siyuan.config.system.uploadErrLog ? " checked" : ""}>
-</label>
-<label class="b3-label fn__flex">
-    <div class="fn__flex-1">
         ${window.siyuan.languages.about11}
         <div class="b3-label__text">${window.siyuan.languages.about12}</div>
     </div>
@@ -142,7 +134,7 @@ export const about = {
         </button>
     </div>
 </div>
-<div class="b3-label fn__flex"><div class="fn__block">
+<div class="b3-label">
     <div>
         ${window.siyuan.languages.dataRepoPurge}
     </div>
@@ -166,7 +158,7 @@ export const about = {
         <span class="fn__space"></span>
         <input class="b3-text-field fn__flex-center fn__size200" min="1" type="number" id="retentionIndexesDaily" value="${window.siyuan.config.repo.retentionIndexesDaily}">
     </div>
-</div></div>
+</div>
 <div class="fn__flex b3-label config__item">
     <div class="fn__flex-1">
         ${window.siyuan.languages.systemLog}
@@ -365,15 +357,6 @@ ${checkUpdateHTML}
                     cb() {
                         window.location.reload();
                     }
-                });
-            });
-        });
-        const uploadErrLogElement = about.element.querySelector("#uploadErrLog") as HTMLInputElement;
-        uploadErrLogElement.addEventListener("change", () => {
-            fetchPost("/api/system/setUploadErrLog", {uploadErrLog: uploadErrLogElement.checked}, () => {
-                exportLayout({
-                    errorExit: true,
-                    cb: exitSiYuan
                 });
             });
         });

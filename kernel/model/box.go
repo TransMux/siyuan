@@ -154,8 +154,6 @@ func ListNotebooks() (ret []*Box, err error) {
 		sort.Slice(ret, func(i, j int) bool {
 			return util.PinYinCompare(ret[j].Name, ret[i].Name)
 		})
-	case util.SortModeUpdatedASC:
-	case util.SortModeUpdatedDESC:
 	case util.SortModeAlphanumASC:
 		sort.Slice(ret, func(i, j int) bool {
 			return util.NaturalCompare(ret[i].Name, ret[j].Name)
@@ -166,12 +164,10 @@ func ListNotebooks() (ret []*Box, err error) {
 		})
 	case util.SortModeCustom:
 		sort.Slice(ret, func(i, j int) bool { return ret[i].Sort < ret[j].Sort })
-	case util.SortModeRefCountASC:
-	case util.SortModeRefCountDESC:
 	case util.SortModeCreatedASC:
-		sort.Slice(ret, func(i, j int) bool { return util.NaturalCompare(ret[j].ID, ret[i].ID) })
+		sort.Slice(ret, func(i, j int) bool { return ret[i].ID < ret[j].ID })
 	case util.SortModeCreatedDESC:
-		sort.Slice(ret, func(i, j int) bool { return util.NaturalCompare(ret[j].ID, ret[i].ID) })
+		sort.Slice(ret, func(i, j int) bool { return ret[i].ID > ret[j].ID })
 	}
 	return
 }
@@ -596,7 +592,7 @@ func normalizeTree(tree *parse.Tree) (yfmRootID, yfmTitle, yfmUpdated string) {
 					}
 					continue
 				}
-				if "tags" == attrK {
+				if "tags" == attrK && nil != attrV {
 					var tags string
 					if str, ok := attrV.(string); ok {
 						tags = strings.TrimSpace(str)
@@ -614,7 +610,10 @@ func normalizeTree(tree *parse.Tree) (yfmRootID, yfmTitle, yfmUpdated string) {
 						tags += tagStr + ","
 					}
 					tags = strings.TrimRight(tags, ",")
-					tree.Root.SetIALAttr("tags", tags)
+					tags = strings.TrimSpace(tags)
+					if "" != tags {
+						tree.Root.SetIALAttr("tags", tags)
+					}
 					continue
 				}
 

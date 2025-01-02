@@ -103,6 +103,13 @@ func IsBlockRef(n *ast.Node) bool {
 	return ast.NodeTextMark == n.Type && n.IsTextMarkType("block-ref")
 }
 
+func IsBlockLink(n *ast.Node) bool {
+	if nil == n {
+		return false
+	}
+	return ast.NodeTextMark == n.Type && n.IsTextMarkType("a") && strings.HasPrefix(n.TextMarkAHref, "siyuan://blocks/")
+}
+
 func IsFileAnnotationRef(n *ast.Node) bool {
 	if nil == n {
 		return false
@@ -442,6 +449,11 @@ var DynamicRefTexts = sync.Map{}
 func SetDynamicBlockRefText(blockRef *ast.Node, refText string) {
 	if !IsBlockRef(blockRef) {
 		return
+	}
+
+	refText = strings.TrimSpace(refText)
+	if "" == refText {
+		refText = blockRef.TextMarkBlockRefID
 	}
 
 	blockRef.TextMarkBlockRefSubtype = "d"

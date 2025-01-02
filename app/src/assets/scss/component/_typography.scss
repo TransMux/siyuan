@@ -1,6 +1,7 @@
 @font-face {
   font-family: 'JetBrainsMono-Regular';
-  src: url(../fonts/JetBrainsMono-2.304/JetBrainsMono-Regular.woff2) format('woff2');
+  /* webpackIgnore: true */
+  src: url(../../../appearance/fonts/JetBrainsMono-2.304/JetBrainsMono-Regular.woff2) format('woff2');
 }
 
 .b3-typography,
@@ -105,9 +106,13 @@
     box-shadow: inset 0 -1px 0 var(--b3-theme-surface-lighter);
   }
 
+  u {
+    text-decoration: none;
+    border-bottom: 1px solid;
+  }
+
   u,
   span[data-type~="u"] {
-    text-decoration: none;
     border-bottom: 1px solid;
     color: var(--b3-protyle-inline-u-color);
   }
@@ -276,7 +281,6 @@
   }
 
   .code-block:not(pre) {
-    padding: 2em 1em 1.6em;
     margin: 1em 0;
     box-sizing: border-box;
 
@@ -319,6 +323,7 @@
   }
 
   div.hljs {
+    padding: 2em 1em 1.6em;
     flex: 1;
     display: flex;
     position: relative;

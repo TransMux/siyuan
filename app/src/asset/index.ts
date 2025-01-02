@@ -78,7 +78,9 @@ export class Asset extends Model {
         /// #if !MOBILE
         if (typeof pdfId === "string") {
             this.getPdfId(() => {
-                onPageNumberChanged({value: this.pdfPage, pdfInstance: this.pdfObject, id: this.pdfId});
+                if (this.pdfPage) {
+                    onPageNumberChanged({value: this.pdfPage, pdfInstance: this.pdfObject, id: this.pdfId});
+                }
             });
             return;
         }

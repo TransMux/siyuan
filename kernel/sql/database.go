@@ -225,6 +225,8 @@ func initDBConnection() {
 	if nil != db {
 		closeDatabase()
 	}
+
+	util.LogDatabaseSize(util.DBPath)
 	dsn := util.DBPath + "?_journal_mode=WAL" +
 		"&_synchronous=OFF" +
 		"&_mmap_size=2684354560" +
@@ -272,6 +274,7 @@ func initHistoryDBConnection() {
 		historyDB.Close()
 	}
 
+	util.LogDatabaseSize(util.HistoryDBPath)
 	dsn := util.HistoryDBPath + "?_journal_mode=WAL" +
 		"&_synchronous=OFF" +
 		"&_mmap_size=2684354560" +
@@ -327,6 +330,7 @@ func initAssetContentDBConnection() {
 		assetContentDB.Close()
 	}
 
+	util.LogDatabaseSize(util.AssetContentDBPath)
 	dsn := util.AssetContentDBPath + "?_journal_mode=WAL" +
 		"&_synchronous=OFF" +
 		"&_mmap_size=2684354560" +
@@ -1316,6 +1320,9 @@ func queryRow(query string, args ...interface{}) *sql.Row {
 		logging.LogErrorf("statement is empty")
 		return nil
 	}
+	if nil == db {
+		return nil
+	}
 	return db.QueryRow(query, args...)
 }
 
@@ -1323,6 +1330,9 @@ func query(query string, args ...interface{}) (*sql.Rows, error) {
 	query = strings.TrimSpace(query)
 	if "" == query {
 		return nil, errors.New("statement is empty")
+	}
+	if nil == db {
+		return nil, errors.New("database is nil")
 	}
 	return db.Query(query, args...)
 }
@@ -1505,6 +1515,10 @@ func SQLTemplateFuncs(templateFuncMap *template.FuncMap) {
 			stmt = strings.Replace(stmt, "?", arg, 1)
 		}
 		retSpans = SelectSpansRawStmt(stmt, 512)
+		return
+	}
+	(*templateFuncMap)["querySQL"] = func(stmt string) (ret []map[string]interface{}) {
+		ret, _ = Query(stmt, 1024)
 		return
 	}
 }

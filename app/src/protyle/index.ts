@@ -28,7 +28,7 @@ import {setPanelFocus} from "../layout/util";
 /// #endif
 import {Title} from "./header/Title";
 import {Background} from "./header/Background";
-import {onGet, setReadonlyByConfig} from "./util/onGet";
+import {disabledProtyle, enableProtyle, onGet, setReadonlyByConfig} from "./util/onGet";
 import {reloadProtyle} from "./util/reload";
 import {renderBacklink} from "./wysiwyg/renderBacklink";
 import {setEmpty} from "../mobile/util/setEmpty";
@@ -42,6 +42,8 @@ import {hasClosestBlock} from "./util/hasClosest";
 import {setStorageVal} from "./util/compatibility";
 import {merge} from "./util/merge";
 import {getAllModels} from "../layout/getAll";
+import {isSupportCSSHL} from "./render/searchMarkRender";
+import {renderAVAttribute} from "./render/av/blockAttr";
 
 export class Protyle {
 
@@ -73,12 +75,20 @@ export class Protyle {
             options: mergedOptions,
             block: {},
             highlight: {
-                mark: new Highlight(),
-                markHL: new Highlight(),
+                mark: isSupportCSSHL() ? new Highlight() : undefined,
+                markHL: isSupportCSSHL() ? new Highlight() : undefined,
                 ranges: [],
                 rangeIndex: 0,
+                styleElement: document.createElement("style"),
             }
         };
+
+        if (isSupportCSSHL()) {
+            const styleId = genUUID();
+            this.protyle.highlight.styleElement.dataset.uuid = styleId;
+            this.protyle.highlight.styleElement.textContent = `.protyle-wysiwyg::highlight(search-mark-${styleId}) {background-color: var(--b3-highlight-background);color: var(--b3-highlight-color);}
+  .protyle-wysiwyg::highlight(search-mark-hl-${styleId}) {color: var(--b3-highlight-color);background-color: var(--b3-highlight-current-background)}`;
+        }
 
         this.protyle.hint = new Hint(this.protyle);
         if (mergedOptions.render.breadcrumb) {
@@ -445,5 +455,17 @@ export class Protyle {
 
     public focusBlock(element: Element, toStart = true) {
         return focusBlock(element, undefined, toStart);
+    }
+
+    public disable() {
+        disabledProtyle(this.protyle);
+    }
+
+    public enable() {
+        enableProtyle(this.protyle);
+    }
+
+    public renderAVAttribute(element: HTMLElement, id: string, cb?: (element: HTMLElement) => void) {
+        renderAVAttribute(element, id, this.protyle, cb);
     }
 }

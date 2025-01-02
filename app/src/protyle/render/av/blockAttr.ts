@@ -15,6 +15,7 @@ import {previewImage} from "../../preview/image";
 import {webUtils} from "electron";
 /// #endif
 import {isBrowser} from "../../../util/functions";
+import {Constants} from "../../../constants";
 
 const genAVRollupHTML = (value: IAVCellValue) => {
     let html = "";
@@ -60,7 +61,7 @@ export const genAVValueHTML = (value: IAVCellValue) => {
     let html = "";
     switch (value.type) {
         case "block":
-            html = `<div class="fn__flex-1" placeholder="${window.siyuan.languages.empty}">${value.block.content}</div>`;
+            html = `<input value="${value.block.content}" type="text" class="b3-text-field b3-text-field--text fn__flex-1" placeholder="${window.siyuan.languages.empty}">`;
             break;
         case "text":
             html = `<textarea style="resize: vertical" rows="${value.text.content.split("\n").length}" class="b3-text-field b3-text-field--text fn__flex-1" placeholder="${window.siyuan.languages.empty}">${value.text.content}</textarea>`;
@@ -179,10 +180,13 @@ export const renderAVAttribute = (element: HTMLElement, id: string, protyle: IPr
             avID: string
             avName: string
         }) => {
-            let innerHTML = `<div class="custom-attr__avheader block__logo popover__block" data-id='${JSON.stringify(table.blockIDs)}'>
+            let innerHTML = `<div class="custom-attr__avheader">
+    <div class="block__logo popover__block" data-id='${JSON.stringify(table.blockIDs)}'>
+        <svg class="block__logoicon"><use xlink:href="#iconDatabase"></use></svg><span>${table.avName || window.siyuan.languages.database}</span>
+    </div>
     <div class="fn__flex-1"></div>
-    <svg class="block__logoicon"><use xlink:href="#iconDatabase"></use></svg><span>${table.avName || window.siyuan.languages.database}</span>
-    <div class="fn__flex-1"></div>
+    <span class="fn__space"></span>
+    <span data-type="remove" class="block__icon block__icon--warning block__icon--show b3-tooltips__w b3-tooltips" aria-label="${window.siyuan.languages.removeAV}"><svg><use xlink:href="#iconTrashcan"></use></svg></span>
 </div>`;
             // siyuan://blocks/20241030141818-poymuxo
             for (let i = 0; i < table.keyValues.length; i++) {
@@ -201,13 +205,13 @@ export const renderAVAttribute = (element: HTMLElement, id: string, protyle: IPr
     <div data-av-id="${table.avID}" data-col-id="${item.values[0].keyID}" data-block-id="${item.values[0].blockID}" data-id="${item.values[0].id}" data-type="${item.values[0].type}" 
 data-options="${item.key?.options ? escapeAttr(JSON.stringify(item.key.options)) : "[]"}" 
 ${["text", "number", "date", "url", "phone", "template", "email"].includes(item.values[0].type) ? "" : `placeholder="${window.siyuan.languages.empty}"`}  
-class="fn__flex-1 fn__flex${["url", "text", "number", "email", "phone"].includes(item.values[0].type) ? "" : " custom-attr__avvalue"}${["block", "created", "updated"].includes(item.values[0].type) ? " custom-attr__avvalue--readonly" : ""}">${genAVValueHTML(item.values[0])}</div>
+class="fn__flex-1 fn__flex${["url", "text", "number", "email", "phone", "block"].includes(item.values[0].type) ? "" : " custom-attr__avvalue"}${["created", "updated"].includes(item.values[0].type) ? " custom-attr__avvalue--readonly" : ""}">${genAVValueHTML(item.values[0])}</div>
 </div>`;
             }
             if (renderAddButton) {
                 innerHTML += `<div class="fn__hr"></div>
 <button data-type="addColumn" class="b3-button b3-button--cancel"><svg><use xlink:href="#iconAdd"></use></svg>${window.siyuan.languages.newCol}</button>
-<div class="fn__hr--b"></div>`;
+<div class="fn__hr--b"></div><div class="fn__hr--b"></div>`;
             }
             html += `<div data-av-id="${table.avID}" data-node-id="${id}" data-type="NodeAttributeView">${innerHTML}</div>`;
 
@@ -363,6 +367,32 @@ class="fn__flex-1 fn__flex${["url", "text", "number", "email", "phone"].includes
                 }
             });
             element.addEventListener("click", (event) => {
+                const removeElement = hasClosestByAttribute(event.target as HTMLElement, "data-type", "remove");
+                if (removeElement) {
+                    const blockElement = hasClosestBlock(removeElement);
+                    if (blockElement) {
+                        transaction(protyle, [{
+                            action: "removeAttrViewBlock",
+                            srcIDs: [id],
+                            avID: blockElement.dataset.avId,
+                        }, {
+                            action: "doUpdateUpdated",
+                            id,
+                            data: dayjs().format("YYYYMMDDHHmmss"),
+                        }]);
+                        blockElement.remove();
+                        if (!element.innerHTML) {
+                            window.siyuan.dialogs.find(item => {
+                                if (item.element.getAttribute("data-key") === Constants.DIALOG_ATTR) {
+                                    item.destroy();
+                                    return true;
+                                }
+                            });
+                        }
+                    }
+                    event.stopPropagation();
+                    return;
+                }
                 openEdit(protyle, element, event);
                 // https://x.transmux.top/j/20241105132235-xxwvst1 副作用有待观察
                 event.stopPropagation();
@@ -409,6 +439,14 @@ class="fn__flex-1 fn__flex${["url", "text", "number", "email", "phone"].includes
                             }
                         };
                     }
+                } else if (type === "block") {
+                    value = {
+                        block: {
+                            content: item.value,
+                            id: item.parentElement.dataset.blockId,
+                        },
+                        isDetached: false
+                    };
                 }
                 fetchPost("/api/av/setAttributeViewBlockAttr", {
                     avID: item.parentElement.dataset.avId,
@@ -418,6 +456,8 @@ class="fn__flex-1 fn__flex${["url", "text", "number", "email", "phone"].includes
                 }, (setResponse) => {
                     if (type === "number") {
                         item.parentElement.querySelector(".fn__flex-center").textContent = setResponse.data.value.number.formattedContent;
+                    } else if (type === "block" && !item.value) {
+                        item.value = setResponse.data.value.block.content;
                     }
                 });
             });

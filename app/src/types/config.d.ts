@@ -268,7 +268,19 @@ declare namespace Config {
      * User interface language
      * Same as {@link IAppearance.lang}
      */
-    export type TLang = "en_US" | "es_ES" | "fr_FR" | "zh_CHT" | "zh_CN" | "ja_JP" | "it_IT" | "de_DE" | "he_IL" | "ru_RU" | "pl_PL";
+    export type TLang =
+        "en_US"
+        | "es_ES"
+        | "fr_FR"
+        | "zh_CHT"
+        | "zh_CN"
+        | "ja_JP"
+        | "it_IT"
+        | "de_DE"
+        | "he_IL"
+        | "ru_RU"
+        | "pl_PL"
+        | "ar_SA";
 
     /**
      * SiYuan bazaar related configuration
@@ -881,6 +893,7 @@ declare namespace Config {
         showInFolder: IKey;
         spaceRepetition: IKey;
         switchReadonly: IKey;
+        switchAdjust: IKey;
         undo: IKey;
         vLayout: IKey;
         wysiwyg: IKey;
@@ -1347,6 +1360,10 @@ declare namespace Config {
          */
         mode: number;
         /**
+         * Synchronization interval (unit: seconds)
+         */
+        interval: number;
+        /**
          * Whether to enable synchronization perception
          */
         perception: boolean;
@@ -1355,6 +1372,7 @@ declare namespace Config {
          * - `0`: SiYuan official cloud storage service
          * - `2`: Object storage service compatible with S3 protocol
          * - `3`: Network storage service using WebDAV protocol
+         * - `4`: Local file system
          */
         provider: number;
         s3: ISyncS3;
@@ -1367,6 +1385,7 @@ declare namespace Config {
          */
         synced: number;
         webdav: ISyncWebDAV;
+        local: ISyncLocal;
     }
 
     /**
@@ -1442,6 +1461,28 @@ declare namespace Config {
     }
 
     /**
+     * Local file system related configuration
+     */
+    export interface ISyncLocal {
+        /**
+         * The full path of local directory
+         *
+         * Examples:
+         * - Windows: `"D:/path/to/repos/directory"`
+         * - Unix: `"/path/to/repos/directory"`
+         */
+        endpoint: string;
+        /**
+         * Timeout (unit: seconds)
+         */
+        timeout: number;
+        /**
+         * Concurrent requests.
+         */
+        concurrentReqs: number;
+    }
+
+    /**
      * System related information
      */
     export interface ISystem {
@@ -1465,6 +1506,7 @@ declare namespace Config {
          * - `docker`: Docker container
          * - `android`: Android device
          * - `ios`: iOS device
+         * - `harmony`: HarmonyOS device
          * - `std`: Desktop Electron environment
          */
         container: TSystemContainer;
@@ -1529,10 +1571,6 @@ declare namespace Config {
          * Operating system platform name
          */
         osPlatform: string;
-        /**
-         * Whether to upload error logs
-         */
-        uploadErrLog: boolean;
         /**
          * The absolute path of the workspace directory
          */

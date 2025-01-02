@@ -19,6 +19,7 @@ package model
 import (
 	"bytes"
 	"crypto/rand"
+	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
@@ -500,7 +501,7 @@ func buildSnapshots(logs []*dejavu.Log) (ret []*Snapshot) {
 
 func statTypesByPath(files []*entity.File) (ret []*TypeCount) {
 	for _, f := range files {
-		ext := path.Ext(f.Path)
+		ext := util.Ext(f.Path)
 		if "" == ext {
 			ext = "NoExt"
 		}
@@ -555,6 +556,7 @@ func ImportRepoKey(base64Key string) (retKey string, err error) {
 
 	Conf.Repo.Key = key
 	Conf.Save()
+	logging.LogInfof("imported repo key [%x]", sha1.Sum(Conf.Repo.Key))
 
 	if err = os.RemoveAll(Conf.Repo.GetSaveDir()); err != nil {
 		return
@@ -669,6 +671,7 @@ func InitRepoKeyFromPassphrase(passphrase string) (err error) {
 
 	Conf.Repo.Key = key
 	Conf.Save()
+	logging.LogInfof("inited repo key [%x]", sha1.Sum(Conf.Repo.Key))
 
 	initDataRepo()
 	return
@@ -705,6 +708,7 @@ func InitRepoKey() (err error) {
 	}
 	Conf.Repo.Key = key
 	Conf.Save()
+	logging.LogInfof("inited repo key [%x]", sha1.Sum(Conf.Repo.Key))
 
 	initDataRepo()
 	return
@@ -799,7 +803,7 @@ func DownloadCloudSnapshot(tag, id string) (err error) {
 			util.PushErrMsg(Conf.Language(29), 5000)
 			return
 		}
-	case conf.ProviderWebDAV, conf.ProviderS3:
+	case conf.ProviderWebDAV, conf.ProviderS3, conf.ProviderLocal:
 		if !IsPaidUser() {
 			util.PushErrMsg(Conf.Language(214), 5000)
 			return
@@ -841,7 +845,7 @@ func UploadCloudSnapshot(tag, id string) (err error) {
 			util.PushErrMsg(Conf.Language(29), 5000)
 			return
 		}
-	case conf.ProviderWebDAV, conf.ProviderS3:
+	case conf.ProviderWebDAV, conf.ProviderS3, conf.ProviderLocal:
 		if !IsPaidUser() {
 			util.PushErrMsg(Conf.Language(214), 5000)
 			return
@@ -887,7 +891,7 @@ func RemoveCloudRepoTag(tag string) (err error) {
 			util.PushErrMsg(Conf.Language(29), 5000)
 			return
 		}
-	case conf.ProviderWebDAV, conf.ProviderS3:
+	case conf.ProviderWebDAV, conf.ProviderS3, conf.ProviderLocal:
 		if !IsPaidUser() {
 			util.PushErrMsg(Conf.Language(214), 5000)
 			return
@@ -919,7 +923,7 @@ func GetCloudRepoTagSnapshots() (ret []*dejavu.Log, err error) {
 			util.PushErrMsg(Conf.Language(29), 5000)
 			return
 		}
-	case conf.ProviderWebDAV, conf.ProviderS3:
+	case conf.ProviderWebDAV, conf.ProviderS3, conf.ProviderLocal:
 		if !IsPaidUser() {
 			util.PushErrMsg(Conf.Language(214), 5000)
 			return
@@ -955,7 +959,7 @@ func GetCloudRepoSnapshots(page int) (ret []*dejavu.Log, pageCount, totalCount i
 			util.PushErrMsg(Conf.Language(29), 5000)
 			return
 		}
-	case conf.ProviderWebDAV, conf.ProviderS3:
+	case conf.ProviderWebDAV, conf.ProviderS3, conf.ProviderLocal:
 		if !IsPaidUser() {
 			util.PushErrMsg(Conf.Language(214), 5000)
 			return
@@ -1284,14 +1288,13 @@ func bootSyncRepo() (err error) {
 
 	isBootSyncing.Store(true)
 
-	start := time.Now()
-
 	waitGroup := sync.WaitGroup{}
 	var errs []error
 	waitGroup.Add(1)
 	go func() {
 		defer waitGroup.Done()
 
+		start := time.Now()
 		_, _, indexErr := indexRepoBeforeCloudSync(repo)
 		if indexErr != nil {
 			errs = append(errs, indexErr)
@@ -1307,6 +1310,8 @@ func bootSyncRepo() (err error) {
 			isBootSyncing.Store(false)
 			return
 		}
+
+		logging.LogInfof("boot index repo elapsed [%.2fs]", time.Since(start).Seconds())
 	}()
 
 	var fetchedFiles []*entity.File
@@ -1314,6 +1319,7 @@ func bootSyncRepo() (err error) {
 	go func() {
 		defer waitGroup.Done()
 
+		start := time.Now()
 		syncContext := map[string]interface{}{eventbus.CtxPushMsg: eventbus.CtxPushMsgToStatusBar}
 		cloudLatest, getErr := repo.GetCloudLatest(syncContext)
 		if nil != getErr {
@@ -1338,29 +1344,14 @@ func bootSyncRepo() (err error) {
 			isBootSyncing.Store(false)
 			return
 		}
+
+		logging.LogInfof("boot get sync cloud files elapsed [%.2fs]", time.Since(start).Seconds())
 	}()
 	waitGroup.Wait()
 	if 0 < len(errs) {
 		err = errs[0]
-		return
 	}
 
-	syncingFiles = sync.Map{}
-	syncingStorages.Store(false)
-	for _, fetchedFile := range fetchedFiles {
-		name := path.Base(fetchedFile.Path)
-		if strings.HasSuffix(name, ".sy") {
-			id := name[:len(name)-3]
-			syncingFiles.Store(id, true)
-			continue
-		}
-		if strings.HasPrefix(fetchedFile.Path, "/storage/") {
-			syncingStorages.Store(true)
-		}
-	}
-
-	elapsed := time.Since(start)
-	logging.LogInfof("boot get sync cloud files elapsed [%.2fs]", elapsed.Seconds())
 	if err != nil {
 		autoSyncErrCount++
 		planSyncAfter(fixSyncInterval)
@@ -1381,6 +1372,20 @@ func bootSyncRepo() (err error) {
 		BootSyncSucc = 1
 		isBootSyncing.Store(false)
 		return
+	}
+
+	syncingFiles = sync.Map{}
+	syncingStorages.Store(false)
+	for _, fetchedFile := range fetchedFiles {
+		name := path.Base(fetchedFile.Path)
+		if strings.HasSuffix(name, ".sy") {
+			id := name[:len(name)-3]
+			syncingFiles.Store(id, true)
+			continue
+		}
+		if strings.HasPrefix(fetchedFile.Path, "/storage/") {
+			syncingStorages.Store(true)
+		}
 	}
 
 	if 0 < len(fetchedFiles) {
@@ -1551,7 +1556,6 @@ func processSyncMergeResult(exit, byHand bool, mergeResult *dejavu.MergeResult, 
 			}
 			planSyncAfter(delay)
 		}
-		util.PushClearProgress()
 		return
 	}
 
@@ -1841,6 +1845,8 @@ func newRepository() (ret *dejavu.Repo, err error) {
 		webdavClient.SetTimeout(time.Duration(cloudConf.WebDAV.Timeout) * time.Second)
 		webdavClient.SetTransport(httpclient.NewTransport(cloudConf.WebDAV.SkipTlsVerify))
 		cloudRepo = cloud.NewWebDAV(&cloud.BaseCloud{Conf: cloudConf}, webdavClient)
+	case conf.ProviderLocal:
+		cloudRepo = cloud.NewLocal(&cloud.BaseCloud{Conf: cloudConf})
 	default:
 		err = fmt.Errorf("unknown cloud provider [%d]", Conf.Sync.Provider)
 		return
@@ -2124,6 +2130,12 @@ func buildCloudConf() (ret *cloud.Conf, err error) {
 			SkipTlsVerify:  Conf.Sync.WebDAV.SkipTlsVerify,
 			Timeout:        Conf.Sync.WebDAV.Timeout,
 			ConcurrentReqs: Conf.Sync.WebDAV.ConcurrentReqs,
+		}
+	case conf.ProviderLocal:
+		ret.Local = &cloud.ConfLocal{
+			Endpoint:       Conf.Sync.Local.Endpoint,
+			Timeout:        Conf.Sync.Local.Timeout,
+			ConcurrentReqs: Conf.Sync.Local.ConcurrentReqs,
 		}
 	default:
 		err = fmt.Errorf("invalid provider [%d]", Conf.Sync.Provider)

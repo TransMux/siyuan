@@ -252,7 +252,7 @@ func checkSync(boot, exit, byHand bool) bool {
 		if !IsSubscriber() {
 			return false
 		}
-	case conf.ProviderWebDAV, conf.ProviderS3:
+	case conf.ProviderWebDAV, conf.ProviderS3, conf.ProviderLocal:
 		if !IsPaidUser() {
 			return false
 		}
@@ -389,6 +389,20 @@ func SetSyncEnable(b bool) {
 	return
 }
 
+func SetSyncInterval(interval int) {
+	if 30 > interval {
+		interval = 30
+	}
+	if 43200 < interval {
+		interval = 43200
+	}
+
+	Conf.Sync.Interval = interval
+	Conf.Save()
+	planSyncAfter(time.Duration(interval) * time.Second)
+	return
+}
+
 func SetSyncPerception(b bool) {
 	if util.ContainerDocker == util.Container {
 		b = false
@@ -457,13 +471,48 @@ func SetSyncProviderWebDAV(webdav *conf.WebDAV) (err error) {
 	return
 }
 
+func SetSyncProviderLocal(local *conf.Local) (err error) {
+	local.Endpoint = strings.TrimSpace(local.Endpoint)
+	local.Endpoint = util.NormalizeLocalPath(local.Endpoint)
+
+	absPath, err := filepath.Abs(local.Endpoint)
+	if nil != err {
+		msg := fmt.Sprintf("get endpoint [%s] abs path failed: %s", local.Endpoint, err)
+		logging.LogErrorf(msg)
+		err = errors.New(fmt.Sprintf(Conf.Language(77), msg))
+		return
+	}
+	if !gulu.File.IsExist(absPath) {
+		msg := fmt.Sprintf("endpoint [%s] not exist", local.Endpoint+" ("+absPath+")")
+		logging.LogErrorf(msg)
+		err = errors.New(fmt.Sprintf(Conf.Language(77), msg))
+		return
+	}
+	if util.IsAbsPathInWorkspace(absPath) {
+		msg := fmt.Sprintf("endpoint [%s] is in workspace", local.Endpoint+" ("+absPath+")")
+		logging.LogErrorf(msg)
+		err = errors.New(fmt.Sprintf(Conf.Language(77), msg))
+		return
+	}
+
+	local.Timeout = util.NormalizeTimeout(local.Timeout)
+	local.ConcurrentReqs = util.NormalizeConcurrentReqs(local.ConcurrentReqs, conf.ProviderLocal)
+
+	Conf.Sync.Local = local
+	Conf.Save()
+	return
+}
+
 var (
 	syncLock  = sync.Mutex{}
 	isSyncing = atomic.Bool{}
 )
 
 func CreateCloudSyncDir(name string) (err error) {
-	if conf.ProviderSiYuan != Conf.Sync.Provider {
+	switch Conf.Sync.Provider {
+	case conf.ProviderSiYuan, conf.ProviderLocal:
+		break
+	default:
 		err = errors.New(Conf.Language(131))
 		return
 	}
@@ -488,7 +537,10 @@ func CreateCloudSyncDir(name string) (err error) {
 }
 
 func RemoveCloudSyncDir(name string) (err error) {
-	if conf.ProviderSiYuan != Conf.Sync.Provider {
+	switch Conf.Sync.Provider {
+	case conf.ProviderSiYuan, conf.ProviderLocal:
+		break
+	default:
 		err = errors.New(Conf.Language(131))
 		return
 	}
@@ -560,6 +612,10 @@ func ListCloudSyncDir() (syncDirs []*Sync, hSize string, err error) {
 	if conf.ProviderSiYuan == Conf.Sync.Provider {
 		hSize = humanize.BytesCustomCeil(uint64(size), 2)
 	}
+	if conf.ProviderS3 == Conf.Sync.Provider {
+		Conf.Sync.CloudName = syncDirs[0].CloudName
+		Conf.Save()
+	}
 	return
 }
 
@@ -592,6 +648,8 @@ func formatRepoErrorMsg(err error) string {
 		msgLowerCase := strings.ToLower(msg)
 		if strings.Contains(msgLowerCase, "permission denied") || strings.Contains(msg, "access is denied") {
 			msg = Conf.Language(33)
+		} else if strings.Contains(msgLowerCase, "region was not a valid DNS name") {
+			msg = Conf.language(254)
 		} else if strings.Contains(msgLowerCase, "device or resource busy") || strings.Contains(msg, "is being used by another") {
 			msg = fmt.Sprintf(Conf.Language(85), err)
 		} else if strings.Contains(msgLowerCase, "cipher: message authentication failed") {
@@ -600,7 +658,7 @@ func formatRepoErrorMsg(err error) string {
 			msg = Conf.Language(24)
 		} else if strings.Contains(msgLowerCase, "net/http: request canceled while waiting for connection") || strings.Contains(msgLowerCase, "exceeded while awaiting") || strings.Contains(msgLowerCase, "context deadline exceeded") || strings.Contains(msgLowerCase, "timeout") || strings.Contains(msgLowerCase, "context cancellation while reading body") {
 			msg = Conf.Language(24)
-		} else if strings.Contains(msgLowerCase, "connection was") || strings.Contains(msgLowerCase, "reset by peer") || strings.Contains(msgLowerCase, "refused") || strings.Contains(msgLowerCase, "socket") || strings.Contains(msgLowerCase, "closed idle connection") || strings.Contains(msgLowerCase, "eof") {
+		} else if strings.Contains(msgLowerCase, "connection") || strings.Contains(msgLowerCase, "refused") || strings.Contains(msgLowerCase, "socket") || strings.Contains(msgLowerCase, "eof") || strings.Contains(msgLowerCase, "closed") || strings.Contains(msgLowerCase, "network") {
 			msg = Conf.Language(28)
 		}
 	}
@@ -641,7 +699,7 @@ func getSyncIgnoreLines() (ret []string) {
 
 func IncSync() {
 	syncSameCount.Store(0)
-	planSyncAfter(30 * time.Second)
+	planSyncAfter(time.Duration(Conf.Sync.Interval) * time.Second)
 }
 
 func planSyncAfter(d time.Duration) {
@@ -664,6 +722,9 @@ func isProviderOnline(byHand bool) (ret bool) {
 		checkURL = Conf.Sync.WebDAV.Endpoint
 		skipTlsVerify = Conf.Sync.WebDAV.SkipTlsVerify
 		timeout = Conf.Sync.WebDAV.Timeout * 1000
+	case conf.ProviderLocal:
+		checkURL = "file://" + Conf.Sync.Local.Endpoint
+		timeout = Conf.Sync.Local.Timeout * 1000
 	default:
 		logging.LogWarnf("unknown provider: %d", Conf.Sync.Provider)
 		return false

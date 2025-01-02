@@ -49,7 +49,6 @@ export const exportConfig = {
         <option value="2" ${window.siyuan.config.export.blockRefMode === 2 ? "selected" : ""}>${window.siyuan.languages.export2}</option>
         <option value="3" ${window.siyuan.config.export.blockRefMode === 3 ? "selected" : ""}>${window.siyuan.languages.export3}</option>
         <option value="4" ${window.siyuan.config.export.blockRefMode === 4 ? "selected" : ""}>${window.siyuan.languages.export4}</option>
-        <option value="5" ${window.siyuan.config.export.blockRefMode === 5 ? "selected" : ""}>${window.siyuan.languages.export9}</option>
     </select>
 </div>
 <div class="fn__flex b3-label config__item">
@@ -258,7 +257,7 @@ export const exportConfig = {
         exportConfig.element.querySelector("#exportData").addEventListener("click", async () => {
             /// #if BROWSER
             fetchPost("/api/export/exportData", {}, response => {
-                window.location.href = response.data.zip;
+                openByMobile(response.data.zip);
             });
             /// #else
             const result = await ipcRenderer.invoke(Constants.SIYUAN_GET, {

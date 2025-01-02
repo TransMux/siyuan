@@ -418,6 +418,10 @@ export const paste = async (protyle: IProtyle, event: (ClipboardEvent | DragEven
     // 处理代码块粘贴
     if (nodeElement.getAttribute("data-type") === "NodeCodeBlock" ||
         protyle.toolbar.getCurrentType(range).includes("code")) {
+        // https://github.com/siyuan-note/siyuan/issues/13552
+        textPlain = textPlain.replace(/\u200D```/g, "```");
+        textPlain = textPlain.replace(/```/g, "\u200D```");
+
         insertHTML(textPlain, protyle);
         return;
     } else if (siyuanHTML) {
@@ -457,6 +461,10 @@ export const paste = async (protyle: IProtyle, event: (ClipboardEvent | DragEven
                 // 复制 HTML 块粘贴出来的不是 HTML 块 https://github.com/siyuan-note/siyuan/issues/12994
                 tempInnerHTML = Lute.UnEscapeHTMLStr(tempInnerHTML);
             }
+
+            // https://github.com/siyuan-note/siyuan/issues/13552
+            tempInnerHTML = tempInnerHTML.replace(/\u200D```/g, "```");
+
             insertHTML(tempInnerHTML, protyle, isBlock, false, true);
         }
         filterClipboardHint(protyle, protyle.lute.BlockDOM2StdMd(tempInnerHTML));
@@ -525,6 +533,7 @@ export const paste = async (protyle: IProtyle, event: (ClipboardEvent | DragEven
             return;
         } else if (files && files.length > 0) {
             uploadFiles(protyle, files);
+            return;
         } else if (textPlain.trim() !== "" && files && files.length === 0) {
             if (range.toString() !== "") {
                 const firstLine = textPlain.split("\n")[0];
@@ -553,6 +562,10 @@ export const paste = async (protyle: IProtyle, event: (ClipboardEvent | DragEven
                     }
                 }
             }
+
+            // https://github.com/siyuan-note/siyuan/issues/13552
+            textPlain = textPlain.replace(/\u200D```/g, "```");
+
             let textPlainDom: string;
             if (isFileAnnotation(textPlain)) {
                 console.log("Patching lute processing logic for temp solution of multi-layer assets", textPlain);

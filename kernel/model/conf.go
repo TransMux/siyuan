@@ -18,6 +18,7 @@ package model
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,12 +29,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/88250/go-humanize"
 	"github.com/88250/gulu"
 	"github.com/88250/lute"
 	"github.com/88250/lute/ast"
 	"github.com/Xuanwo/go-locale"
-	"github.com/getsentry/sentry-go"
 	"github.com/sashabaranov/go-openai"
 	"github.com/siyuan-note/eventbus"
 	"github.com/siyuan-note/filelock"
@@ -266,9 +265,10 @@ func InitConf() {
 	if nil == Conf.Export {
 		Conf.Export = conf.NewExport()
 	}
-	if 0 == Conf.Export.BlockRefMode || 1 == Conf.Export.BlockRefMode {
+	if 0 == Conf.Export.BlockRefMode || 1 == Conf.Export.BlockRefMode || 5 == Conf.Export.BlockRefMode {
 		// 废弃导出选项引用块转换为原始块和引述块 https://github.com/siyuan-note/siyuan/issues/3155
-		Conf.Export.BlockRefMode = 4 // 改为脚注
+		// 锚点哈希模式和脚注模式合并 https://github.com/siyuan-note/siyuan/issues/13331
+		Conf.Export.BlockRefMode = 4 // 改为脚注+锚点哈希
 	}
 	if "" == Conf.Export.PandocBin {
 		Conf.Export.PandocBin = util.PandocBinPath
@@ -342,6 +342,12 @@ func InitConf() {
 	if 0 == Conf.Sync.Mode {
 		Conf.Sync.Mode = 1
 	}
+	if 30 > Conf.Sync.Interval {
+		Conf.Sync.Interval = 30
+	}
+	if 60*60*12 < Conf.Sync.Interval {
+		Conf.Sync.Interval = 60 * 60 * 12
+	}
 	if nil == Conf.Sync.S3 {
 		Conf.Sync.S3 = &conf.S3{PathStyle: true, SkipTlsVerify: true}
 	}
@@ -354,6 +360,13 @@ func InitConf() {
 	Conf.Sync.WebDAV.Endpoint = util.NormalizeEndpoint(Conf.Sync.WebDAV.Endpoint)
 	Conf.Sync.WebDAV.Timeout = util.NormalizeTimeout(Conf.Sync.WebDAV.Timeout)
 	Conf.Sync.WebDAV.ConcurrentReqs = util.NormalizeConcurrentReqs(Conf.Sync.WebDAV.ConcurrentReqs, conf.ProviderWebDAV)
+	if nil == Conf.Sync.Local {
+		Conf.Sync.Local = &conf.Local{}
+	}
+	Conf.Sync.Local.Endpoint = util.NormalizeLocalPath(Conf.Sync.Local.Endpoint)
+	Conf.Sync.Local.Timeout = util.NormalizeTimeout(Conf.Sync.Local.Timeout)
+	Conf.Sync.Local.ConcurrentReqs = util.NormalizeConcurrentReqs(Conf.Sync.Local.ConcurrentReqs, conf.ProviderLocal)
+
 	if util.ContainerDocker == util.Container {
 		Conf.Sync.Perception = false
 	}
@@ -390,6 +403,9 @@ func InitConf() {
 	}
 	if 1 > Conf.Repo.RetentionIndexesDaily {
 		Conf.Repo.RetentionIndexesDaily = 2
+	}
+	if 0 < len(Conf.Repo.Key) {
+		logging.LogInfof("repo key [%x]", sha1.Sum(Conf.Repo.Key))
 	}
 
 	if nil == Conf.Search {
@@ -497,15 +513,6 @@ func InitConf() {
 
 	Conf.Save()
 	logging.SetLogLevel(Conf.LogLevel)
-
-	if Conf.System.UploadErrLog {
-		logging.LogInfof("user has enabled [Automatically upload error messages and diagnostic data]")
-		sentry.Init(sentry.ClientOptions{
-			Dsn:         "https://bdff135f14654ae58a054adeceb2c308@o1173696.ingest.sentry.io/6269178",
-			Release:     util.Ver,
-			Environment: util.Mode,
-		})
-	}
 
 	if Conf.System.DisableGoogleAnalytics {
 		logging.LogInfof("user has disabled [Google Analytics]")
@@ -628,19 +635,17 @@ func Close(force, setCurrentWorkspace bool, execInstallPkg int) (exitCode int) {
 
 	util.IsExiting.Store(true)
 	waitSecondForExecInstallPkg := false
-	if !skipNewVerInstallPkg() {
-		if newVerInstallPkgPath := getNewVerInstallPkgPath(); "" != newVerInstallPkgPath {
-			if 2 == execInstallPkg || (force && 0 == execInstallPkg) { // 执行新版本安装
-				waitSecondForExecInstallPkg = true
-				if gulu.OS.IsWindows() {
-					util.PushMsg(Conf.Language(130), 1000*30)
-				}
-				go execNewVerInstallPkg(newVerInstallPkgPath)
-			} else if 0 == execInstallPkg { // 新版本安装包已经准备就绪
-				exitCode = 2
-				logging.LogInfof("the new version install pkg is ready [%s], waiting for the user's next instruction", newVerInstallPkgPath)
-				return
+	if !skipNewVerInstallPkg() && "" != newVerInstallPkgPath {
+		if 2 == execInstallPkg || (force && 0 == execInstallPkg) { // 执行新版本安装
+			waitSecondForExecInstallPkg = true
+			if gulu.OS.IsWindows() {
+				util.PushMsg(Conf.Language(130), 1000*30)
 			}
+			go execNewVerInstallPkg(newVerInstallPkgPath)
+		} else if 0 == execInstallPkg { // 新版本安装包已经准备就绪
+			exitCode = 2
+			logging.LogInfof("the new version install pkg is ready [%s], waiting for the user's next instruction", newVerInstallPkgPath)
+			return
 		}
 	}
 
@@ -835,7 +840,8 @@ func (conf *AppConf) language(num int) (ret string) {
 }
 
 func InitBoxes() {
-	initialized := 0 < treenode.CountBlocks()
+	blockCount := treenode.CountBlocks()
+	initialized := 0 < blockCount
 	for _, box := range Conf.GetOpenedBoxes() {
 		box.UpdateHistoryGenerated() // 初始化历史生成时间为当前时间
 
@@ -844,11 +850,7 @@ func InitBoxes() {
 		}
 	}
 
-	var dbSize string
-	if dbFile, err := os.Stat(util.DBPath); err == nil {
-		dbSize = humanize.BytesCustomCeil(uint64(dbFile.Size()), 2)
-	}
-	logging.LogInfof("database size [%s], tree/block count [%d/%d]", dbSize, treenode.CountTrees(), treenode.CountBlocks())
+	logging.LogInfof("tree/block count [%d/%d]", treenode.CountTrees(), blockCount)
 }
 
 func IsSubscriber() bool {

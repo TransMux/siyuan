@@ -26,6 +26,7 @@ import (
 	"github.com/88250/lute/html"
 	"github.com/gin-gonic/gin"
 	"github.com/siyuan-note/logging"
+	"github.com/siyuan-note/siyuan/kernel/filesys"
 	"github.com/siyuan-note/siyuan/kernel/model"
 	"github.com/siyuan-note/siyuan/kernel/util"
 )
@@ -223,6 +224,22 @@ func setBlockReminder(c *gin.Context) {
 	}
 }
 
+func getUnfoldedParentID(c *gin.Context) {
+	ret := gulu.Ret.NewResult()
+	defer c.JSON(http.StatusOK, ret)
+
+	arg, ok := util.JsonArg(c, ret)
+	if !ok {
+		return
+	}
+
+	id := arg["id"].(string)
+	parentID := model.GetUnfoldedParentID(id)
+	ret.Data = map[string]interface{}{
+		"parentID": parentID,
+	}
+}
+
 func checkBlockFold(c *gin.Context) {
 	ret := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, ret)
@@ -320,7 +337,10 @@ func getContentWordCount(c *gin.Context) {
 	}
 
 	content := arg["content"].(string)
-	ret.Data = model.ContentStat(content)
+	ret.Data = map[string]any{
+		"reqId": arg["reqId"],
+		"stat":  filesys.ContentStat(content),
+	}
 }
 
 func getBlocksWordCount(c *gin.Context) {
@@ -337,7 +357,10 @@ func getBlocksWordCount(c *gin.Context) {
 	for _, id := range idsArg {
 		ids = append(ids, id.(string))
 	}
-	ret.Data = model.BlocksWordCount(ids)
+	ret.Data = map[string]any{
+		"reqId": arg["reqId"],
+		"stat":  filesys.BlocksWordCount(ids),
+	}
 }
 
 func getTreeStat(c *gin.Context) {
@@ -350,7 +373,10 @@ func getTreeStat(c *gin.Context) {
 	}
 
 	id := arg["id"].(string)
-	ret.Data = model.StatTree(id)
+	ret.Data = map[string]any{
+		"reqId": arg["reqId"],
+		"stat":  filesys.StatTree(id),
+	}
 }
 
 func getDOMText(c *gin.Context) {
@@ -376,7 +402,10 @@ func getRefText(c *gin.Context) {
 	}
 
 	id := arg["id"].(string)
-	model.FlushTxQueue()
+	if util.InvalidIDPattern(id, ret) {
+		return
+	}
+
 	refText := model.GetBlockRefText(id)
 	if "" == refText {
 		// 空块返回 id https://github.com/siyuan-note/siyuan/issues/10259
@@ -409,7 +438,7 @@ func getRefIDs(c *gin.Context) {
 	}
 
 	id := arg["id"].(string)
-	refIDs, refTexts, defIDs := model.GetBlockRefs(id)
+	refIDs, refTexts, defIDs := model.GetBlockRefs(id, true)
 	ret.Data = map[string][]string{
 		"refIDs":   refIDs,
 		"refTexts": refTexts,

@@ -18,6 +18,9 @@ const forwardStack: IBackStack[] = [];
 
 const focusStack = (backStack: IBackStack) => {
     const protyle = getCurrentEditor().protyle;
+    // 前进后快速后退会导致滚动错位 https://ld246.com/article/1734018624070
+    protyle.observerLoad.disconnect();
+
     window.siyuan.storage[Constants.LOCAL_DOCINFO] = {
         id: backStack.id,
     };
@@ -95,6 +98,10 @@ const focusStack = (backStack: IBackStack) => {
             setReadonlyByConfig(protyle, true);
         }
         protyle.contentElement.scrollTop = backStack.scrollTop;
+        // 等待 av 等加载 https://ld246.com/article/1734018624070
+        setTimeout(() => {
+            protyle.contentElement.scrollTop = backStack.scrollTop;
+        }, Constants.TIMEOUT_LOAD);
     });
 };
 
@@ -146,9 +153,13 @@ export const goBack = () => {
         closePanel();
         return;
     }
-    if (window.JSAndroid && window.siyuan.backStack.length < 1) {
+    if ((window.JSAndroid || window.JSHarmony) && window.siyuan.backStack.length < 1) {
         if (document.querySelector('#message [data-id="exitTip"]')) {
-            window.JSAndroid.returnDesktop();
+            if (window.JSAndroid) {
+                window.JSAndroid.returnDesktop();
+            } else if (window.JSHarmony) {
+                window.JSHarmony.returnDesktop();
+            }
         } else {
             showMessage(window.siyuan.languages.returnDesktop, 3000, "info", "exitTip");
         }

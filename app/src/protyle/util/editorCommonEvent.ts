@@ -874,7 +874,7 @@ export const dropEvent = (protyle: IProtyle, editorElement: HTMLElement) => {
                 let html = "";
                 for (let i = 0; i < selectedIds.length; i++) {
                     const response = await fetchSyncPost("/api/block/getRefText", {id: selectedIds[i]});
-                    html += `((${selectedIds[i]} '${response.data}')) `;
+                    html += protyle.lute.Md2BlockDOM(`((${selectedIds[i]} '${response.data}'))`);
                 }
                 insertHTML(html, protyle);
             } else if (event.shiftKey) {
@@ -895,7 +895,9 @@ export const dropEvent = (protyle: IProtyle, editorElement: HTMLElement) => {
                             sourceElements.push(elementItem);
                         }
                     });
-                } else {    // 跨窗口拖拽
+                } else if (window.siyuan.config.system.workspaceDir.toLowerCase() === gutterTypes[3]) {
+                    // 跨窗口拖拽
+                    // 不能跨工作区域拖拽 https://github.com/siyuan-note/siyuan/issues/13582
                     const targetProtyleElement = document.createElement("template");
                     targetProtyleElement.innerHTML = `<div>${event.dataTransfer.getData(gutterType)}</div>`;
                     targetProtyleElement.content.querySelectorAll(queryClass.substring(0, queryClass.length - 1)).forEach(elementItem => {
@@ -1071,7 +1073,7 @@ export const dropEvent = (protyle: IProtyle, editorElement: HTMLElement) => {
         } else if (event.dataTransfer.getData(Constants.SIYUAN_DROP_FILE)?.split("-").length > 1) {
             // 文件树拖拽
             const ids = event.dataTransfer.getData(Constants.SIYUAN_DROP_FILE).split(",");
-            if (!event.altKey) {
+            if (!event.altKey && (!targetElement || !targetElement.classList.contains("av__row"))) {
                 if (event.y > protyle.wysiwyg.element.lastElementChild.getBoundingClientRect().bottom) {
                     insertEmptyBlock(protyle, "afterend", protyle.wysiwyg.element.lastElementChild.getAttribute("data-node-id"));
                 } else {
@@ -1085,7 +1087,7 @@ export const dropEvent = (protyle: IProtyle, editorElement: HTMLElement) => {
                 let html = "";
                 for (let i = 0; i < ids.length; i++) {
                     const response = await fetchSyncPost("/api/block/getRefText", {id: ids[i]});
-                    html += `((${ids[i]} '${response.data}')) `;
+                    html += protyle.lute.Md2BlockDOM(`((${ids[i]} '${response.data}'))`);
                 }
                 insertHTML(html, protyle);
             } else if (targetElement && !protyle.options.backlinkData && targetElement.className.indexOf("dragover__") > -1) {
@@ -1132,15 +1134,28 @@ export const dropEvent = (protyle: IProtyle, editorElement: HTMLElement) => {
                         blockElement.setAttribute("updated", newUpdated);
                     }
                 } else {
-                    for (let i = 0; i < ids.length; i++) {
-                        if (ids[i]) {
-                            await fetchSyncPost("/api/filetree/doc2Heading", {
-                                srcID: ids[i],
-                                after: targetElement.classList.contains("dragover__bottom"),
-                                targetID: targetElement.getAttribute("data-node-id"),
-                            });
+                    if (targetElement.classList.contains("dragover__bottom")) {
+                        for (let i = ids.length - 1; i > -1; i--) {
+                            if (ids[i]) {
+                                await fetchSyncPost("/api/filetree/doc2Heading", {
+                                    srcID: ids[i],
+                                    after: true,
+                                    targetID: targetElement.getAttribute("data-node-id"),
+                                });
+                            }
+                        }
+                    } else {
+                        for (let i = 0; i < ids.length; i++) {
+                            if (ids[i]) {
+                                await fetchSyncPost("/api/filetree/doc2Heading", {
+                                    srcID: ids[i],
+                                    after: false,
+                                    targetID: targetElement.getAttribute("data-node-id"),
+                                });
+                            }
                         }
                     }
+
                     fetchPost("/api/filetree/getDoc", {
                         id: protyle.block.id,
                         size: window.siyuan.config.editor.dynamicLoadBlocks,
@@ -1333,7 +1348,7 @@ export const dropEvent = (protyle: IProtyle, editorElement: HTMLElement) => {
         } else if (targetElement && gutterType && gutterType.startsWith(`${Constants.SIYUAN_DROP_GUTTER}NodeAttributeViewRowMenu${Constants.ZWSP}`.toLowerCase())) {
             // 行只能拖拽当前 av 中
             if ((!targetElement.classList.contains("av__row") && !targetElement.classList.contains("av__row--util")) ||
-                !window.siyuan.dragElement.contains(targetElement)) {
+                (window.siyuan.dragElement && !window.siyuan.dragElement.contains(targetElement))) {
                 targetElement = false;
             }
         }

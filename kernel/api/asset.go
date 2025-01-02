@@ -57,6 +57,9 @@ func statAsset(c *gin.Context) {
 		if strings.Contains(p, ":") {
 			p = strings.TrimPrefix(p, "/")
 		}
+		if strings.Contains(p, "?") {
+			p = p[:strings.Index(p, "?")]
+		}
 	} else {
 		ret.Code = 1
 		return
@@ -86,7 +89,7 @@ func statAsset(c *gin.Context) {
 
 	ret.Data = map[string]interface{}{
 		"size":     info.Size(),
-		"hSize":    humanize.BytesCustomCeil(uint64(info.Size()), 2),
+		"hSize":    humanize.IBytesCustomCeil(uint64(info.Size()), 2),
 		"created":  created,
 		"hCreated": hCreated,
 		"updated":  updated,

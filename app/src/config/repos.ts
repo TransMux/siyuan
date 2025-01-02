@@ -6,6 +6,7 @@ import {processSync} from "../dialog/processSystem";
 import {getCloudURL} from "./util/about";
 import {openByMobile} from "../protyle/util/compatibility";
 import {confirmDialog} from "../dialog/confirmDialog";
+import {isKernelInMobile} from "../util/functions";
 
 const renderProvider = (provider: number) => {
     if (provider === 0) {
@@ -74,7 +75,7 @@ const renderProvider = (provider: number) => {
     <input id="bucket" class="b3-text-field fn__block" value="${window.siyuan.config.sync.s3.bucket}">
 </div>
 <div class="b3-label b3-label--inner fn__flex">
-    <div class="fn__flex-center fn__size200">Region</div>
+    <div class="fn__flex-center fn__size200">Region ID</div>
     <div class="fn__space"></div>
     <input id="region" class="b3-text-field fn__block" value="${window.siyuan.config.sync.s3.region}">
 </div>
@@ -124,7 +125,7 @@ const renderProvider = (provider: number) => {
     ${window.siyuan.languages.syncThirdPartyProviderWebDAVIntro}
     <div class="fn__hr"></div>
     <em>${window.siyuan.languages.proFeature}</em>
-    <div class="fn__hr"></div>    
+    <div class="fn__hr"></div>
     ${window.siyuan.languages.syncThirdPartyProviderTip}
 </div>
 <div class="b3-label b3-label--inner fn__flex">
@@ -177,6 +178,36 @@ const renderProvider = (provider: number) => {
     <button class="b3-button b3-button--outline fn__size200" data-action="exportData" data-type="webdav">
         <svg><use xlink:href="#iconUpload"></use></svg>${window.siyuan.languages.export}
     </button>
+</div>`;
+    } else if (provider === 4) {
+        if (isKernelInMobile()) {
+            return `<div class="b3-label b3-label--inner">
+    ${window.siyuan.languages.syncThirdPartyProviderLocalIntro}
+    <div class="fn__hr"></div>
+    <em>${window.siyuan.languages.proFeature}</em>
+    <div class="fn__hr"></div>
+    ${window.siyuan.languages.deviceNotSupport}
+</div>`;
+        }
+        return `<div class="b3-label b3-label--inner">
+    ${window.siyuan.languages.syncThirdPartyProviderLocalIntro}
+    <div class="fn__hr"></div>
+    <em>${window.siyuan.languages.proFeature}</em>
+</div>
+<div class="b3-label b3-label--inner fn__flex">
+    <div class="fn__flex-center fn__size200">Endpoint</div>
+    <div class="fn__space"></div>
+    <input id="endpoint" class="b3-text-field fn__block" value="${window.siyuan.config.sync.local.endpoint}">
+</div>
+<div class="b3-label b3-label--inner fn__flex">
+    <div class="fn__flex-center fn__size200">Timeout (s)</div>
+    <div class="fn__space"></div>
+    <input id="timeout" class="b3-text-field fn__block" type="number" min="7" max="300" value="${window.siyuan.config.sync.local.timeout}">
+</div>
+<div class="b3-label b3-label--inner fn__flex">
+    <div class="fn__flex-center fn__size200">Concurrent Reqs</div>
+    <div class="fn__space"></div>
+    <input id="localConcurrentReqs" class="b3-text-field fn__block" type="number" min="1" max="1024" value="${window.siyuan.config.sync.local.concurrentReqs}">
 </div>`;
     }
     return "";
@@ -326,6 +357,39 @@ const bindProviderEvent = () => {
                 fetchPost("/api/sync/setSyncProviderWebDAV", {webdav}, () => {
                     window.siyuan.config.sync.webdav = webdav;
                 });
+            } else if (window.siyuan.config.sync.provider === 4) {
+                let timeout = parseInt((providerPanelElement.querySelector("#timeout") as HTMLInputElement).value, 10);
+                if (7 > timeout) {
+                    timeout = 7;
+                }
+                if (300 < timeout) {
+                    timeout = 300;
+                }
+                let concurrentReqs = parseInt((providerPanelElement.querySelector("#localConcurrentReqs") as HTMLInputElement).value, 10);
+                if (1 > concurrentReqs) {
+                    concurrentReqs = 1;
+                }
+                if (1024 < concurrentReqs) {
+                    concurrentReqs = 1024;
+                }
+                (providerPanelElement.querySelector("#timeout") as HTMLInputElement).value = timeout.toString();
+                const local = {
+                    endpoint: (providerPanelElement.querySelector("#endpoint") as HTMLInputElement).value,
+                    timeout: timeout,
+                    concurrentReqs: concurrentReqs,
+                };
+                fetchPost("/api/sync/setSyncProviderLocal", {local}, (response) => {
+                    if (response.code === 0) {
+                        window.siyuan.config.sync.local = response.data.local;
+
+                        const endpoint = providerPanelElement.querySelector<HTMLInputElement>("#endpoint");
+                        if (endpoint) {
+                            endpoint.value = response.data.local.endpoint;
+                        }
+                    } else {
+                        window.siyuan.config.sync.local = local;
+                    }
+                });
             }
         });
     });
@@ -348,6 +412,7 @@ export const repos = {
         <option value="0" ${window.siyuan.config.sync.provider === 0 ? "selected" : ""}>SiYuan</option>
         <option value="2" ${window.siyuan.config.sync.provider === 2 ? "selected" : ""}>S3</option>
         <option value="3" ${window.siyuan.config.sync.provider === 3 ? "selected" : ""}>WebDAV</option>
+        <option value="4" ${window.siyuan.config.sync.provider === 4 ? "selected" : ""}>${window.siyuan.languages.localFlieSystem}</option>
     </select>
 </div>
 <div id="syncProviderPanel" class="b3-label">
@@ -392,6 +457,16 @@ export const repos = {
             <option value="3" ${window.siyuan.config.sync.mode === 3 ? "selected" : ""}>${window.siyuan.languages.syncMode3}</option>
         </select>
     </div>
+    <div class="fn__flex b3-label${(window.siyuan.config.sync.mode !== 1) ? " fn__none" : ""}">
+        <div class="fn__flex-1">
+            ${window.siyuan.languages.syncInterval}
+            <div class="b3-label__text">${window.siyuan.languages.syncIntervalTip}</div>
+        </div>
+        <span class="fn__space"></span>
+        <input type="number" min="30" max="43200" id="syncInterval" class="b3-text-field fn__flex-center" value="${window.siyuan.config.sync.interval}" >
+        <span class="fn__space"></span>        
+        <span class="fn__flex-center ft__on-surface">${window.siyuan.languages.second}</span> 
+    </div>
     <label class="fn__flex b3-label${(window.siyuan.config.sync.mode !== 1 || window.siyuan.config.system.container === "docker" || window.siyuan.config.sync.provider !== 0) ? " fn__none" : ""}">
         <div class="fn__flex-1">
             ${window.siyuan.languages.syncPerception}
@@ -434,6 +509,21 @@ export const repos = {
                 processSync();
             });
         });
+        const syncIntervalElement = repos.element.querySelector("#syncInterval") as HTMLInputElement;
+        syncIntervalElement.addEventListener("change", () => {
+            let interval = parseInt(syncIntervalElement.value);
+            if (30 > interval) {
+                interval = 30;
+            }
+            if (43200 < interval) {
+                interval = 43200;
+            }
+            syncIntervalElement.value = interval.toString();
+            fetchPost("/api/sync/setSyncInterval", {interval: interval}, () => {
+                window.siyuan.config.sync.interval = interval;
+                processSync();
+            });
+        });
         const syncPerceptionElement = repos.element.querySelector("#syncPerception") as HTMLInputElement;
         syncPerceptionElement.addEventListener("change", () => {
             fetchPost("/api/sync/setSyncPerception", {enabled: syncPerceptionElement.checked}, () => {
@@ -454,6 +544,11 @@ export const repos = {
                     syncPerceptionElement.parentElement.classList.remove("fn__none");
                 } else {
                     syncPerceptionElement.parentElement.classList.add("fn__none");
+                }
+                if (syncModeElement.value === "1") {
+                    syncIntervalElement.parentElement.classList.remove("fn__none");
+                } else {
+                    syncIntervalElement.parentElement.classList.add("fn__none");
                 }
                 window.siyuan.config.sync.mode = parseInt(syncModeElement.value, 10);
             });
@@ -477,6 +572,11 @@ export const repos = {
                     syncPerceptionElement.parentElement.classList.add("fn__none");
                 } else {
                     syncPerceptionElement.parentElement.classList.remove("fn__none");
+                }
+                if (window.siyuan.config.sync.mode !== 1) {
+                    syncIntervalElement.parentElement.classList.add("fn__none");
+                } else {
+                    syncIntervalElement.parentElement.classList.remove("fn__none");
                 }
             });
         });
