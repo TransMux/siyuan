@@ -20,6 +20,7 @@ import {countBlockWord} from "../../layout/status";
 import {isPaidUser, needSubscribe} from "../../util/needSubscribe";
 import {resize} from "../util/resize";
 import {processClonePHElement} from "../render/util";
+import { renderAVAttribute } from "../render/av/blockAttr";
 
 const removeTopElement = (updateElement: Element, protyle: IProtyle) => {
     // 移动到其他文档中，该块需移除
@@ -463,6 +464,7 @@ export const onTransaction = (protyle: IProtyle, operation: IOperation, isUndo: 
         return;
     }
     if (operation.action === "updateAttrs") { // 调用接口才推送
+        // siyuan://blocks/20250102171448-dfjgl4w
         const data = operation.data as any;
         const attrsResult: IObject = {};
         let bookmarkHTML = "";
@@ -482,6 +484,7 @@ export const onTransaction = (protyle: IProtyle, operation: IOperation, isUndo: 
             } else if (key === "memo") {
                 memoHTML = `<div class="protyle-attr--memo b3-tooltips b3-tooltips__sw" aria-label="${escapeHTML}"><svg><use xlink:href="#iconM"></use></svg></div>`;
             } else if (key === "custom-avs" && data.new["av-names"]) {
+                // 在这里拼接了数据库的图标
                 avHTML = `<div class="protyle-attr--av"><svg><use xlink:href="#iconDatabase"></use></svg>${data.new["av-names"]}</div>`;
             }
         });
@@ -536,6 +539,23 @@ export const onTransaction = (protyle: IProtyle, operation: IOperation, isUndo: 
                 }
                 /// #endif
             }
+            // 更新 av 属性面板
+            // 在标题下方插入属性视图 siyuan://blocks/20241030002647-dqjwzgq
+            // 查询是否已经存在属性视图元素，避免重复渲染
+            let avDocElement = protyle.title.element.parentElement.querySelector(".mux-doc-heading-av-panel") as HTMLElement;
+            if (!avDocElement) {
+                avDocElement = document.createElement("div");
+                avDocElement.className = "mux-doc-heading-av-panel";
+                // 设置样式
+                avDocElement.style.marginRight = "96px";
+                avDocElement.style.marginLeft = "96px";
+                avDocElement.style.transition = "margin 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+                // 插入到 this.element 的同级，但是需要是这一级的最后一个元素
+                protyle.title.element.parentElement.appendChild(avDocElement);
+            }
+            // 渲染属性视图
+            // protyle.block.rootID === operation.id
+            renderAVAttribute(avDocElement, operation.id, protyle, undefined, false);
             return;
         }
         protyle.wysiwyg.element.querySelectorAll(`[data-node-id="${operation.id}"]`).forEach((item: HTMLElement) => {
