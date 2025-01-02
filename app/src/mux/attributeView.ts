@@ -2,8 +2,12 @@ import { fetchPost } from "../util/fetch";
 
 const 知识单元avID = "20250101005818-yb4stwq";
 const 知识单元目录 = "20250101010126-gjm1cwx";
+
 const 关系笔记avID = "20250101233539-mitgexi";
 const 关系笔记目录 = "20250101010038-81wd8r8";
+
+const 标签之树avID = "20250101001630-x03k4te";
+const 标签之树目录 = "20250101005307-7384qo5";
 
 export function afterAddedFileToDatabase(file_ids: Array<string>, avID: string) {
     console.log("添加文档到数据库callback: ", file_ids, avID);
@@ -20,6 +24,13 @@ export function afterAddedFileToDatabase(file_ids: Array<string>, avID: string) 
         fetchPost("/api/filetree/moveDocsByID", {
             "fromIDs": file_ids,
             "toID": 关系笔记目录
+        });
+    }
+
+    if (avID === 标签之树avID) {
+        fetchPost("/api/filetree/moveDocsByID", {
+            "fromIDs": file_ids,
+            "toID": 标签之树目录
         });
     }
 }
