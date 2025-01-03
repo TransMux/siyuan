@@ -364,87 +364,101 @@ export const refMenu = (protyle: IProtyle, element: HTMLElement) => {
         }).element);
     }
     /// #if !MOBILE
-    window.siyuan.menus.menu.append(new MenuItem({
-        label: window.siyuan.languages.openBy,
-        icon: "iconOpen",
-        accelerator: window.siyuan.config.keymap.editor.general.openBy.custom + "/" + window.siyuan.languages.click,
-        click() {
-            checkFold(refBlockId, (zoomIn, action, isRoot) => {
-                if (!isRoot) {
-                    action.push(Constants.CB_GET_HL);
-                }
-                openFileById({
-                    app: protyle.app,
-                    id: refBlockId,
-                    action,
-                    zoomIn
-                });
-            });
-        }
-    }).element);
-    window.siyuan.menus.menu.append(new MenuItem({
-        label: window.siyuan.languages.refTab,
-        icon: "iconEyeoff",
-        accelerator: window.siyuan.config.keymap.editor.general.refTab.custom + "/" + updateHotkeyTip("⌘" + window.siyuan.languages.click),
-        click() {
-            checkFold(refBlockId, (zoomIn) => {
-                openFileById({
-                    app: protyle.app,
-                    id: refBlockId,
-                    action: zoomIn ? [Constants.CB_GET_HL, Constants.CB_GET_ALL] : [Constants.CB_GET_HL, Constants.CB_GET_CONTEXT, Constants.CB_GET_ROOTSCROLL],
-                    keepCursor: true,
-                    zoomIn
-                });
-            });
-        }
-    }).element);
-    window.siyuan.menus.menu.append(new MenuItem({
-        label: window.siyuan.languages.insertRight,
-        icon: "iconLayoutRight",
-        accelerator: window.siyuan.config.keymap.editor.general.insertRight.custom + "/" + updateHotkeyTip("⌥" + window.siyuan.languages.click),
-        click() {
-            checkFold(refBlockId, (zoomIn, action, isRoot) => {
-                if (!isRoot) {
-                    action.push(Constants.CB_GET_HL);
-                }
-                openFileById({
-                    app: protyle.app,
-                    id: refBlockId,
-                    position: "right",
-                    action,
-                    zoomIn
-                });
-            });
-        }
-    }).element);
-    window.siyuan.menus.menu.append(new MenuItem({
-        label: window.siyuan.languages.insertBottom,
-        icon: "iconLayoutBottom",
-        accelerator: window.siyuan.config.keymap.editor.general.insertBottom.custom + (window.siyuan.config.keymap.editor.general.insertBottom.custom ? "/" : "") + updateHotkeyTip("⇧" + window.siyuan.languages.click),
-        click() {
-            checkFold(refBlockId, (zoomIn, action, isRoot) => {
-                if (!isRoot) {
-                    action.push(Constants.CB_GET_HL);
-                }
-                openFileById({
-                    app: protyle.app,
-                    id: refBlockId,
-                    position: "bottom",
-                    action,
-                    zoomIn
-                });
-            });
-        }
-    }).element);
+    // window.siyuan.menus.menu.append(new MenuItem({
+    //     label: window.siyuan.languages.openBy,
+    //     icon: "iconOpen",
+    //     accelerator: window.siyuan.config.keymap.editor.general.openBy.custom + "/" + window.siyuan.languages.click,
+    //     click() {
+    //         checkFold(refBlockId, (zoomIn, action, isRoot) => {
+    //             if (!isRoot) {
+    //                 action.push(Constants.CB_GET_HL);
+    //             }
+    //             openFileById({
+    //                 app: protyle.app,
+    //                 id: refBlockId,
+    //                 action,
+    //                 zoomIn
+    //             });
+    //         });
+    //     }
+    // }).element);
+    // window.siyuan.menus.menu.append(new MenuItem({
+    //     label: window.siyuan.languages.refTab,
+    //     icon: "iconEyeoff",
+    //     accelerator: window.siyuan.config.keymap.editor.general.refTab.custom + "/" + updateHotkeyTip("⌘" + window.siyuan.languages.click),
+    //     click() {
+    //         checkFold(refBlockId, (zoomIn) => {
+    //             openFileById({
+    //                 app: protyle.app,
+    //                 id: refBlockId,
+    //                 action: zoomIn ? [Constants.CB_GET_HL, Constants.CB_GET_ALL] : [Constants.CB_GET_HL, Constants.CB_GET_CONTEXT, Constants.CB_GET_ROOTSCROLL],
+    //                 keepCursor: true,
+    //                 zoomIn
+    //             });
+    //         });
+    //     }
+    // }).element);
+    // window.siyuan.menus.menu.append(new MenuItem({
+    //     label: window.siyuan.languages.insertRight,
+    //     icon: "iconLayoutRight",
+    //     accelerator: window.siyuan.config.keymap.editor.general.insertRight.custom + "/" + updateHotkeyTip("⌥" + window.siyuan.languages.click),
+    //     click() {
+    //         checkFold(refBlockId, (zoomIn, action, isRoot) => {
+    //             if (!isRoot) {
+    //                 action.push(Constants.CB_GET_HL);
+    //             }
+    //             openFileById({
+    //                 app: protyle.app,
+    //                 id: refBlockId,
+    //                 position: "right",
+    //                 action,
+    //                 zoomIn
+    //             });
+    //         });
+    //     }
+    // }).element);
+    // window.siyuan.menus.menu.append(new MenuItem({
+    //     label: window.siyuan.languages.insertBottom,
+    //     icon: "iconLayoutBottom",
+    //     accelerator: window.siyuan.config.keymap.editor.general.insertBottom.custom + (window.siyuan.config.keymap.editor.general.insertBottom.custom ? "/" : "") + updateHotkeyTip("⇧" + window.siyuan.languages.click),
+    //     click() {
+    //         checkFold(refBlockId, (zoomIn, action, isRoot) => {
+    //             if (!isRoot) {
+    //                 action.push(Constants.CB_GET_HL);
+    //             }
+    //             openFileById({
+    //                 app: protyle.app,
+    //                 id: refBlockId,
+    //                 position: "bottom",
+    //                 action,
+    //                 zoomIn
+    //             });
+    //         });
+    //     }
+    // }).element);
     /// #if !BROWSER
+    // window.siyuan.menus.menu.append(new MenuItem({
+    //     label: window.siyuan.languages.openByNewWindow,
+    //     icon: "iconOpenWindow",
+    //     click() {
+    //         openNewWindowById(refBlockId);
+    //     }
+    // }).element);
+    /// #endif
+    // 取消上面所有引用块的打开方法，把转换为 ^*^ 的按钮提到最上面
     window.siyuan.menus.menu.append(new MenuItem({
-        label: window.siyuan.languages.openByNewWindow,
-        icon: "iconOpenWindow",
+        label: "转换为 引用 *",
+        iconHTML: "",
         click() {
-            openNewWindowById(refBlockId);
+            element.setAttribute("data-subtype", "s");
+            element.textContent = "*";
+            nodeElement.setAttribute("updated", dayjs().format("YYYYMMDDHHmmss"));
+            updateTransaction(protyle, id, nodeElement.outerHTML, oldHTML);
+            focusByRange(protyle.toolbar.range);
+            oldHTML = nodeElement.outerHTML;
         }
     }).element);
-    /// #endif
+
     window.siyuan.menus.menu.append(new MenuItem({ type: "separator" }).element);
     window.siyuan.menus.menu.append(new MenuItem({
         icon: "iconLink",
