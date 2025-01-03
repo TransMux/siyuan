@@ -452,6 +452,8 @@ export const refMenu = (protyle: IProtyle, element: HTMLElement) => {
         click() {
             element.setAttribute("data-subtype", "s");
             element.textContent = "*";
+            // 转换为上标 *
+            element.classList.add("sup");
             nodeElement.setAttribute("updated", dayjs().format("YYYYMMDDHHmmss"));
             updateTransaction(protyle, id, nodeElement.outerHTML, oldHTML);
             focusByRange(protyle.toolbar.range);
