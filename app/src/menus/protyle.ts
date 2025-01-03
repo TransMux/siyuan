@@ -447,9 +447,25 @@ export const refMenu = (protyle: IProtyle, element: HTMLElement) => {
     /// #endif
     // 取消上面所有引用块的打开方法，把转换为 ^*^ 的按钮提到最上面
     window.siyuan.menus.menu.append(new MenuItem({
-        label: "转换为 引用 *",
+        label: "转换为 *",
         iconHTML: "",
         click() {
+            element.setAttribute("data-subtype", "s");
+            element.textContent = "*";
+            // 转换为上标 *
+            element.setAttribute("data-type", "block-ref sup");
+            nodeElement.setAttribute("updated", dayjs().format("YYYYMMDDHHmmss"));
+            updateTransaction(protyle, id, nodeElement.outerHTML, oldHTML);
+            focusByRange(protyle.toolbar.range);
+            oldHTML = nodeElement.outerHTML;
+        }
+    }).element);
+
+    window.siyuan.menus.menu.append(new MenuItem({
+        label: "转换为 锚文本 *",
+        iconHTML: "",
+        click() {
+            element.insertAdjacentHTML("beforebegin", element.innerHTML);
             element.setAttribute("data-subtype", "s");
             element.textContent = "*";
             // 转换为上标 *
