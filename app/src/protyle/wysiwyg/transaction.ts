@@ -21,6 +21,7 @@ import {isPaidUser, needSubscribe} from "../../util/needSubscribe";
 import {resize} from "../util/resize";
 import {processClonePHElement} from "../render/util";
 import { renderAVAttribute } from "../render/av/blockAttr";
+import { renderCustomAttr } from "../../mux/attributeView";
 
 const removeTopElement = (updateElement: Element, protyle: IProtyle) => {
     // 移动到其他文档中，该块需移除
@@ -556,6 +557,19 @@ export const onTransaction = (protyle: IProtyle, operation: IOperation, isUndo: 
             // 更新 av 属性面板
             // 在标题下方插入属性视图 siyuan://blocks/20241030002647-dqjwzgq
             // 查询是否已经存在属性视图元素，避免重复渲染
+            let attrElement = protyle.title.element.parentElement.querySelector(".mux-doc-heading-attr-panel") as HTMLElement;
+            if (!attrElement) {
+                attrElement = document.createElement("div");
+                attrElement.className = "mux-doc-heading-attr-panel";
+                // 设置样式
+                attrElement.style.marginRight = "96px";
+                attrElement.style.marginLeft = "96px";
+                attrElement.style.transition = "margin 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+                renderCustomAttr(attrElement, operation.id)
+                protyle.title.element.parentElement.appendChild(attrElement);
+            }
+            renderCustomAttr(attrElement, operation.id)
+            
             let avDocElement = protyle.title.element.parentElement.querySelector(".mux-doc-heading-av-panel") as HTMLElement;
             if (!avDocElement) {
                 avDocElement = document.createElement("div");

@@ -27,6 +27,7 @@ import {openTitleMenu} from "./openTitleMenu";
 import {electronUndo} from "../undo";
 import {renderAVAttribute} from "../render/av/blockAttr";
 import {enableLuteMarkdownSyntax, restoreLuteMarkdownSyntax} from "../util/paste";
+import { renderCustomAttr } from "../../mux/attributeView";
 
 export class Title {
     public element: HTMLElement;
@@ -357,7 +358,19 @@ export class Title {
         }
         // 在标题下方插入属性视图 siyuan://blocks/20241030002647-dqjwzgq
         // 查询是否已经存在属性视图元素，避免重复渲染
-        let avDocElement = this.element.parentElement.querySelector(".mux-doc-heading-av-panel") as HTMLElement;
+        let attrElement = protyle.title.element.parentElement.querySelector(".mux-doc-heading-attr-panel") as HTMLElement;
+        if (!attrElement) {
+            attrElement = document.createElement("div");
+            attrElement.className = "mux-doc-heading-attr-panel";
+            // 设置样式
+            attrElement.style.marginRight = "96px";
+            attrElement.style.marginLeft = "96px";
+            attrElement.style.transition = "margin 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+            this.element.parentElement.appendChild(attrElement);
+        }
+        renderCustomAttr(attrElement, protyle.block.id)
+        
+        let avDocElement = protyle.title.element.parentElement.querySelector(".mux-doc-heading-av-panel") as HTMLElement;
         if (!avDocElement) {
             avDocElement = document.createElement("div");
             avDocElement.className = "mux-doc-heading-av-panel";

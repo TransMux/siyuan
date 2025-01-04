@@ -192,6 +192,11 @@ export const setPadding = (protyle: IProtyle) => {
             muxDocHeadingAvPanelElement.style.marginRight = `${right}px`;
             muxDocHeadingAvPanelElement.style.marginLeft = `${left}px`;
         }
+        const muxDocHeadingAttrPanelElement = protyle.title.element.parentElement.querySelector(".mux-doc-heading-attr-panel") as HTMLElement;
+        if (muxDocHeadingAttrPanelElement) {
+            muxDocHeadingAttrPanelElement.style.marginRight = `${right}px`;
+            muxDocHeadingAttrPanelElement.style.marginLeft = `${left}px`;
+        }
     }
     if (window.siyuan.config.editor.displayBookmarkIcon) {
         const editorAttrElement = document.getElementById("editorAttr");

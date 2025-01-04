@@ -61,6 +61,7 @@ import { popSearch } from "../mobile/menu/search";
 import { showMessage } from "../dialog/message";
 import { renderAVAttribute } from "../protyle/render/av/blockAttr";
 import {img3115} from "../boot/compatibleVersion";
+import { renderCustomAttr } from "../mux/attributeView";
 
 const renderAssetList = (element: Element, k: string, position: IPosition, exts: string[] = []) => {
     fetchPost("/api/search/searchAsset", {
@@ -1017,6 +1018,12 @@ export const zoomOut = (options: {
         // siyuan://blocks/20241030171124-2fpgeo2
         // 刷新属性面板，options.id 为聚焦块的id
         // 获取存在的属性面板
+        const avAttrPanelElement = options.protyle.title.element.parentElement.querySelector(".mux-doc-heading-attr-panel");
+        if (avAttrPanelElement) {
+            setTimeout(() => {
+                renderCustomAttr(avAttrPanelElement, options.id)
+            }, 0);
+        }
         const avPanelElement = options.protyle.title.element.parentElement.querySelector(".mux-doc-heading-av-panel");
         if (avPanelElement) {
             // 允许异步渲染属性视图

@@ -1,4 +1,4 @@
-import { fetchPost } from "../util/fetch";
+import { fetchPost, fetchSyncPost } from "../util/fetch";
 import { getBlockInfoByIDSQL } from "./utils";
 
 const 知识单元avID = "20250101005818-yb4stwq";
@@ -72,4 +72,60 @@ export async function afterAddedFileToDatabase(file_ids: Array<string>, avID: st
             });
         }
     }
+}
+
+const bindAttrInput = (inputElement: HTMLInputElement, id: string) => {
+    inputElement.addEventListener("change", () => {
+        fetchPost("/api/attr/setBlockAttrs", {
+            id,
+            attrs: {[inputElement.dataset.name]: inputElement.value}
+        });
+    });
+};
+
+export async function renderCustomAttr(customAttrElement: Element, block_id: string, focusName = "bookmark") {
+    // javascript
+    // export const openFileAttr = (attrs: IObject, focusName = "bookmark", protyle?: IProtyle) => {
+    const response = await fetchSyncPost("/api/attr/getBlockAttrs", {id: block_id})
+    const attrs = response.data;
+
+    customAttrElement.innerHTML = `<div class="fn__flex-column">
+    <div class="fn__flex-1">
+        <div class="custom-attr" data-type="attr">
+            <label class="b3-label b3-label--noborder">
+                ${window.siyuan.languages.name}
+                <div class="fn__hr"></div>
+                <input spellcheck="${window.siyuan.config.editor.spellcheck}" class="b3-text-field fn__block" placeholder="${window.siyuan.languages.attrNameTip}" data-name="name">
+            </label>
+            <label class="b3-label b3-label--noborder">
+                ${window.siyuan.languages.alias}
+                <div class="fn__hr"></div>
+                <input spellcheck="${window.siyuan.config.editor.spellcheck}" class="b3-text-field fn__block" placeholder="${window.siyuan.languages.attrAliasTip}" data-name="alias">
+            </label>
+        </div>
+    </div>
+</div>`;
+
+    (customAttrElement.querySelector('.b3-text-field[data-name="name"]') as HTMLInputElement).value = attrs.name || "";
+    (customAttrElement.querySelector('.b3-text-field[data-name="alias"]') as HTMLInputElement).value = attrs.alias || "";
+
+
+    customAttrElement.addEventListener("click", (event) => {
+        debugger
+        let target = event.target as HTMLElement;
+        while (!target.isSameNode(customAttrElement)) {
+            const type = target.dataset.action;
+            if (target.classList.contains("item--full")) {
+                target.parentElement.querySelector(".item--focus").classList.remove("item--focus");
+                target.classList.add("item--focus");
+            }
+            target = target.parentElement;
+        }
+    });
+    customAttrElement.querySelectorAll(".b3-text-field").forEach((item: HTMLInputElement) => {
+        if (focusName !== "av" && focusName === item.getAttribute("data-name")) {
+            item.focus();
+        }
+        bindAttrInput(item, attrs.id);
+    });
 }
