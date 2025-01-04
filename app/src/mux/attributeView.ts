@@ -20,7 +20,7 @@ export async function afterAddedFileToDatabase(file_ids: Array<string>, avID: st
         const blockInfo = await getBlockInfoByIDSQL(file_id);
 
         // 如果 path 不包含任何关键字，则保留该 file_id
-        if (![知识单元目录, 关系笔记目录, 标签之树目录].some(keyword => blockInfo.path.includes(keyword))) {
+        if (![知识单元目录, 关系笔记目录, 标签之树目录].some(keyword => blockInfo[0].path.includes(keyword))) {
             filteredFileIDs.push(file_id);
         }
     }
