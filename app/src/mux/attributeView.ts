@@ -61,5 +61,15 @@ export async function afterAddedFileToDatabase(file_ids: Array<string>, avID: st
             "fromIDs": file_ids,
             "toID": 外部输入目录
         });
+
+        // 设置 icon
+        for (const file_id of file_ids) {
+            fetchPost("/api/attr/setBlockAttrs", {
+                "id": file_id,
+                "attrs": {
+                    "icon": "2705"
+                }
+            });
+        }
     }
 }
