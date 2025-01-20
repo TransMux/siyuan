@@ -770,17 +770,17 @@ export class Gutter {
                 }).element);
             }
         }
-        if (!protyle.disabled) {
-            window.siyuan.menus.menu.append(new MenuItem({
-                id: "ai",
-                icon: "iconSparkles",
-                label: window.siyuan.languages.ai,
-                accelerator: window.siyuan.config.keymap.editor.general.ai.custom,
-                click() {
-                    AIActions(selectsElement, protyle);
-                }
-            }).element);
-        }
+        // if (!protyle.disabled) {
+        //     window.siyuan.menus.menu.append(new MenuItem({
+        //         id: "ai",
+        //         icon: "iconSparkles",
+        //         label: window.siyuan.languages.ai,
+        //         accelerator: window.siyuan.config.keymap.editor.general.ai.custom,
+        //         click() {
+        //             AIActions(selectsElement, protyle);
+        //         }
+        //     }).element);
+        // }
         const copyMenu: IMenu[] = (copySubMenu(Array.from(selectsElement).map(item => item.getAttribute("data-node-id")), true, selectsElement[0]) as IMenu[]).concat([{
             id: "copyPlainText",
             iconHTML: "",
@@ -1294,17 +1294,17 @@ export class Gutter {
                 submenu: turnIntoSubmenu
             }).element);
         }
-        if (!protyle.disabled && !nodeElement.classList.contains("hr")) {
-            window.siyuan.menus.menu.append(new MenuItem({
-                id: "ai",
-                icon: "iconSparkles",
-                label: window.siyuan.languages.ai,
-                accelerator: window.siyuan.config.keymap.editor.general.ai.custom,
-                click() {
-                    AIActions([nodeElement], protyle);
-                }
-            }).element);
-        }
+        // if (!protyle.disabled && !nodeElement.classList.contains("hr")) {
+        //     window.siyuan.menus.menu.append(new MenuItem({
+        //         id: "ai",
+        //         icon: "iconSparkles",
+        //         label: window.siyuan.languages.ai,
+        //         accelerator: window.siyuan.config.keymap.editor.general.ai.custom,
+        //         click() {
+        //             AIActions([nodeElement], protyle);
+        //         }
+        //     }).element);
+        // }
 
         const copyMenu = (copySubMenu([id], true, nodeElement) as IMenu[]).concat([{
             id: "copyPlainText",
@@ -1764,122 +1764,122 @@ export class Gutter {
             }).element);
         }
         window.siyuan.menus.menu.append(new MenuItem({ id: "separator_2", type: "separator" }).element);
-        if (!protyle.options.backlinkData) {
-            window.siyuan.menus.menu.append(new MenuItem({
-                id: "enter",
-                accelerator: `${updateHotkeyTip(window.siyuan.config.keymap.general.enter.custom)}/${updateHotkeyTip("⌘" + window.siyuan.languages.click)}`,
-                label: window.siyuan.languages.enter,
-                click: () => {
-                    zoomOut({ protyle, id });
-                }
-            }).element);
-            window.siyuan.menus.menu.append(new MenuItem({
-                id: "enterBack",
-                accelerator: window.siyuan.config.keymap.general.enterBack.custom,
-                label: window.siyuan.languages.enterBack,
-                click: () => {
-                    enterBack(protyle, id);
-                }
-            }).element);
-        } else {
-            /// #if !MOBILE
-            window.siyuan.menus.menu.append(new MenuItem({
-                id: "enter",
-                accelerator: `${updateHotkeyTip(window.siyuan.config.keymap.general.enter.custom)}/${updateHotkeyTip("⌘" + window.siyuan.languages.click)}`,
-                label: window.siyuan.languages.openBy,
-                click: () => {
-                    checkFold(id, (zoomIn, action) => {
-                        openFileById({
-                            app: protyle.app,
-                            id,
-                            action,
-                            zoomIn
-                        });
-                    });
-                }
-            }).element);
-            /// #endif
-        }
-        if (!protyle.disabled) {
-            window.siyuan.menus.menu.append(new MenuItem({
-                id: "insertBefore",
-                icon: "iconBefore",
-                label: window.siyuan.languages["insert-before"],
-                accelerator: window.siyuan.config.keymap.editor.general.insertBefore.custom,
-                click() {
-                    hideElements(["select"], protyle);
-                    countBlockWord([], protyle.block.rootID);
-                    insertEmptyBlock(protyle, "beforebegin", id);
-                }
-            }).element);
-            window.siyuan.menus.menu.append(new MenuItem({
-                id: "insertAfter",
-                icon: "iconAfter",
-                label: window.siyuan.languages["insert-after"],
-                accelerator: window.siyuan.config.keymap.editor.general.insertAfter.custom,
-                click() {
-                    hideElements(["select"], protyle);
-                    countBlockWord([], protyle.block.rootID);
-                    insertEmptyBlock(protyle, "afterend", id);
-                }
-            }).element);
-            const countElement = nodeElement.lastElementChild.querySelector(".protyle-attr--refcount");
-            if (countElement && countElement.textContent) {
-                transferBlockRef(id);
-            }
-        }
-        window.siyuan.menus.menu.append(new MenuItem({
-            id: "jumpToParentNext",
-            label: window.siyuan.languages.jumpToParentNext,
-            accelerator: window.siyuan.config.keymap.editor.general.jumpToParentNext.custom,
-            click() {
-                hideElements(["select"], protyle);
-                jumpToParent(protyle, nodeElement, "next");
-            }
-        }).element);
-        window.siyuan.menus.menu.append(new MenuItem({
-            id: "jumpToParentPrev",
-            label: window.siyuan.languages.jumpToParentPrev,
-            accelerator: window.siyuan.config.keymap.editor.general.jumpToParentPrev.custom,
-            click() {
-                hideElements(["select"], protyle);
-                jumpToParent(protyle, nodeElement, "previous");
-            }
-        }).element);
-        window.siyuan.menus.menu.append(new MenuItem({
-            id: "jumpToParent",
-            label: window.siyuan.languages.jumpToParent,
-            accelerator: window.siyuan.config.keymap.editor.general.jumpToParent.custom,
-            click() {
-                hideElements(["select"], protyle);
-                jumpToParent(protyle, nodeElement, "parent");
-            }
-        }).element);
+        // if (!protyle.options.backlinkData) {
+        //     window.siyuan.menus.menu.append(new MenuItem({
+        //         id: "enter",
+        //         accelerator: `${updateHotkeyTip(window.siyuan.config.keymap.general.enter.custom)}/${updateHotkeyTip("⌘" + window.siyuan.languages.click)}`,
+        //         label: window.siyuan.languages.enter,
+        //         click: () => {
+        //             zoomOut({ protyle, id });
+        //         }
+        //     }).element);
+        //     window.siyuan.menus.menu.append(new MenuItem({
+        //         id: "enterBack",
+        //         accelerator: window.siyuan.config.keymap.general.enterBack.custom,
+        //         label: window.siyuan.languages.enterBack,
+        //         click: () => {
+        //             enterBack(protyle, id);
+        //         }
+        //     }).element);
+        // } else {
+        //     /// #if !MOBILE
+        //     window.siyuan.menus.menu.append(new MenuItem({
+        //         id: "enter",
+        //         accelerator: `${updateHotkeyTip(window.siyuan.config.keymap.general.enter.custom)}/${updateHotkeyTip("⌘" + window.siyuan.languages.click)}`,
+        //         label: window.siyuan.languages.openBy,
+        //         click: () => {
+        //             checkFold(id, (zoomIn, action) => {
+        //                 openFileById({
+        //                     app: protyle.app,
+        //                     id,
+        //                     action,
+        //                     zoomIn
+        //                 });
+        //             });
+        //         }
+        //     }).element);
+        //     /// #endif
+        // }
+        // if (!protyle.disabled) {
+        //     window.siyuan.menus.menu.append(new MenuItem({
+        //         id: "insertBefore",
+        //         icon: "iconBefore",
+        //         label: window.siyuan.languages["insert-before"],
+        //         accelerator: window.siyuan.config.keymap.editor.general.insertBefore.custom,
+        //         click() {
+        //             hideElements(["select"], protyle);
+        //             countBlockWord([], protyle.block.rootID);
+        //             insertEmptyBlock(protyle, "beforebegin", id);
+        //         }
+        //     }).element);
+        //     window.siyuan.menus.menu.append(new MenuItem({
+        //         id: "insertAfter",
+        //         icon: "iconAfter",
+        //         label: window.siyuan.languages["insert-after"],
+        //         accelerator: window.siyuan.config.keymap.editor.general.insertAfter.custom,
+        //         click() {
+        //             hideElements(["select"], protyle);
+        //             countBlockWord([], protyle.block.rootID);
+        //             insertEmptyBlock(protyle, "afterend", id);
+        //         }
+        //     }).element);
+        //     const countElement = nodeElement.lastElementChild.querySelector(".protyle-attr--refcount");
+        //     if (countElement && countElement.textContent) {
+        //         transferBlockRef(id);
+        //     }
+        // }
+        // window.siyuan.menus.menu.append(new MenuItem({
+        //     id: "jumpToParentNext",
+        //     label: window.siyuan.languages.jumpToParentNext,
+        //     accelerator: window.siyuan.config.keymap.editor.general.jumpToParentNext.custom,
+        //     click() {
+        //         hideElements(["select"], protyle);
+        //         jumpToParent(protyle, nodeElement, "next");
+        //     }
+        // }).element);
+        // window.siyuan.menus.menu.append(new MenuItem({
+        //     id: "jumpToParentPrev",
+        //     label: window.siyuan.languages.jumpToParentPrev,
+        //     accelerator: window.siyuan.config.keymap.editor.general.jumpToParentPrev.custom,
+        //     click() {
+        //         hideElements(["select"], protyle);
+        //         jumpToParent(protyle, nodeElement, "previous");
+        //     }
+        // }).element);
+        // window.siyuan.menus.menu.append(new MenuItem({
+        //     id: "jumpToParent",
+        //     label: window.siyuan.languages.jumpToParent,
+        //     accelerator: window.siyuan.config.keymap.editor.general.jumpToParent.custom,
+        //     click() {
+        //         hideElements(["select"], protyle);
+        //         jumpToParent(protyle, nodeElement, "parent");
+        //     }
+        // }).element);
 
-        window.siyuan.menus.menu.append(new MenuItem({ id: "separator_3", type: "separator" }).element);
+        // window.siyuan.menus.menu.append(new MenuItem({ id: "separator_3", type: "separator" }).element);
 
-        if (type !== "NodeThematicBreak") {
-            window.siyuan.menus.menu.append(new MenuItem({
-                id: "fold",
-                label: window.siyuan.languages.fold,
-                accelerator: `${updateHotkeyTip(window.siyuan.config.keymap.editor.general.collapse.custom)}/${updateHotkeyTip("⌥" + window.siyuan.languages.click)}`,
-                click() {
-                    setFold(protyle, nodeElement);
-                    focusBlock(nodeElement);
-                }
-            }).element);
-            if (!protyle.disabled) {
-                window.siyuan.menus.menu.append(new MenuItem({
-                    id: "attr",
-                    label: window.siyuan.languages.attr,
-                    icon: "iconAttr",
-                    accelerator: window.siyuan.config.keymap.editor.general.attr.custom + "/" + updateHotkeyTip("⇧" + window.siyuan.languages.click),
-                    click() {
-                        openAttr(nodeElement, "bookmark", protyle);
-                    }
-                }).element);
-            }
-        }
+        // if (type !== "NodeThematicBreak") {
+        //     window.siyuan.menus.menu.append(new MenuItem({
+        //         id: "fold",
+        //         label: window.siyuan.languages.fold,
+        //         accelerator: `${updateHotkeyTip(window.siyuan.config.keymap.editor.general.collapse.custom)}/${updateHotkeyTip("⌥" + window.siyuan.languages.click)}`,
+        //         click() {
+        //             setFold(protyle, nodeElement);
+        //             focusBlock(nodeElement);
+        //         }
+        //     }).element);
+        //     if (!protyle.disabled) {
+        //         window.siyuan.menus.menu.append(new MenuItem({
+        //             id: "attr",
+        //             label: window.siyuan.languages.attr,
+        //             icon: "iconAttr",
+        //             accelerator: window.siyuan.config.keymap.editor.general.attr.custom + "/" + updateHotkeyTip("⇧" + window.siyuan.languages.click),
+        //             click() {
+        //                 openAttr(nodeElement, "bookmark", protyle);
+        //             }
+        //         }).element);
+        //     }
+        // }
         if (!protyle.disabled) {
             const appearanceElement = new MenuItem({
                 id: "appearance",
@@ -1912,42 +1912,42 @@ export class Gutter {
             // this.genHeights([nodeElement], protyle);
         }
         window.siyuan.menus.menu.append(new MenuItem({ id: "separator_4", type: "separator" }).element);
-        if (window.siyuan.config.cloudRegion === 0 &&
-            !["NodeThematicBreak", "NodeBlockQueryEmbed", "NodeIFrame", "NodeHTMLBlock", "NodeWidget", "NodeVideo", "NodeAudio"].includes(type) &&
-            getContenteditableElement(nodeElement)?.textContent.trim() !== "" &&
-            (type !== "NodeCodeBlock" || (type === "NodeCodeBlock" && !nodeElement.getAttribute("data-subtype")))) {
-            window.siyuan.menus.menu.append(new MenuItem({
-                id: "wechatReminder",
-                icon: "iconMp",
-                label: window.siyuan.languages.wechatReminder,
-                ignore: window.siyuan.config.readonly,
-                click() {
-                    openWechatNotify(nodeElement);
-                }
-            }).element);
-        }
-        if (type !== "NodeThematicBreak" && !window.siyuan.config.readonly) {
-            window.siyuan.menus.menu.append(new MenuItem({
-                id: "quickMakeCard",
-                icon: "iconRiffCard",
-                label: window.siyuan.languages.quickMakeCard,
-                accelerator: window.siyuan.config.keymap.editor.general.quickMakeCard.custom,
-                iconHTML: '<svg class="b3-menu__icon" style="color:var(--b3-theme-primary)"><use xlink:href="#iconRiffCard"></use></svg>',
-                click() {
-                    quickMakeCard(protyle, [nodeElement]);
-                }
-            }).element);
-            window.siyuan.menus.menu.append(new MenuItem({
-                id: "addToDeck",
-                label: window.siyuan.languages.addToDeck,
-                ignore: !window.siyuan.config.flashcard.deck,
-                icon: "iconRiffCard",
-                click() {
-                    makeCard(protyle.app, [id]);
-                }
-            }).element);
-            window.siyuan.menus.menu.append(new MenuItem({ id: "separator_5", type: "separator" }).element);
-        }
+        // if (window.siyuan.config.cloudRegion === 0 &&
+        //     !["NodeThematicBreak", "NodeBlockQueryEmbed", "NodeIFrame", "NodeHTMLBlock", "NodeWidget", "NodeVideo", "NodeAudio"].includes(type) &&
+        //     getContenteditableElement(nodeElement)?.textContent.trim() !== "" &&
+        //     (type !== "NodeCodeBlock" || (type === "NodeCodeBlock" && !nodeElement.getAttribute("data-subtype")))) {
+        //     window.siyuan.menus.menu.append(new MenuItem({
+        //         id: "wechatReminder",
+        //         icon: "iconMp",
+        //         label: window.siyuan.languages.wechatReminder,
+        //         ignore: window.siyuan.config.readonly,
+        //         click() {
+        //             openWechatNotify(nodeElement);
+        //         }
+        //     }).element);
+        // }
+        // if (type !== "NodeThematicBreak" && !window.siyuan.config.readonly) {
+        //     window.siyuan.menus.menu.append(new MenuItem({
+        //         id: "quickMakeCard",
+        //         icon: "iconRiffCard",
+        //         label: window.siyuan.languages.quickMakeCard,
+        //         accelerator: window.siyuan.config.keymap.editor.general.quickMakeCard.custom,
+        //         iconHTML: '<svg class="b3-menu__icon" style="color:var(--b3-theme-primary)"><use xlink:href="#iconRiffCard"></use></svg>',
+        //         click() {
+        //             quickMakeCard(protyle, [nodeElement]);
+        //         }
+        //     }).element);
+        //     window.siyuan.menus.menu.append(new MenuItem({
+        //         id: "addToDeck",
+        //         label: window.siyuan.languages.addToDeck,
+        //         ignore: !window.siyuan.config.flashcard.deck,
+        //         icon: "iconRiffCard",
+        //         click() {
+        //             makeCard(protyle.app, [id]);
+        //         }
+        //     }).element);
+        //     window.siyuan.menus.menu.append(new MenuItem({ id: "separator_5", type: "separator" }).element);
+        // }
 
         if (protyle?.app?.plugins) {
             emitOpenMenu({
