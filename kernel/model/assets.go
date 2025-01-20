@@ -830,6 +830,12 @@ func UnusedAssets() (ret []string) {
 			toRemoves = append(toRemoves, asset)
 			continue
 		}
+
+		if strings.HasSuffix(asset, "android-notification-texts.txt") {
+			// 排除 Android 通知文本
+			toRemoves = append(toRemoves, asset)
+			continue
+		}
 	}
 
 	// 排除数据库中引用的资源文件
@@ -1095,7 +1101,6 @@ func assetsLinkDestsInNode(node *ast.Node) (ret []string) {
 							if !util.IsAssetLinkDest([]byte(dest)) {
 								continue
 							}
-
 							ret = append(ret, strings.TrimSpace(dest))
 						}
 					}
@@ -1106,12 +1111,10 @@ func assetsLinkDestsInNode(node *ast.Node) (ret []string) {
 							if !util.IsAssetLinkDest([]byte(dest)) {
 								continue
 							}
-
 							ret = append(ret, strings.TrimSpace(dest))
 						}
 					}
 				}
-
 			}
 		} else {
 			if ast.NodeWidget == n.Type {
@@ -1120,15 +1123,16 @@ func assetsLinkDestsInNode(node *ast.Node) (ret []string) {
 					// 兼容两种属性名 custom-data-assets 和 data-assets https://github.com/siyuan-note/siyuan/issues/4122#issuecomment-1154796568
 					dataAssets = n.IALAttr("data-assets")
 				}
-				if "" == dataAssets || !util.IsAssetLinkDest([]byte(dataAssets)) {
+				if !util.IsAssetLinkDest([]byte(dataAssets)) {
 					return ast.WalkContinue
 				}
 				ret = append(ret, dataAssets)
 			} else { // HTMLBlock/InlineHTML/IFrame/Audio/Video
 				dest := treenode.GetNodeSrcTokens(n)
-				if "" != dest {
-					ret = append(ret, dest)
+				if !util.IsAssetLinkDest([]byte(dest)) {
+					return ast.WalkContinue
 				}
+				ret = append(ret, dest)
 			}
 		}
 		return ast.WalkContinue

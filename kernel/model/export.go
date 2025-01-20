@@ -269,7 +269,7 @@ func Export2Liandi(id string) (err error) {
 	title := path.Base(tree.HPath)
 	tags := tree.Root.IALAttr("tags")
 	content := exportMarkdownContent0(tree, util.GetCloudForumAssetsServer()+time.Now().Format("2006/01")+"/siyuan/"+Conf.GetUser().UserId+"/", true,
-		".md", 4, 1, 0,
+		".md", 4, Conf.Export.BlockEmbedMode, Conf.Export.FileAnnotationRefMode,
 		"#", "#",
 		"", "",
 		false, nil, true, &map[string]*parse.Tree{})
@@ -2068,6 +2068,7 @@ func exportTree(tree *parse.Tree, wysiwyg, keepFold, avHiddenCol bool,
 	luteEngine := NewLute()
 	ret = tree
 	id := tree.Root.ID
+	(*treeCache)[tree.ID] = tree
 
 	// 解析查询嵌入节点
 	depth := 0
@@ -2799,7 +2800,7 @@ func blockLink2Ref(currentTree *parse.Tree, id string, treeCache *map[string]*pa
 	if nil == b {
 		return
 	}
-	t, err := loadTreeWithCache(b.ID, treeCache)
+	t, err := loadTreeWithCache(b.RootID, treeCache)
 	if nil != err {
 		return
 	}
@@ -2849,7 +2850,7 @@ func collectFootnotesDefs(currentTree *parse.Tree, id string, refFootnotes *[]*r
 	if nil == b {
 		return
 	}
-	t, err := loadTreeWithCache(b.ID, treeCache)
+	t, err := loadTreeWithCache(b.RootID, treeCache)
 	if nil != err {
 		return
 	}
@@ -3122,12 +3123,12 @@ func prepareExportTrees(docPaths []string) (defBlockIDs []string, trees *map[str
 	treeCache := &map[string]*parse.Tree{}
 	defBlockIDs = []string{}
 	for i, p := range docPaths {
-		id := strings.TrimSuffix(path.Base(p), ".sy")
-		if !ast.IsNodeIDPattern(id) {
+		rootID := strings.TrimSuffix(path.Base(p), ".sy")
+		if !ast.IsNodeIDPattern(rootID) {
 			continue
 		}
 
-		tree, err := loadTreeWithCache(id, treeCache)
+		tree, err := loadTreeWithCache(rootID, treeCache)
 		if err != nil {
 			continue
 		}

@@ -455,7 +455,7 @@ export class Files extends Model {
             window.siyuan.dragElement = undefined;
         });
         this.element.addEventListener("dragover", (event: DragEvent & { target: HTMLElement }) => {
-            if (window.siyuan.config.readonly) {
+            if (window.siyuan.config.readonly || event.dataTransfer.types.includes(Constants.SIYUAN_DROP_TAB)) {
                 return;
             }
             const contentRect = this.element.getBoundingClientRect();
@@ -760,7 +760,7 @@ export class Files extends Model {
         } else {
             return `<ul class="b3-list b3-list--background" data-url="${item.id}" data-sort="${item.sort}" data-sortmode="${item.sortMode}">
 <li class="b3-list-item b3-list-item--hide-action" ${window.siyuan.config.fileTree.sort === 6 ? 'draggable="true"' : ""} 
-style="--file-toggle-width:0px" 
+style="--file-toggle-width:22px" 
 data-type="navigation-root" data-path="/">
     <span class="b3-list-item__toggle b3-list-item__toggle--hl">
         <svg class="b3-list-item__arrow"><use xlink:href="#iconRight"></use></svg>
@@ -798,7 +798,7 @@ data-type="navigation-root" data-path="/">
         } else {
             counterElement.classList.add("fn__none");
         }
-        window.siyuan.storage[Constants.LOCAL_FILESPATHS].forEach((item: filesPath) => {
+        window.siyuan.storage[Constants.LOCAL_FILESPATHS].forEach((item: IFilesPath) => {
             item.openPaths.forEach((openPath) => {
                 this.selectItem(item.notebookId, openPath, undefined, false);
             });
@@ -1019,16 +1019,6 @@ data-type="navigation-root" data-path="/">
         let fileHTML = "";
         data.files.forEach((item: IFile) => {
             fileHTML += this.genFileHTML(item);
-            if (filePath === item.path) {
-                this.selectItem(data.box, filePath, undefined, setStorage);
-            } else if (filePath.startsWith(item.path.replace(".sy", ""))) {
-                fetchPost("/api/filetree/listDocsByPath", {
-                    notebook: data.box,
-                    path: item.path
-                }, response => {
-                    this.selectItem(response.data.box, filePath, response.data, setStorage);
-                });
-            }
         });
         if (fileHTML === "") {
             return;
@@ -1046,6 +1036,18 @@ data-type="navigation-root" data-path="/">
             emojiElement.textContent = unicode2Emoji(window.siyuan.storage[Constants.LOCAL_IMAGES].folder);
         }
         liElement.insertAdjacentHTML("afterend", `<ul>${fileHTML}</ul>`);
+        data.files.forEach((item: IFile) => {
+            if (filePath === item.path) {
+                this.selectItem(data.box, filePath, undefined, setStorage);
+            } else if (filePath.startsWith(item.path.replace(".sy", ""))) {
+                fetchPost("/api/filetree/listDocsByPath", {
+                    notebook: data.box,
+                    path: item.path
+                }, response => {
+                    this.selectItem(response.data.box, filePath, response.data, setStorage);
+                });
+            }
+        });
         if (setStorage) {
             this.setCurrent(this.element.querySelector(`ul[data-url="${data.box}"] li[data-path="${filePath}"]`));
         }
@@ -1137,9 +1139,9 @@ data-type="navigation-root" data-path="/">
     }
 
     private getOpenPaths() {
-        const filesPaths: filesPath[] = [];
+        const filesPaths: IFilesPath[] = [];
         this.element.querySelectorAll(".b3-list[data-url]").forEach((item: HTMLElement) => {
-            const notebookPaths: filesPath = {
+            const notebookPaths: IFilesPath = {
                 notebookId: item.getAttribute("data-url"),
                 openPaths: []
             };
@@ -1181,12 +1183,12 @@ data-type="navigation-root" data-path="/">
             countHTML = `<span class="popover__block counter b3-tooltips b3-tooltips__nw" aria-label="${window.siyuan.languages.ref}">${item.count}</span>`;
         }
         const ariaLabel = this.genDocAriaLabel(item, escapeAriaLabel);
-        const paddingLeft = `${(item.path.split("/").length - 1) * 18}px`
+        const paddingLeft = (item.path.split("/").length - 1) * 18;
         return `<li data-node-id="${item.id}" data-name="${Lute.EscapeHTMLStr(item.name)}" draggable="true" data-count="${item.subFileCount}" 
 data-type="navigation-file" 
-style="--file-toggle-width:${paddingLeft}" 
+style="--file-toggle-width:${paddingLeft + 18}px" 
 class="b3-list-item b3-list-item--hide-action" data-path="${item.path}">
-    <span style="padding-left: ${paddingLeft}" class="b3-list-item__toggle b3-list-item__toggle--hl${item.subFileCount === 0 ? " fn__hidden" : ""}">
+    <span style="padding-left: ${paddingLeft}px" class="b3-list-item__toggle b3-list-item__toggle--hl${item.subFileCount === 0 ? " fn__hidden" : ""}">
         <svg class="b3-list-item__arrow"><use xlink:href="#iconRight"></use></svg>
     </span>
     <span class="b3-list-item__icon b3-tooltips b3-tooltips__n popover__block" data-id="${item.id}" aria-label="${window.siyuan.languages.changeIcon}">${unicode2Emoji(item.icon || (item.subFileCount === 0 ? window.siyuan.storage[Constants.LOCAL_IMAGES].file : window.siyuan.storage[Constants.LOCAL_IMAGES].folder))}</span>
