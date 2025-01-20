@@ -30,15 +30,6 @@ jobs:
             mingwsys: "MINGW64"
             goarch: "amd64"
             suffix: "win.exe"
-          - os: macos-latest
-            name: macos build mac-arm64.dmg
-            kernel_path: "../app/kernel-darwin-arm64/SiYuan-Kernel"
-            build_args_prefix: "-s -w -X"
-            build_args_suffix: "Mode=prod"
-            electron_args: "dist-darwin-arm64"
-            goos: "darwin"
-            goarch: "arm64"
-            suffix: "mac-arm64.dmg"
 
     steps:
       - uses: actions/checkout@v4  # 检出代码
