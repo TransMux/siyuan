@@ -1,17 +1,6 @@
 import { fetchPost, fetchSyncPost } from "../util/fetch";
+import { 关系笔记avID, 关系笔记目录, 外部输入avID, 外部输入目录, 标签之树avID, 标签之树目录, 知识单元avID, 知识单元目录 } from "./settings";
 import { getBlockInfoByIDSQL } from "./utils";
-
-const 知识单元avID = "20250101005818-yb4stwq";
-const 知识单元目录 = "20250101010126-gjm1cwx";
-
-const 关系笔记avID = "20250101233539-mitgexi";
-const 关系笔记目录 = "20250101010038-81wd8r8";
-
-const 标签之树avID = "20250101001630-x03k4te";
-const 标签之树目录 = "20250101005307-7384qo5";
-
-const 外部输入avID = "20250102171020-4cqqonx";
-const 外部输入目录 = "20250102171013-zzcyz96";
 
 export async function afterAddedFileToDatabase(file_ids: Array<string>, avID: string) {
     console.log("添加文档到数据库callback: ", file_ids, avID);
@@ -78,7 +67,7 @@ const bindAttrInput = (inputElement: HTMLInputElement, id: string) => {
     inputElement.addEventListener("change", () => {
         fetchPost("/api/attr/setBlockAttrs", {
             id,
-            attrs: {[inputElement.dataset.name]: inputElement.value}
+            attrs: { [inputElement.dataset.name]: inputElement.value }
         });
     });
 };
@@ -86,7 +75,7 @@ const bindAttrInput = (inputElement: HTMLInputElement, id: string) => {
 export async function renderCustomAttr(customAttrElement: Element, block_id: string, focusName = "bookmark") {
     // javascript
     // export const openFileAttr = (attrs: IObject, focusName = "bookmark", protyle?: IProtyle) => {
-    const response = await fetchSyncPost("/api/attr/getBlockAttrs", {id: block_id})
+    const response = await fetchSyncPost("/api/attr/getBlockAttrs", { id: block_id })
     const attrs = response.data;
 
     customAttrElement.innerHTML = `<div class="fn__flex-column">
