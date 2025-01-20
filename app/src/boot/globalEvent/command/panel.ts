@@ -29,6 +29,7 @@ import { escapeHtml } from "../../../util/escape";
 import { openFileById } from "../../../editor/util";
 /// #if !BROWSER
 import { ipcRenderer } from "electron";
+import { 主页ID } from "../../../mux/settings";
 /// #endif
 
 // https://x.transmux.top/j/20241103163805-hj20chp
@@ -122,7 +123,7 @@ export const commandPanel = (app: App) => {
     });
 
     // https://x.transmux.top/j/20241103170133-bvx9q0c
-    commandHtml += `<li class="b3-list-item" data-command="openDoc" data-node-id="20241102120403-mp3vfh4">
+    commandHtml += `<li class="b3-list-item" data-command="openDoc" data-node-id="${主页ID}">
     <span class="b3-list-item__text">打开主页 (open homepage)</span>
 </li>`;
 
