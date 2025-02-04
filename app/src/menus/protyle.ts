@@ -62,6 +62,7 @@ import { showMessage } from "../dialog/message";
 import { renderAVAttribute } from "../protyle/render/av/blockAttr";
 import {img3115} from "../boot/compatibleVersion";
 import { renderCustomAttr } from "../mux/attributeView";
+import {hideTooltip} from "../dialog/tooltip";
 
 const renderAssetList = (element: Element, k: string, position: IPosition, exts: string[] = []) => {
     fetchPost("/api/search/searchAsset", {
@@ -1424,6 +1425,7 @@ export const linkMenu = (protyle: IProtyle, linkElement: HTMLElement, focusText 
     if (!nodeElement) {
         return;
     }
+    hideTooltip();
     hideElements(["util", "toolbar", "hint"], protyle);
     const id = nodeElement.getAttribute("data-node-id");
     let html = nodeElement.outerHTML;
@@ -1548,7 +1550,10 @@ export const linkMenu = (protyle: IProtyle, linkElement: HTMLElement, focusText 
         label: window.siyuan.languages.copy,
         icon: "iconCopy",
         click() {
-            writeText(protyle.lute.BlockDOM2StdMd(linkElement.outerHTML));
+            const range = document.createRange();
+            range.selectNode(linkElement);
+            focusByRange(range);
+            document.execCommand("copy");
         }
     }).element);
     if (protyle.disabled) {
@@ -1565,14 +1570,10 @@ export const linkMenu = (protyle: IProtyle, linkElement: HTMLElement, focusText 
             icon: "iconCut",
             label: window.siyuan.languages.cut,
             click() {
-                writeText(protyle.lute.BlockDOM2StdMd(linkElement.outerHTML));
-
-                linkElement.insertAdjacentHTML("afterend", "<wbr>");
-                linkElement.remove();
-                nodeElement.setAttribute("updated", dayjs().format("YYYYMMDDHHmmss"));
-                updateTransaction(protyle, id, nodeElement.outerHTML, html);
-                focusByWbr(nodeElement, protyle.toolbar.range);
-                html = nodeElement.outerHTML;
+                const range = document.createRange();
+                range.selectNode(linkElement);
+                focusByRange(range);
+                document.execCommand("cut");
             }
         }).element);
         window.siyuan.menus.menu.append(new MenuItem({

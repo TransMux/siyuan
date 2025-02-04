@@ -428,7 +428,9 @@ export class WYSIWYG {
                 html = getEnableHTML(html);
             }
             textPlain = textPlain || protyle.lute.BlockDOM2StdMd(html).trimEnd();
-            textPlain = textPlain.replace(/\u00A0/g, " "); // Replace non-breaking spaces with normal spaces when copying https://github.com/siyuan-note/siyuan/issues/9382
+            textPlain = textPlain.replace(/\u00A0/g, " ") // Replace non-breaking spaces with normal spaces when copying https://github.com/siyuan-note/siyuan/issues/9382
+                // Remove ZWSP when copying inline elements https://github.com/siyuan-note/siyuan/issues/13882
+                .replace(new RegExp(Constants.ZWSP, "g"), "");
             event.clipboardData.setData("text/plain", textPlain);
             event.clipboardData.setData("text/html", selectTableElement ? html : protyle.lute.BlockDOM2HTML(selectAVElement ? textPlain : html));
             event.clipboardData.setData("text/siyuan", selectTableElement ? protyle.lute.HTML2BlockDOM(html) : html);
@@ -2400,7 +2402,7 @@ export class WYSIWYG {
             }
 
             const tagElement = hasClosestByAttribute(event.target, "data-type", "tag");
-            if (tagElement && !event.altKey && !event.shiftKey) {
+            if (tagElement && !event.altKey && !event.shiftKey && range.toString() === "") {
                 /// #if !MOBILE
                 openGlobalSearch(protyle.app, `#${tagElement.textContent}#`, !ctrlIsPressed, {method: 0});
                 hideElements(["dialog"]);
