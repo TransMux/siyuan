@@ -1,0 +1,12 @@
+// 存储额外的css
+
+/* 
+在独立小窗取消属性面板的底色
+siyuan://blocks/20250205200123-bvfkrur
+*/
+
+.body--window {
+    .layout__center .mux-doc-heading-attr-panel .fn__flex-column {
+        background-color: unset;
+    }
+}
