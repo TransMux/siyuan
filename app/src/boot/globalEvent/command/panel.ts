@@ -62,7 +62,7 @@ const commandKeyToLabel: { [key: string]: string } = {
     goToTab7: "goto tab 7",
     goToTab8: "goto tab 8",
     goToTab9: "goto tab 9",
-    toggleWin: "hide window",
+    // toggleWin: "hide window",
     move: "move selected block to..."
 };
 
