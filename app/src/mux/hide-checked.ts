@@ -37,3 +37,5 @@ export function toggle() {
     }
 }
 
+// 默认启用
+enable()
