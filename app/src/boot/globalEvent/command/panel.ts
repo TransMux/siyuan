@@ -30,6 +30,7 @@ import { openFileById } from "../../../editor/util";
 /// #if !BROWSER
 import { ipcRenderer } from "electron";
 import { 主页ID } from "../../../mux/settings";
+import { toggle } from "../../../mux/hide-checked";
 /// #endif
 
 // https://x.transmux.top/j/20241103163805-hj20chp
@@ -139,6 +140,11 @@ export const commandPanel = (app: App) => {
 </li>`;
     /// #endif
 
+    // https://x.transmux.top/j/20250207000640-w6qpyf9
+    commandHtml += `<li class="b3-list-item" data-command="hideChecked">
+    <span class="b3-list-item__text">隐藏已完成的任务 (hide checked)</span>
+</li>`;
+
     // https://x.transmux.top/j/20241101223108-o9zjabn
     let recentDocsHtml = "";
     let index = 0;
@@ -220,6 +226,9 @@ ${unicode2Emoji(item.icon || window.siyuan.storage[Constants.LOCAL_IMAGES].file,
                     window.location.reload();
                 } else if (command === "openDevTools") {
                     ipcRenderer.send(Constants.SIYUAN_CMD, "openDevTools")
+                } else if (command === "hideChecked") {
+                    // https://x.transmux.top/j/20250207000640-w6qpyf9
+                    toggle()
                 } else {
                     execByCommand({ command, app, previousRange: range });
                 }
@@ -254,6 +263,9 @@ ${unicode2Emoji(item.icon || window.siyuan.storage[Constants.LOCAL_IMAGES].file,
                         window.location.reload();
                     } else if (command === "openDevTools") {
                         ipcRenderer.send(Constants.SIYUAN_CMD, "openDevTools")
+                    } else if (command === "hideChecked") {
+                        // https://x.transmux.top/j/20250207000640-w6qpyf9
+                        toggle()
                     } else {
                         execByCommand({ command, app, previousRange: range });
                     }
