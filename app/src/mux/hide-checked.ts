@@ -1,7 +1,7 @@
 // 隐藏已完成 https://x.transmux.top/j/20250207000640-w6qpyf9
 const css_隐藏已完成 = `
 [data-type="NodeListItem"][class*="protyle-task--done"][data-node-id] {
-    opacity: 0.2;
+    opacity: 0.1;
 }
 `;
 
