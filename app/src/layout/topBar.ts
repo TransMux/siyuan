@@ -26,7 +26,6 @@ export const initBar = (app: App) => {
     toolbarElement.innerHTML = `
 <div id="barWorkspace" class="ariaLabel toolbar__item toolbar__item--active" aria-label="${window.siyuan.languages.mainMenu} ${updateHotkeyTip(window.siyuan.config.keymap.general.mainMenu.custom)}">
     <span class="toolbar__text">${getWorkspaceName()}</span>
-    <svg class="toolbar__svg"><use xlink:href="#iconDown"></use></svg>
 </div>
 <div id="barSync" class="ariaLabel toolbar__item${window.siyuan.config.readonly ? " fn__none" : ""}">
     <svg><use xlink:href="#iconCloudSucc"></use></svg>
