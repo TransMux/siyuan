@@ -25,7 +25,7 @@ export const initBar = (app: App) => {
     const toolbarElement = document.getElementById("toolbar");
     toolbarElement.innerHTML = `
 <div id="barWorkspace" class="ariaLabel toolbar__item toolbar__item--active" aria-label="${window.siyuan.languages.mainMenu} ${updateHotkeyTip(window.siyuan.config.keymap.general.mainMenu.custom)}">
-    <span class="toolbar__text">${getWorkspaceName()}</span>
+    <span class="toolbar__text" style="max-width: unset;">${getWorkspaceName()}</span>
 </div>
 <div id="barSync" class="ariaLabel toolbar__item${window.siyuan.config.readonly ? " fn__none" : ""}">
     <svg><use xlink:href="#iconCloudSucc"></use></svg>
@@ -259,6 +259,13 @@ export const initBar = (app: App) => {
         });
     });
     barSyncElement.setAttribute("aria-label", window.siyuan.config.sync.stat || (window.siyuan.languages.syncNow + " " + updateHotkeyTip(window.siyuan.config.keymap.general.syncNow.custom)));
+
+    // https://x.transmux.top/j/20250210233239-nod7oya
+    const workspaceNameElement = toolbarElement.querySelector(".toolbar__text");
+    // 定时更新当前时间
+    setInterval(() => {
+        workspaceNameElement.textContent = new Date().toLocaleString();
+    }, 1000); // 每秒更新一次
 };
 
 export const setZoom = (type: "zoomIn" | "zoomOut" | "restore") => {
