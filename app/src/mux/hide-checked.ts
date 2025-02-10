@@ -1,3 +1,5 @@
+import { bulletMain } from "./focus-block";
+
 // 隐藏已完成 https://x.transmux.top/j/20250207000640-w6qpyf9
 const css_隐藏已完成 = `
 [data-type="NodeListItem"][class*="protyle-task--done"][data-node-id] {
@@ -39,3 +41,5 @@ export function toggle() {
 
 // 默认启用
 enable()
+
+bulletMain();
