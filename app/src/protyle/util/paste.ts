@@ -226,6 +226,7 @@ export const restoreLuteMarkdownSyntax = (protyle: IProtyle) => {
     protyle.lute.SetSup(window.siyuan.config.editor.markdown.inlineSup);
     protyle.lute.SetTag(window.siyuan.config.editor.markdown.inlineTag);
     protyle.lute.SetInlineUnderscore(window.siyuan.config.editor.markdown.inlineUnderscore);
+    protyle.lute.SetMark(window.siyuan.config.editor.markdown.inlineMark);
 };
 
 export const pasteText = async (protyle: IProtyle, textPlain: string, nodeElement: Element, toBlockDOM = true) => {
@@ -577,7 +578,7 @@ export const paste = async (protyle: IProtyle, event: (ClipboardEvent | DragEven
                     return;
                 } else {
                     // https://github.com/siyuan-note/siyuan/issues/8475
-                    const linkDest = protyle.lute.GetLinkDest(textPlain);
+                    const linkDest = textPlain.startsWith("assets/") ? textPlain : protyle.lute.GetLinkDest(textPlain);
                     if (linkDest) {
                         protyle.toolbar.setInlineMark(protyle, "a", "range", {
                             type: "a",

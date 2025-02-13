@@ -1,7 +1,6 @@
 import {
     hasClosestBlock,
     hasClosestByClassName,
-    hasClosestByMatchTag,
     hasClosestByTag,
     hasTopClosestByClassName,
     isInEmbedBlock
@@ -402,7 +401,7 @@ export class Gutter {
                     transaction(protyle, doOperations, undoOperations);
                 } else {
                     const hasFold = setFold(protyle, foldElement);
-                    const foldArrowElement = buttonElement.parentElement.querySelector("[data-type='fold'] > svg") as HTMLElement
+                    const foldArrowElement = buttonElement.parentElement.querySelector("[data-type='fold'] > svg") as HTMLElement;
                     if (hasFold !== -1 && foldArrowElement) {
                         foldArrowElement.style.transform = hasFold === 0 ? "rotate(90deg)" : "";
                     }
@@ -1563,7 +1562,7 @@ export class Gutter {
             if (!tableElement.contains(range.startContainer)) {
                 range = getEditorRange(tableElement.querySelector("th"));
             }
-            const cellElement = hasClosestByMatchTag(range.startContainer, "TD") || hasClosestByMatchTag(range.startContainer, "TH");
+            const cellElement = hasClosestByTag(range.startContainer, "TD") || hasClosestByTag(range.startContainer, "TH");
             if (cellElement) {
                 window.siyuan.menus.menu.append(new MenuItem({ id: "separator_table", type: "separator" }).element);
                 window.siyuan.menus.menu.append(new MenuItem({
@@ -2396,9 +2395,9 @@ export class Gutter {
                     gutterTip = this.gutterTip.split("<br>").splice(0, 2).join("<br>");
                 }
 
-                let popoverHTML = ""
+                let popoverHTML = "";
                 if (protyle.options.backlinkData) {
-                    popoverHTML = `class="popover__block" data-id="${dataNodeId}"`
+                    popoverHTML = `class="popover__block" data-id="${dataNodeId}"`;
                 }
                 const buttonHTML = `<button class="ariaLabel" data-position="right" aria-label="${gutterTip}" 
 data-type="${type}" data-subtype="${nodeElement.getAttribute("data-subtype")}" data-node-id="${dataNodeId}">

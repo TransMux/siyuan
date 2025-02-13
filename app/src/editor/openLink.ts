@@ -32,8 +32,11 @@ export const openLink = (protyle: IProtyle, aLink: string, event?: MouseEvent, c
     /// #else
     if (isLocalPath(linkAddress)) {
         if (Constants.SIYUAN_ASSETS_EXTS.includes(pathPosix().extname(linkAddress)) &&
-            (!linkAddress.endsWith(".pdf") ||
-                (linkAddress.endsWith(".pdf") && !linkAddress.startsWith("file://")))
+            (
+                !linkAddress.endsWith(".pdf") ||
+                    // 本地 pdf 仅 assets/ 开头的才使用 siyuan 打开
+                (linkAddress.endsWith(".pdf") && linkAddress.startsWith("assets/"))
+            )
         ) {
             // https://x.transmux.top/j/20241201141042-wcuvofb 修改默认操作
             if (event && event.altKey) {
