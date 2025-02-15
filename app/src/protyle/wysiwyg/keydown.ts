@@ -69,6 +69,7 @@ import {checkFold} from "../../util/noRelyPCFunction";
 import {AIActions} from "../../ai/actions";
 import {openLink} from "../../editor/openLink";
 import {onlyProtyleCommand} from "../../boot/globalEvent/command/protyle";
+import { altx上色顺序Keys, altx上色顺序Values } from "../../mux/settings";
 
 export const getContentByInlineHTML = (range: Range, cb: (content: string) => void) => {
     let html = "";
@@ -1362,7 +1363,38 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
             if (selectText === "" && selectElements.length === 0) {
                 selectElements.push(nodeElement);
             }
-            fontEvent(protyle, selectElements);
+            debugger
+            if (selectElements.length > 0) {
+                fontEvent(protyle, selectElements);
+            } else {
+                // 如果选择的元素没有跨block，也就是说，在一个block中选择的
+
+                // 1. 获取当前range的commonAncestorContainer的color样式
+                const commonAncestorContainer = range.commonAncestorContainer;
+                // 如果 commonAncestorContainer 不是元素节点，则使用其父元素
+                const containerElement = commonAncestorContainer.nodeType === Node.ELEMENT_NODE
+                    ? (commonAncestorContainer as HTMLElement)
+                    : (commonAncestorContainer.parentElement as HTMLElement);
+
+                const computedColor = containerElement.style.color;
+
+                // 2. 匹配 altx上色顺序，应用匹配到的下一个颜色
+                const matchColorIndex = altx上色顺序Keys.findIndex(key => computedColor.includes(key));
+                if (matchColorIndex !== -1) {
+                    const nextColor = altx上色顺序Values[matchColorIndex + 1];
+                    if (nextColor.type === "clear") {
+                        protyle.toolbar.setInlineMark(protyle, "clear", "range", { type: "text" });
+                    } else {
+                        // 在有背景的情况下进行设置，会导致背景颜色和字体颜色同时存在
+                        // protyle.toolbar.setInlineMark(protyle, "clear", "range", { type: "text" });
+                        protyle.toolbar.setInlineMark(protyle, "text", "range", nextColor);
+                    }
+                } else {
+                    // 如果匹配不到，则应用最弱的颜色
+                    const nextColor = altx上色顺序Values[0];
+                    protyle.toolbar.setInlineMark(protyle, "text", "range", nextColor);
+                }
+            }
             event.stopPropagation();
             event.preventDefault();
             return;
