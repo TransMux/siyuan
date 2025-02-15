@@ -17,6 +17,7 @@ import {assetMenu} from "../../menus/protyle";
 import {previewImage} from "../preview/image";
 import {Menu} from "../../plugin/Menu";
 import {escapeHtml} from "../../util/escape";
+import { deleteFile } from "../../editor/deleteFile";
 
 const bgs = [
     "background:radial-gradient(black 3px, transparent 4px),radial-gradient(black 3px, transparent 4px),linear-gradient(#fff 4px, transparent 0),linear-gradient(45deg, transparent 74px, transparent 75px, #a4a4a4 75px, #a4a4a4 76px, transparent 77px, transparent 109px),linear-gradient(-45deg, transparent 75px, transparent 76px, #a4a4a4 76px, #a4a4a4 77px, transparent 78px, transparent 109px),#fff;background-size: 109px 109px, 109px 109px,100% 6px, 109px 109px, 109px 109px;background-position: 54px 55px, 0px 0px, 0px 0px, 0px 0px, 0px 0px;",
@@ -138,6 +139,10 @@ export class Background {
         <button class="b3-button b3-button--cancel" data-type="random">
             <svg><use xlink:href="#iconImage"></use></svg>
             ${window.siyuan.languages.titleBg}
+        </button>
+        <button class="b3-button b3-button--cancel" data-type="deleteDoc" style="color: var(--b3-theme-error);">
+            <svg><use xlink:href="#iconTrashcan"></use></svg>
+            ${window.siyuan.languages.delete}
         </button>
     </div>
 </div>`;
@@ -351,6 +356,12 @@ export class Background {
                             w: rect.width
                         });
                     }
+                    event.preventDefault();
+                    event.stopPropagation();
+                    break;
+                } else if (type === "deleteDoc") {
+                    // https://x.transmux.top/j/20250216021526-wg3vnwa
+                    deleteFile(protyle.notebookId, protyle.path);
                     event.preventDefault();
                     event.stopPropagation();
                     break;
