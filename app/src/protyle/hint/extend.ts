@@ -320,6 +320,16 @@ export const hintSlash = (key: string, protyle: IProtyle) => {
         value: "",
         id: "separator_6",
         html: "separator",
+    }, {
+        // https://x.transmux.top/j/20250214114352-ikmo2mx
+        filter: ["link daily note"],
+        id: "linkDailyNote",
+        value: Constants.ZWSP + 1001,
+        html: `<div class="b3-list-item__first"><svg class="b3-list-item__graphic"><use xlink:href="#iconFile"></use></svg><span class="b3-list-item__text">链接到日记</span></div>`,
+    }, {
+        value: "",
+        id: "separator_7",
+        html: "separator",
     }];
     let hasPlugin = false;
     protyle.app.plugins.forEach((plugin) => {
