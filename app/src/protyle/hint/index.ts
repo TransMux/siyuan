@@ -666,7 +666,6 @@ ${genHintItemHTML(item)}
                 });
                 return;
             } else if (value === Constants.ZWSP + 1001) {
-                debugger
                 // https://x.transmux.top/j/20250214114352-ikmo2mx
                 const localNotebookId = window.siyuan.storage[Constants.LOCAL_DAILYNOTEID];
                 if (localNotebookId) {
@@ -676,6 +675,7 @@ ${genHintItemHTML(item)}
                     }, (response) => {
                         // dayString = 02-17
                         const dayString = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
+                        range.deleteContents();
                         pasteText(protyle, `((${response.data.id} '${dayString}'))`, nodeElement);
                     });
                 }
