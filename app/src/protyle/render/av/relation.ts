@@ -9,6 +9,7 @@ import {updateAttrViewCellAnimation} from "./action";
 import {focusBlock} from "../../util/selection";
 import {setPosition} from "../../../util/setPosition";
 import * as dayjs from "dayjs";
+import { 自定义获取av主键的所有值 } from "../../../mux/utils";
 
 const genSearchList = (element: Element, keyword: string, avId?: string, excludes = true, cb?: () => void) => {
     fetchPost("/api/av/searchAttributeView", {
@@ -264,10 +265,11 @@ export const bindRelationEvent = (options: {
     blockElement: Element,
     cellElements: HTMLElement[]
 }) => {
-    fetchPost("/api/av/getAttributeViewPrimaryKeyValues", {
+    自定义获取av主键的所有值({
         id: options.menuElement.firstElementChild.getAttribute("data-av-id"),
         keyword: "",
-    }, response => {
+    }, (response: any) => {
+        debugger;
         const cells = response.data.rows.values as IAVCellValue[] || [];
         let html = "";
         let selectHTML = "";

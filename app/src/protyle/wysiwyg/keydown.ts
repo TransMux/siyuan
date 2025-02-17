@@ -1363,7 +1363,6 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
             if (selectText === "" && selectElements.length === 0) {
                 selectElements.push(nodeElement);
             }
-            debugger
             if (selectElements.length > 0) {
                 fontEvent(protyle, selectElements);
             } else {
