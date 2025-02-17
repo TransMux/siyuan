@@ -1,23 +1,24 @@
-import {hasClosestByClassName} from "../util/hasClosest";
-import {getRandom, isMobile} from "../../util/functions";
-import {hideElements} from "../ui/hideElements";
-import {uploadFiles} from "../upload";
-import {fetchPost} from "../../util/fetch";
-import {getRandomEmoji, openEmojiPanel, unicode2Emoji, updateFileTreeEmoji, updateOutlineEmoji} from "../../emoji";
-import {upDownHint} from "../../util/upDownHint";
+import { hasClosestByClassName } from "../util/hasClosest";
+import { getRandom, isMobile } from "../../util/functions";
+import { hideElements } from "../ui/hideElements";
+import { uploadFiles } from "../upload";
+import { fetchPost } from "../../util/fetch";
+import { getRandomEmoji, openEmojiPanel, unicode2Emoji, updateFileTreeEmoji, updateOutlineEmoji } from "../../emoji";
+import { upDownHint } from "../../util/upDownHint";
 /// #if !MOBILE
-import {openGlobalSearch} from "../../search/util";
+import { openGlobalSearch } from "../../search/util";
 /// #else
-import {popSearch} from "../../mobile/menu/search";
+import { popSearch } from "../../mobile/menu/search";
 /// #endif
-import {getEventName} from "../util/compatibility";
-import {Dialog} from "../../dialog";
-import {Constants} from "../../constants";
-import {assetMenu} from "../../menus/protyle";
-import {previewImage} from "../preview/image";
-import {Menu} from "../../plugin/Menu";
-import {escapeHtml} from "../../util/escape";
+import { getEventName } from "../util/compatibility";
+import { Dialog } from "../../dialog";
+import { Constants } from "../../constants";
+import { assetMenu } from "../../menus/protyle";
+import { previewImage } from "../preview/image";
+import { Menu } from "../../plugin/Menu";
+import { escapeHtml } from "../../util/escape";
 import { deleteFile } from "../../editor/deleteFile";
+import { showMessage } from "../../dialog/message";
 
 const bgs = [
     "background:radial-gradient(black 3px, transparent 4px),radial-gradient(black 3px, transparent 4px),linear-gradient(#fff 4px, transparent 0),linear-gradient(45deg, transparent 74px, transparent 75px, #a4a4a4 75px, #a4a4a4 76px, transparent 77px, transparent 109px),linear-gradient(-45deg, transparent 75px, transparent 76px, #a4a4a4 76px, #a4a4a4 77px, transparent 78px, transparent 109px),#fff;background-size: 109px 109px, 109px 109px,100% 6px, 109px 109px, 109px 109px;background-position: 54px 55px, 0px 0px, 0px 0px, 0px 0px, 0px 0px;",
@@ -140,6 +141,10 @@ export class Background {
             <svg><use xlink:href="#iconImage"></use></svg>
             ${window.siyuan.languages.titleBg}
         </button>
+        <button class="b3-button b3-button--cancel" data-type="moveDocToDailyNote">
+            <svg><use xlink:href="#iconFile"></use></svg>
+            移动到日记下
+        </button>
         <button class="b3-button b3-button--cancel" data-type="deleteDoc" style="color: var(--b3-theme-error);">
             <svg><use xlink:href="#iconTrashcan"></use></svg>
             ${window.siyuan.languages.delete}
@@ -163,7 +168,7 @@ export class Background {
                     this.render(this.ial, protyle.block.rootID);
                     fetchPost("/api/attr/setBlockAttrs", {
                         id: protyle.block.rootID,
-                        attrs: {"title-img": style}
+                        attrs: { "title-img": style }
                     });
                 });
             }
@@ -206,7 +211,7 @@ export class Background {
                 this.render(this.ial, protyle.block.rootID);
                 fetchPost("/api/attr/setBlockAttrs", {
                     id: protyle.block.rootID,
-                    attrs: {"title-img": style}
+                    attrs: { "title-img": style }
                 });
             });
         });
@@ -249,7 +254,7 @@ export class Background {
                         this.ial["title-img"] = style;
                         fetchPost("/api/attr/setBlockAttrs", {
                             id: protyle.block.rootID,
-                            attrs: {"title-img": style}
+                            attrs: { "title-img": style }
                         });
                     } else {
                         this.render(this.ial, protyle.block.rootID);
@@ -287,7 +292,7 @@ export class Background {
                             this.render(this.ial, protyle.block.rootID);
                             fetchPost("/api/attr/setBlockAttrs", {
                                 id: protyle.block.rootID,
-                                attrs: {"title-img": this.ial["title-img"]}
+                                attrs: { "title-img": this.ial["title-img"] }
                             });
                             dialog.destroy();
                         }
@@ -300,7 +305,7 @@ export class Background {
                     this.render(this.ial, protyle.block.rootID);
                     fetchPost("/api/attr/setBlockAttrs", {
                         id: protyle.block.rootID,
-                        attrs: {"title-img": this.ial["title-img"]}
+                        attrs: { "title-img": this.ial["title-img"] }
                     });
                     event.preventDefault();
                     event.stopPropagation();
@@ -316,7 +321,7 @@ export class Background {
                         this.render(this.ial, protyle.block.rootID);
                         fetchPost("/api/attr/setBlockAttrs", {
                             id: protyle.block.rootID,
-                            attrs: {"title-img": this.ial["title-img"]}
+                            attrs: { "title-img": this.ial["title-img"] }
                         });
                         /// #if MOBILE
                         window.siyuan.menus.menu.remove();
@@ -330,7 +335,7 @@ export class Background {
                     this.render(this.ial, protyle.block.rootID);
                     fetchPost("/api/attr/setBlockAttrs", {
                         id: protyle.block.rootID,
-                        attrs: {"title-img": ""}
+                        attrs: { "title-img": "" }
                     });
                     event.preventDefault();
                     event.stopPropagation();
@@ -342,7 +347,7 @@ export class Background {
                         updateOutlineEmoji(emoji, protyle.block.rootID);
                         fetchPost("/api/attr/setBlockAttrs", {
                             id: protyle.block.rootID,
-                            attrs: {"icon": emoji}
+                            attrs: { "icon": emoji }
                         });
                         if (protyle.model) {
                             protyle.model.parent.setDocIcon(emoji);
@@ -362,6 +367,24 @@ export class Background {
                 } else if (type === "deleteDoc") {
                     // https://x.transmux.top/j/20250216021526-wg3vnwa
                     deleteFile(protyle.notebookId, protyle.path);
+                    event.preventDefault();
+                    event.stopPropagation();
+                    break;
+                } else if (type === "moveDocToDailyNote") {
+                    // https://x.transmux.top/j/20250217175042-e08hdav
+                    const localNotebookId = window.siyuan.storage[Constants.LOCAL_DAILYNOTEID];
+                    fetchPost("/api/filetree/createDailyNote", {
+                        notebook: localNotebookId,
+                        app: Constants.SIYUAN_APPID,
+                    }, (response) => {
+                        // target id response.data.id
+                        fetchPost("/api/filetree/moveDocsByID", {
+                            "fromIDs": [protyle.block.rootID],
+                            "toID": response.data.id
+                        }, () => {
+                            showMessage("移动到日记下成功", 1000);
+                        });
+                    });
                     event.preventDefault();
                     event.stopPropagation();
                     break;
@@ -393,7 +416,7 @@ export class Background {
                         this.render(this.ial, protyle.block.rootID);
                         fetchPost("/api/attr/setBlockAttrs", {
                             id: protyle.block.rootID,
-                            attrs: {"title-img": this.ial["title-img"]}
+                            attrs: { "title-img": this.ial["title-img"] }
                         });
                         dialog.destroy();
                     });
@@ -403,7 +426,7 @@ export class Background {
                     break;
                 } else if (type === "open-search") {
                     /// #if !MOBILE
-                    openGlobalSearch(protyle.app, `#${target.textContent}#`, !window.siyuan.ctrlIsPressed, {method: 0});
+                    openGlobalSearch(protyle.app, `#${target.textContent}#`, !window.siyuan.ctrlIsPressed, { method: 0 });
                     /// #else
                     popSearch(protyle.app, {
                         hasReplace: false,
@@ -434,7 +457,7 @@ export class Background {
         const tags = this.getTags();
         fetchPost("/api/attr/setBlockAttrs", {
             id: protyle.block.rootID,
-            attrs: {"tags": tags.toString()}
+            attrs: { "tags": tags.toString() }
         });
         if (tags.length === 0) {
             delete this.ial.tags;
@@ -599,7 +622,7 @@ export class Background {
         });
         menu.element.querySelector(".b3-menu__items").setAttribute("style", "overflow: initial");
         const rect = target.getBoundingClientRect();
-        menu.open({x: rect.left, y: rect.top + rect.height});
+        menu.open({ x: rect.left, y: rect.top + rect.height });
         menu.element.querySelector("input").focus();
     }
 
@@ -624,7 +647,7 @@ export class Background {
         tags.push(tag);
         fetchPost("/api/attr/setBlockAttrs", {
             id: protyle.block.rootID,
-            attrs: {"tags": tags.toString()}
+            attrs: { "tags": tags.toString() }
         });
         this.ial.tags = tags.toString();
         this.render(this.ial, protyle.block.rootID);
