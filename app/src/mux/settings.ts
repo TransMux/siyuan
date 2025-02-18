@@ -12,6 +12,8 @@ export const 标签之树目录 = "20250101005307-7384qo5";
 export const 外部输入avID = "20250102171020-4cqqonx";
 export const 外部输入目录 = "20250102171013-zzcyz96";
 
+export const 已读目录 = "20241231233427-ge48qdq";
+
 export const 主页ID = "20250206142847-cbvnc9o";
 
 // key: 选中的文本如果全部属于同一个节点，并且color可以在下面的key中找到，那么升级到下一个颜色
