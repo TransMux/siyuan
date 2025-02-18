@@ -280,6 +280,11 @@ export const bindRelationEvent = (options: {
             hasIds.push(item.dataset.id);
             selectHTML += `<button data-id="${item.dataset.id}" data-type="setRelationCell" class="b3-menu__item" draggable="true">${genSelectItemHTML("selected", item.dataset.id, !item.classList.contains("av__celltext--ref"), Lute.EscapeHTMLStr(item.textContent || window.siyuan.languages.untitled))}</button>`;
         });
+        // 在文档的属性面板中无法正确检索已存在的项目 https://x.transmux.top/j/20250218023611-lr6dt1n
+        options.cellElements[0].querySelectorAll(".av__celltext--ref").forEach((relationItem: HTMLElement) => {
+            hasIds.push(relationItem.dataset.id);
+            selectHTML += `<button data-id="${relationItem.dataset.id}" data-type="setRelationCell" class="b3-menu__item" draggable="true">${genSelectItemHTML("selected", relationItem.dataset.id, !relationItem.classList.contains("av__celltext--ref"), Lute.EscapeHTMLStr(relationItem.textContent || window.siyuan.languages.untitled))}</button>`;
+        });
         cells.forEach((item) => {
             if (!hasIds.includes(item.block.id)) {
                 html += genSelectItemHTML("unselect", item.block.id, item.isDetached, Lute.EscapeHTMLStr(item.block.content || window.siyuan.languages.untitled));
