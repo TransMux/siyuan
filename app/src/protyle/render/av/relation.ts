@@ -233,10 +233,11 @@ const genSelectItemHTML = (type: "selected" | "empty" | "unselect", id?: string,
 };
 
 const filterItem = (menuElement: Element, cellElement: HTMLElement, keyword: string) => {
-    fetchPost("/api/av/getAttributeViewPrimaryKeyValues", {
+    // https://x.transmux.top/j/20250218023611-lr6dt1n
+    自定义获取av主键的所有值({
         id: menuElement.firstElementChild.getAttribute("data-av-id"),
         keyword,
-    }, response => {
+    }, (response: any) => {
         const cells = response.data.rows.values as IAVCellValue[] || [];
         let html = "";
         let selectHTML = "";
@@ -265,11 +266,11 @@ export const bindRelationEvent = (options: {
     blockElement: Element,
     cellElements: HTMLElement[]
 }) => {
+    // https://x.transmux.top/j/20250218023611-lr6dt1n
     自定义获取av主键的所有值({
         id: options.menuElement.firstElementChild.getAttribute("data-av-id"),
         keyword: "",
     }, (response: any) => {
-        debugger;
         const cells = response.data.rows.values as IAVCellValue[] || [];
         let html = "";
         let selectHTML = "";

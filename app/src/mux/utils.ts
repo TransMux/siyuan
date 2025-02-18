@@ -9,21 +9,33 @@ export async function getBlockInfoByIDSQL(block_id: string) {
 }
 
 export async function 自定义获取av主键的所有值(data: any, callback: any) {
+    // https://x.transmux.top/j/20250218023611-lr6dt1n
     if (data.id === 标签之树avID) {
         data["pageSize"] = 10000;
     }
 
     const cb = (response: any) => {
-        debugger;
-        // 空query的时候，只给出 "* - ..." 一级标签
-        if (data.keyword === "") {
-            const filteredValues = response.data.rows.values.filter((item: any) => item.block.content.match(/^[A-Z] - /));
-            response.data.rows.values = filteredValues;
+        if (data.id === 标签之树avID) {
+            let filteredValues: any[] = [];
+            if (data.keyword === "") {
+                // 默认展示全部根标签
+                filteredValues = response.data.rows.values.filter((item: any) => item.block.content.match(/^[A-Z] - /));
+            } else {
+                debugger
+                // 先假设输入标签，那么检索所有 keyword+数字 - 的子标签
+                filteredValues = response.data.rows.values.filter((item: any) => item.block.content.match(new RegExp(`^${data.keyword}\\d - `)));
+            }
+            if (filteredValues && filteredValues.length != 0) {
+                response.data.rows.values = filteredValues;
+            }
         }
-        // order by content
-        response.data.rows.values.sort((a: any, b: any) => a.block.content.localeCompare(b.block.content));
 
+        // 多级标签排序
+        response.data.rows.values.sort((a: any, b: any) => {
+            return a.block.content.localeCompare(b.block.content);
+        });
         callback(response);
+        return;
     }
 
     fetchPost("/api/av/getAttributeViewPrimaryKeyValues", data, cb);
