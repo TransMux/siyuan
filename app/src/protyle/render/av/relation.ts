@@ -1,15 +1,16 @@
-import {Menu} from "../../../plugin/Menu";
-import {hasClosestByClassName, hasTopClosestByClassName} from "../../util/hasClosest";
-import {upDownHint} from "../../../util/upDownHint";
-import {fetchPost} from "../../../util/fetch";
-import {escapeGreat, escapeHtml} from "../../../util/escape";
-import {transaction} from "../../wysiwyg/transaction";
-import {updateCellsValue} from "./cell";
-import {updateAttrViewCellAnimation} from "./action";
-import {focusBlock} from "../../util/selection";
-import {setPosition} from "../../../util/setPosition";
+import { Menu } from "../../../plugin/Menu";
+import { hasClosestByClassName, hasTopClosestByClassName } from "../../util/hasClosest";
+import { upDownHint } from "../../../util/upDownHint";
+import { fetchPost } from "../../../util/fetch";
+import { escapeGreat, escapeHtml } from "../../../util/escape";
+import { transaction } from "../../wysiwyg/transaction";
+import { updateCellsValue } from "./cell";
+import { updateAttrViewCellAnimation } from "./action";
+import { focusBlock } from "../../util/selection";
+import { setPosition } from "../../../util/setPosition";
 import * as dayjs from "dayjs";
 import { 自定义获取av主键的所有值 } from "../../../mux/utils";
+import { 标签之树avID } from "../../../mux/settings";
 
 const genSearchList = (element: Element, keyword: string, avId?: string, excludes = true, cb?: () => void) => {
     fetchPost("/api/av/searchAttributeView", {
@@ -166,7 +167,7 @@ export const updateRelation = (options: {
         format: colData.name
     }]);
     options.avElement.remove();
-    updateAttrViewCellAnimation(options.blockElement.querySelector(`.av__row--header .av__cell[data-col-id="${colId}"]`), undefined, {name: colNewName});
+    updateAttrViewCellAnimation(options.blockElement.querySelector(`.av__row--header .av__cell[data-col-id="${colId}"]`), undefined, { name: colNewName });
     focusBlock(options.blockElement);
 };
 
@@ -247,6 +248,15 @@ const filterItem = (menuElement: Element, cellElement: HTMLElement, keyword: str
             hasIds.push(item.dataset.id);
             selectHTML += `<button data-id="${item.dataset.id}" data-type="setRelationCell" class="b3-menu__item${item.textContent.indexOf(keyword) > -1 ? "" : " fn__none"}" draggable="true">${genSelectItemHTML("selected", item.dataset.id, !item.classList.contains("av__celltext--ref"), Lute.EscapeHTMLStr(item.textContent || window.siyuan.languages.untitled))}</button>`;
         });
+        // 在文档的属性面板中无法正确检索已存在的项目 https://x.transmux.top/j/20250218023611-lr6dt1n
+        cellElement.querySelectorAll(".av__celltext--ref").forEach((relationItem: HTMLElement) => {
+            // https://x.transmux.top/j/20250218164330-p9pk2mi
+            if (hasIds.includes(relationItem.dataset.id)) {
+                return;
+            }
+            hasIds.push(relationItem.dataset.id);
+            selectHTML += `<button data-id="${relationItem.dataset.id}" data-type="setRelationCell" class="b3-menu__item${relationItem.textContent.indexOf(keyword) > -1 ? "" : " fn__none"}" draggable="true">${genSelectItemHTML("selected", relationItem.dataset.id, !relationItem.classList.contains("av__celltext--ref"), Lute.EscapeHTMLStr(relationItem.textContent || window.siyuan.languages.untitled))}</button>`;
+        });
         cells.forEach((item) => {
             if (!hasIds.includes(item.block.id)) {
                 html += genSelectItemHTML("unselect", item.block.id, item.isDetached, Lute.EscapeHTMLStr(item.block.content || window.siyuan.languages.untitled));
@@ -282,6 +292,10 @@ export const bindRelationEvent = (options: {
         });
         // 在文档的属性面板中无法正确检索已存在的项目 https://x.transmux.top/j/20250218023611-lr6dt1n
         options.cellElements[0].querySelectorAll(".av__celltext--ref").forEach((relationItem: HTMLElement) => {
+            // https://x.transmux.top/j/20250218164330-p9pk2mi
+            if (hasIds.includes(relationItem.dataset.id)) {
+                return;
+            }
             hasIds.push(relationItem.dataset.id);
             selectHTML += `<button data-id="${relationItem.dataset.id}" data-type="setRelationCell" class="b3-menu__item" draggable="true">${genSelectItemHTML("selected", relationItem.dataset.id, !relationItem.classList.contains("av__celltext--ref"), Lute.EscapeHTMLStr(relationItem.textContent || window.siyuan.languages.untitled))}</button>`;
         });
@@ -372,7 +386,7 @@ export const setRelationCell = (protyle: IProtyle, nodeElement: HTMLElement, tar
         cellElements[0] = (nodeElement.querySelector(`.av__row[data-id="${rowElement.dataset.id}"] .av__cell[data-col-id="${cellElements[0].dataset.colId}"]`) ||
             nodeElement.querySelector(`.fn__flex-1[data-col-id="${cellElements[0].dataset.colId}"]`)) as HTMLElement;
     }
-    const newValue: IAVCellRelationValue = {blockIDs: [], contents: []};
+    const newValue: IAVCellRelationValue = { blockIDs: [], contents: [] };
     menuElement.querySelectorAll('[draggable="true"]').forEach(item => {
         const id = item.getAttribute("data-id");
         newValue.blockIDs.push(id);

@@ -21,7 +21,6 @@ export async function 自定义获取av主键的所有值(data: any, callback: a
                 // 默认展示全部根标签
                 filteredValues = response.data.rows.values.filter((item: any) => item.block.content.match(/^[A-Z] - /));
             } else {
-                debugger
                 // 先假设输入标签，那么检索所有 keyword+数字 - 的子标签
                 filteredValues = response.data.rows.values.filter((item: any) => item.block.content.match(new RegExp(`^${data.keyword}\\d - `)));
             }
