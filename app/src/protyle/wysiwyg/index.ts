@@ -1,4 +1,4 @@
-import { getTextStar, paste, pasteText } from "../util/paste";
+import {getTextStar, paste} from "../util/paste";
 import {
     hasClosestBlock,
     hasClosestByAttribute,
@@ -64,7 +64,7 @@ import { openGlobalSearch } from "../../search/util";
 import { popSearch } from "../../mobile/menu/search";
 /// #endif
 import {BlockPanel} from "../../block/Panel";
-import {isInIOS, isMac, isOnlyMeta, readText} from "../util/compatibility";
+import {isInIOS, isMac, isOnlyMeta, readClipboard} from "../util/compatibility";
 import {MenuItem} from "../../menus/Menu";
 import {fetchPost} from "../../util/fetch";
 import {onGet} from "../util/onGet";
@@ -202,6 +202,9 @@ export class WYSIWYG {
             inlineElement.tagName === "SPAN" &&
             inlineElement.textContent !== inputData &&
             !currentTypes.includes("search-mark") &&    // https://github.com/siyuan-note/siyuan/issues/7586
+            !currentTypes.includes("code") &&   // https://github.com/siyuan-note/siyuan/issues/13871
+            !currentTypes.includes("kbd") &&
+            !currentTypes.includes("tag") &&
             range.toString() === "" && range.startContainer.nodeType === 3 &&
             (currentTypes.includes("inline-memo") || currentTypes.includes("text") || currentTypes.includes("block-ref") || currentTypes.includes("file-annotation-ref") || currentTypes.includes("a")) &&
             !hasNextSibling(range.startContainer) && range.startContainer.textContent.length === range.startOffset &&
@@ -366,14 +369,13 @@ export class WYSIWYG {
                 const tempElement = document.createElement("div");
                 // https://github.com/siyuan-note/siyuan/issues/5540
                 const selectTypes = protyle.toolbar.getCurrentType(range);
-                if ((selectTypes.length > 0 || range.startContainer.parentElement.parentElement.getAttribute("data-type") === "NodeHeading") &&
-                    (
-                        (range.startContainer.nodeType === 3 && range.startContainer.parentElement.textContent === range.toString()) ||
-                        (range.startContainer.nodeType !== 3 && range.startContainer.textContent === range.toString())
-                    )) {
-                    if (range.startContainer.parentElement.parentElement.getAttribute("data-type") === "NodeHeading") {
+                const spanElement = hasClosestByTag(range.startContainer, "SPAN");
+                const headingElement = hasClosestByAttribute(range.startContainer, "data-type", "NodeHeading");
+                if ((selectTypes.length > 0 && spanElement && spanElement.textContent.replace(Constants.ZWSP, "") === range.toString()) ||
+                    (headingElement && headingElement.textContent.replace(Constants.ZWSP, "") === range.toString())) {
+                    if (headingElement) {
                         // 复制标题 https://github.com/siyuan-note/insider/issues/297
-                        tempElement.append(range.startContainer.parentElement.parentElement.cloneNode(true));
+                        tempElement.append(headingElement.cloneNode(true));
                     } else if (!["DIV", "TD", "TH", "TR"].includes(range.startContainer.parentElement.tagName)) {
                         // 复制行内元素 https://github.com/siyuan-note/insider/issues/191
                         tempElement.append(range.startContainer.parentElement.cloneNode(true));
@@ -388,7 +390,8 @@ export class WYSIWYG {
                 } else if (selectImgElement) {
                     html = selectImgElement.outerHTML;
                     textPlain = selectImgElement.querySelector("img").getAttribute("data-src");
-                } else if (selectTypes.length > 0 && range.startContainer.nodeType === 3 && range.startContainer.parentElement.tagName === "SPAN" &&
+                } else if (selectTypes.length > 0 && range.startContainer.nodeType === 3 &&
+                    range.startContainer.parentElement.tagName === "SPAN" &&
                     range.startContainer.parentElement.isSameNode(range.endContainer.parentElement)) {
                     // 复制粗体等字体中的一部分
                     const attributes = range.startContainer.parentElement.attributes;
@@ -729,6 +732,7 @@ export class WYSIWYG {
                 if (tableBlockElement) {
                     tableBlockElement.querySelector(".table__select").removeAttribute("style");
                     window.siyuan.menus.menu.remove();
+                    hideElements(["toolbar"], protyle);
                     event.stopPropagation();
                 }
                 // 后续拖拽操作写在多选节点中
@@ -1329,8 +1333,8 @@ export class WYSIWYG {
                                     document.execCommand("paste");
                                 } else if (tableBlockElement) {
                                     try {
-                                        const clipText = await readText();
-                                        pasteText(protyle, clipText, tableBlockElement);
+                                        const text = await readClipboard();
+                                        paste(protyle, Object.assign(text, {target: tableBlockElement as HTMLElement}));
                                     } catch (e) {
                                         console.log(e);
                                     }
