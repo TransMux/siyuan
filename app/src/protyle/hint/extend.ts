@@ -555,11 +555,14 @@ export const hintRenderAssets = (value: string, protyle: IProtyle) => {
     hideElements(["util"], protyle);
 };
 
-export const hintMoveBlock = (pathString: string, sourceElements: Element[], protyle: IProtyle) => {
+export const hintMoveBlock = (pathString: string, sourceElements: Element[], protyle: IProtyle, parentID?: string) => {
     if (pathString === "/") {
         return;
     }
-    const parentID = getDisplayName(pathString, true, true);
+    // https://x.transmux.top/j/20250219105836-k4u5mcg
+    if (!parentID) {
+        parentID = getDisplayName(pathString, true, true);
+    }
     if (protyle.block.rootID === parentID) {
         return;
     }

@@ -42,32 +42,33 @@ import {
     insertEmptyBlock,
     jumpToParent,
 } from "../../block/util";
-import {countBlockWord} from "../../layout/status";
-import {Constants} from "../../constants";
-import {mathRender} from "../render/mathRender";
-import {duplicateBlock} from "../wysiwyg/commonHotkey";
-import {movePathTo} from "../../util/pathName";
-import {hintMoveBlock} from "../hint/extend";
-import {makeCard, quickMakeCard} from "../../card/makeCard";
-import {transferBlockRef} from "../../menus/block";
-import {isMobile} from "../../util/functions";
-import {AIActions} from "../../ai/actions";
-import {activeBlur, renderTextMenu, showKeyboardToolbarUtil} from "../../mobile/util/keyboardToolbar";
-import {hideTooltip} from "../../dialog/tooltip";
-import {appearanceMenu} from "../toolbar/Font";
-import {setPosition} from "../../util/setPosition";
-import {emitOpenMenu} from "../../plugin/EventBus";
-import {insertAttrViewBlockAnimation, updateHeader} from "../render/av/row";
-import {avContextmenu, duplicateCompletely} from "../render/av/action";
-import {getPlainText} from "../util/paste";
-import {addEditorToDatabase} from "../render/av/addToDatabase";
-import {processClonePHElement} from "../render/util";
+import { countBlockWord } from "../../layout/status";
+import { Constants } from "../../constants";
+import { mathRender } from "../render/mathRender";
+import { duplicateBlock } from "../wysiwyg/commonHotkey";
+import { movePathTo } from "../../util/pathName";
+import { hintMoveBlock } from "../hint/extend";
+import { makeCard, quickMakeCard } from "../../card/makeCard";
+import { transferBlockRef } from "../../menus/block";
+import { isMobile } from "../../util/functions";
+import { AIActions } from "../../ai/actions";
+import { activeBlur, renderTextMenu, showKeyboardToolbarUtil } from "../../mobile/util/keyboardToolbar";
+import { hideTooltip } from "../../dialog/tooltip";
+import { appearanceMenu } from "../toolbar/Font";
+import { setPosition } from "../../util/setPosition";
+import { emitOpenMenu } from "../../plugin/EventBus";
+import { insertAttrViewBlockAnimation, updateHeader } from "../render/av/row";
+import { avContextmenu, duplicateCompletely } from "../render/av/action";
+import { getPlainText } from "../util/paste";
+import { addEditorToDatabase } from "../render/av/addToDatabase";
+import { processClonePHElement } from "../render/util";
 import { openNewWindowById } from "../../window/openNewWindow";
 /// #if !MOBILE
-import {openFileById} from "../../editor/util";
+import { openFileById } from "../../editor/util";
 /// #endif
-import {checkFold} from "../../util/noRelyPCFunction";
-import {copyTextByType} from "../toolbar/util";
+import { checkFold } from "../../util/noRelyPCFunction";
+import { copyTextByType } from "../toolbar/util";
+import { showMessage } from "../../dialog/message";
 
 export class Gutter {
     public element: HTMLElement;
@@ -351,7 +352,7 @@ export class Gutter {
                         });
                     });
                 } else {
-                    zoomOut({protyle, id});
+                    zoomOut({ protyle, id });
                 }
             } else if (event.altKey) {
                 let foldElement: Element;
@@ -512,7 +513,7 @@ export class Gutter {
         this.element.addEventListener("mousewheel", (event) => {
             hideElements(["gutter"], protyle);
             event.stopPropagation();
-        }, {passive: true});
+        }, { passive: true });
     }
 
     private isMatchNode(item: Element) {
@@ -867,6 +868,24 @@ export class Gutter {
             click: () => {
                 movePathTo((toPath) => {
                     hintMoveBlock(toPath[0], selectsElement, protyle);
+                });
+            }
+        }).element);
+        // https://x.transmux.top/j/20250219105836-k4u5mcg
+        window.siyuan.menus.menu.append(new MenuItem({
+            id: "moveToDailyNote",
+            label: "追加到今日日记",
+            icon: "iconMove",
+            click: () => {
+                const localNotebookId = window.siyuan.storage[Constants.LOCAL_DAILYNOTEID];
+                fetchPost("/api/filetree/createDailyNote", {
+                    notebook: localNotebookId,
+                    app: Constants.SIYUAN_APPID,
+                }, (response) => {
+                    // target id response.data.id
+                    const parentID = response.data.id;
+                    hintMoveBlock(undefined, selectsElement, protyle, parentID);
+                    showMessage("追加到日记下", 1000);
                 });
             }
         }).element);
@@ -1388,6 +1407,24 @@ export class Gutter {
                 click: () => {
                     movePathTo((toPath) => {
                         hintMoveBlock(toPath[0], [nodeElement], protyle);
+                    });
+                }
+            }).element);
+            // https://x.transmux.top/j/20250219105836-k4u5mcg
+            window.siyuan.menus.menu.append(new MenuItem({
+                id: "moveToDailyNote",
+                label: "追加到今日日记",
+                icon: "iconMove",
+                click: () => {
+                    const localNotebookId = window.siyuan.storage[Constants.LOCAL_DAILYNOTEID];
+                    fetchPost("/api/filetree/createDailyNote", {
+                        notebook: localNotebookId,
+                        app: Constants.SIYUAN_APPID,
+                    }, (response) => {
+                        // target id response.data.id
+                        const parentID = response.data.id;
+                        hintMoveBlock(undefined, [nodeElement], protyle, parentID);
+                        showMessage("追加到日记下", 1000);
                     });
                 }
             }).element);
