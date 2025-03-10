@@ -105,18 +105,15 @@ func Boot() {
 	mode := flag.String("mode", "prod", "dev/prod")
 	flag.Parse()
 
-<<<<<<< HEAD
 	if "dev" == *mode {
 		ServerPort = "6808"
 	}
-=======
 	// Fallback to env vars if commandline args are not set
 	// valid only for CLI args that default to "", as the
 	// others have explicit (sane) defaults
 	workspacePath = coalesceToEnvVar(workspacePath, SIYUAN_WORKSPACE)
 	accessAuthCode = coalesceToEnvVar(accessAuthCode, SIYUAN_ACCESS_AUTH_CODE)
 	lang = coalesceToEnvVar(lang, SIYUAN_LANG)
->>>>>>> origin/dev
 
 	if "" != *wdPath {
 		WorkingDir = *wdPath
