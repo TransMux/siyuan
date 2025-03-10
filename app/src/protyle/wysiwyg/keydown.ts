@@ -69,6 +69,7 @@ import {checkFold} from "../../util/noRelyPCFunction";
 import {AIActions} from "../../ai/actions";
 import {openLink} from "../../editor/openLink";
 import {onlyProtyleCommand} from "../../boot/globalEvent/command/protyle";
+import {AIChat} from "../../ai/chat";
 import { altx上色顺序Keys, altx上色顺序Values } from "../../mux/settings";
 
 export const getContentByInlineHTML = (range: Range, cb: (content: string) => void) => {
@@ -1732,6 +1733,35 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                 selectsElement = [nodeElement];
             }
             AIActions(selectsElement, protyle);
+            return;
+        }
+
+        if (!event.repeat && matchHotKey(window.siyuan.config.keymap.editor.general.aiWriting.custom, event)) {
+            event.preventDefault();
+            event.stopPropagation();
+            AIChat(protyle, nodeElement);
+            return;
+        }
+
+        if (!event.repeat && matchHotKey(window.siyuan.config.keymap.editor.general.openInNewTab.custom, event)) {
+            event.preventDefault();
+            event.stopPropagation();
+            const blockPanel = window.siyuan.blockPanels.find(item => {
+                if (item.element.contains(nodeElement)) {
+                    return true;
+                }
+            });
+            const id = nodeElement.getAttribute("data-node-id");
+            checkFold(id, (zoomIn, action) => {
+                openFileById({
+                    app: protyle.app,
+                    id,
+                    action,
+                    zoomIn,
+                    openNewTab: true
+                });
+                blockPanel.destroy();
+            });
             return;
         }
 

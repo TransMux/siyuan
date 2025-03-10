@@ -210,7 +210,7 @@ const processAV = (range: Range, html: string, protyle: IProtyle, blockElement: 
             } else {
                 let currentRowElement: Element;
                 const firstColIndex = cellElements[0].getAttribute("data-col-id");
-                textJSON.forEach((rowValue, rowIndex) => {
+                textJSON.forEach((rowValue) => {
                     if (!currentRowElement) {
                         currentRowElement = cellElements[0].parentElement;
                     } else {
@@ -220,7 +220,7 @@ const processAV = (range: Range, html: string, protyle: IProtyle, blockElement: 
                         return true;
                     }
                     let cellElement: HTMLElement;
-                    rowValue.forEach((cellValue, cellIndex) => {
+                    rowValue.forEach((cellValue) => {
                         if (!cellElement) {
                             cellElement = currentRowElement.querySelector(`.av__cell[data-col-id="${firstColIndex}"]`) as HTMLElement;
                         } else {
@@ -288,10 +288,10 @@ export const insertHTML = (html: string, protyle: IProtyle, isBlock = false,
     }
     const range = useProtyleRange ? protyle.toolbar.range : getEditorRange(protyle.wysiwyg.element);
     fixTableRange(range);
-    let tableInlineHTML;
+    let unSpinHTML;
     if (hasClosestByAttribute(range.startContainer, "data-type", "NodeTable") && !isBlock) {
         if (hasClosestByTag(range.startContainer, "TABLE")) {
-            tableInlineHTML = protyle.lute.BlockDOM2InlineBlockDOM(html);
+            unSpinHTML = protyle.lute.BlockDOM2InlineBlockDOM(html);
         } else {
             // https://github.com/siyuan-note/siyuan/issues/9411
             isBlock = true;
@@ -381,7 +381,12 @@ export const insertHTML = (html: string, protyle: IProtyle, isBlock = false,
     }
     const tempElement = document.createElement("template");
 
-    let innerHTML = tableInlineHTML || // 在 table 中插入需要使用转换好的行内元素 https://github.com/siyuan-note/siyuan/issues/9358
+    // https://github.com/siyuan-note/siyuan/issues/14162
+    if (html.startsWith("&gt;") && editableElement.textContent.replace(Constants.ZWSP, "") !== "") {
+        unSpinHTML = html;
+    }
+
+    let innerHTML = unSpinHTML || // 在 table 中插入需要使用转换好的行内元素 https://github.com/siyuan-note/siyuan/issues/9358
         protyle.lute.SpinBlockDOM(html) || // 需要再 spin 一次 https://github.com/siyuan-note/siyuan/issues/7118
         html;   // 空格会被 Spin 不再，需要使用原文
     // 粘贴纯文本时会进行内部转义，这里需要进行反转义 https://github.com/siyuan-note/siyuan/issues/10620
@@ -390,11 +395,12 @@ export const insertHTML = (html: string, protyle: IProtyle, isBlock = false,
 
     // https://github.com/siyuan-note/siyuan/issues/14114
     let heading2text = false;
-    if (isBlock && editableElement.textContent.replace(Constants.ZWSP, "") !== "" && tempElement.content.childElementCount === 1 &&
+    if ((editableElement.textContent.replace(Constants.ZWSP, "") !== "" || blockElement.getAttribute("data-type") === "NodeHeading") &&
+        tempElement.content.childElementCount === 1 &&
         tempElement.content.firstChild.nodeType !== 3 &&
         tempElement.content.firstElementChild.getAttribute("data-type") === "NodeHeading") {
         isBlock = false;
-        heading2text = true
+        heading2text = true;
     }
 
     // 使用 lute 方法会添加 p 元素，只有一个 p 元素或者只有一个字符串或者为 <u>b</u> 时的时候只拷贝内部

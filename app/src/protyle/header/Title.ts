@@ -42,7 +42,7 @@ export class Title {
         }
         /// #if !MOBILE
         // 标题内需要一个空格，避免首次加载出现`请输入文档名`干扰
-        this.element.innerHTML = `<span aria-label="${isMac() ? window.siyuan.languages.gutterTip2 : window.siyuan.languages.gutterTip2.replace("⇧", "Shift+")}" data-position="right" class="protyle-title__icon ariaLabel"><svg><use xlink:href="#iconFile"></use></svg></span>
+        this.element.innerHTML = `<span aria-label="${isMac() ? window.siyuan.languages.gutterTip2 : window.siyuan.languages.gutterTip2.replace("⇧", "Shift+")}" data-position="west" class="protyle-title__icon ariaLabel"><svg><use xlink:href="#iconFile"></use></svg></span>
 <div contenteditable="true" spellcheck="${window.siyuan.config.editor.spellcheck}" class="protyle-title__input" data-tip="${window.siyuan.languages._kernel[16]}"> </div><div class="protyle-attr"></div>`;
         this.editElement = this.element.querySelector(".protyle-title__input");
         this.editElement.addEventListener("paste", (event: ClipboardEvent) => {
@@ -197,6 +197,7 @@ export class Title {
             const range = getEditorRange(this.editElement);
             if (range.toString() !== "") {
                 window.siyuan.menus.menu.append(new MenuItem({
+                    id: "copy",
                     icon: "iconCopy",
                     accelerator: "⌘C",
                     label: window.siyuan.languages.copy,
@@ -206,6 +207,7 @@ export class Title {
                     }
                 }).element);
                 window.siyuan.menus.menu.append(new MenuItem({
+                    id: "cut",
                     icon: "iconCut",
                     accelerator: "⌘X",
                     label: window.siyuan.languages.cut,
@@ -218,6 +220,7 @@ export class Title {
                     }
                 }).element);
                 window.siyuan.menus.menu.append(new MenuItem({
+                    id: "delete",
                     icon: "iconTrashcan",
                     accelerator: "⌫",
                     label: window.siyuan.languages.delete,
@@ -232,6 +235,7 @@ export class Title {
                 }).element);
             }
             window.siyuan.menus.menu.append(new MenuItem({
+                id: "paste",
                 label: window.siyuan.languages.paste,
                 icon: "iconPaste",
                 accelerator: "⌘V",
@@ -251,6 +255,7 @@ export class Title {
                 }
             }).element);
             window.siyuan.menus.menu.append(new MenuItem({
+                id: "pasteAsPlainText",
                 label: window.siyuan.languages.pasteAsPlainText,
                 accelerator: "⇧⌘V",
                 click: async () => {
@@ -267,6 +272,7 @@ export class Title {
                 }
             }).element);
             window.siyuan.menus.menu.append(new MenuItem({
+                id: "selectAll",
                 label: window.siyuan.languages.selectAll,
                 icon: "iconSelect",
                 accelerator: "⌘A",

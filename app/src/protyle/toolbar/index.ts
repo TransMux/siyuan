@@ -229,7 +229,7 @@ export class Toolbar {
 
     public setInlineMark(protyle: IProtyle, type: string, action: "range" | "toolbar", textObj?: ITextOption) {
         const nodeElement = hasClosestBlock(this.range.startContainer);
-        if (!nodeElement) {
+        if (!nodeElement || nodeElement.getAttribute("data-type") === "NodeCodeBlock") {
             return;
         }
         const endElement = hasClosestBlock(this.range.endContainer);
@@ -446,6 +446,7 @@ export class Toolbar {
                     }
                 }
                 contents.childNodes.forEach((item: HTMLElement, index) => {
+                    let removeText = "";
                     if (item.nodeType === 3) {
                         if (index === 0 && previousElement && previousElement.nodeType !== 3 &&
                             type === previousElement.getAttribute("data-type") &&
@@ -466,6 +467,11 @@ export class Toolbar {
                             if (item.textContent.startsWith(Constants.ZWSP)) {
                                 newNodes.push(document.createTextNode(Constants.ZWSP));
                                 item.textContent = item.textContent.substring(1);
+                            }
+                            // https://github.com/siyuan-note/siyuan/issues/14204
+                            while (item.textContent.endsWith("\n")) {
+                                item.textContent = item.textContent.substring(0, item.textContent.length - 1);
+                                removeText += "\n";
                             }
                             const inlineElement = document.createElement("span");
                             inlineElement.setAttribute("data-type", type);
@@ -559,6 +565,17 @@ export class Toolbar {
                             });
                         }
                         types = [...new Set(types)];
+                        if (types.includes("block-ref") && item.getAttribute("data-subtype") === "d") {
+                            // https://github.com/siyuan-note/siyuan/issues/14299
+                            if (previousElement.getAttribute("data-id") === item.getAttribute("data-id")) {
+                                previousElement.setAttribute("data-subtype", "s");
+                                item.setAttribute("data-subtype", "s");
+                            }
+                            if (nextElement.getAttribute("data-id") === item.getAttribute("data-id")) {
+                                nextElement.setAttribute("data-subtype", "s");
+                                item.setAttribute("data-subtype", "s");
+                            }
+                        }
                         if (index === 0 && previousElement && previousElement.nodeType !== 3 &&
                             isArrayEqual(types, (previousElement.getAttribute("data-type") || "").split(" ")) &&
                             hasSameTextStyle(item, previousElement, textObj)) {
@@ -588,6 +605,9 @@ export class Toolbar {
                             newNodes.push(item);
                         }
                     }
+                    if (removeText) {
+                        newNodes.push(document.createTextNode(removeText));
+                    }
                 });
             }
         }
@@ -603,7 +623,15 @@ export class Toolbar {
             this.range.setEnd(startContainer.lastChild, startContainer.lastChild.textContent.length);
             afterElement.append(this.range.extractContents());
             startContainer.after(afterElement);
-            this.range.setStartBefore(afterElement);
+            // https://github.com/siyuan-note/siyuan/issues/13871#issuecomment-2662855319
+            const firstTypes = startContainer.getAttribute("data-type").split(" ");
+            if (firstTypes.includes("code") || firstTypes.includes("tag") || firstTypes.includes("kbd")) {
+                afterElement.insertAdjacentText("beforebegin", Constants.ZWSP + Constants.ZWSP);
+                afterElement.insertAdjacentText("afterbegin", Constants.ZWSP);
+                this.range.setStart(afterElement.previousSibling, 1);
+            } else {
+                this.range.setStartBefore(afterElement);
+            }
             this.range.collapse(true);
         }
         for (let i = 0; i < newNodes.length; i++) {
@@ -982,8 +1010,8 @@ export class Toolbar {
                 return;
             }
             setTimeout(() => {
-                addScript("/stage/protyle/js/html2canvas.min.js?v=1.4.1", "protyleHtml2canvas").then(() => {
-                    window.html2canvas(renderElement, {useCORS: true}).then((canvas) => {
+                addScript("/stage/protyle/js/html-to-image.min.js?v=1.11.13", "protyleHtml2image").then(() => {
+                    window.htmlToImage.toCanvas(renderElement).then((canvas) => {
                         canvas.toBlob((blob: Blob) => {
                             const formData = new FormData();
                             formData.append("file", blob);
@@ -1331,6 +1359,7 @@ export class Toolbar {
             }
             previewPath = currentPath;
             previewTemplate(previewPath, previewElement, protyle.block.parentID);
+            event.stopPropagation();
         });
         const inputElement = this.subElement.querySelector("input");
         inputElement.addEventListener("keydown", (event: KeyboardEvent) => {

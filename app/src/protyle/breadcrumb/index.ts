@@ -8,7 +8,7 @@ import {setEditMode} from "../util/setEditMode";
 import {RecordMedia} from "../util/RecordMedia";
 import {hideMessage, showMessage} from "../../dialog/message";
 import {uploadFiles} from "../upload";
-import {hasClosestBlock, hasClosestByAttribute, hasTopClosestByClassName} from "../util/hasClosest";
+import {hasClosestBlock, hasTopClosestByClassName} from "../util/hasClosest";
 import {needSubscribe} from "../../util/needSubscribe";
 import {isMobile} from "../../util/functions";
 import {zoomOut} from "../../menus/protyle";
@@ -32,6 +32,7 @@ import {isInAndroid, isInHarmony, isIPad, isMac, updateHotkeyTip} from "../util/
 import {resize} from "../util/resize";
 import {listIndent, listOutdent} from "../wysiwyg/list";
 import {improveBreadcrumbAppearance} from "../wysiwyg/renderBacklink";
+import {getCloudURL} from "../../config/util/about";
 
 export class Breadcrumb {
     public element: HTMLElement;
@@ -171,27 +172,11 @@ ${padHTML}
                 target = target.parentElement;
             }
         });
-        /// if !MOBILE
+        /// #if !MOBILE
         element.addEventListener("mouseleave", () => {
             protyle.wysiwyg.element.querySelectorAll(".protyle-wysiwyg--hl").forEach(item => {
                 item.classList.remove("protyle-wysiwyg--hl");
             });
-        });
-        this.element.addEventListener("mouseover", (event) => {
-            if (!protyle.selectElement.classList.contains("fn__none")) {
-                return;
-            }
-            const target = event.target as HTMLElement;
-            const svgElement = hasClosestByAttribute(target, "data-node-id", null);
-            if (svgElement) {
-                protyle.wysiwyg.element.querySelectorAll(".protyle-wysiwyg--hl").forEach(item => {
-                    item.classList.remove("protyle-wysiwyg--hl");
-                });
-                const nodeElement = protyle.wysiwyg.element.querySelector(`[data-node-id="${svgElement.getAttribute("data-node-id")}"]`);
-                if (nodeElement) {
-                    nodeElement.classList.add("protyle-wysiwyg--hl");
-                }
-            }
         });
         this.element.addEventListener("mousewheel", (event: WheelEvent) => {
             this.element.scrollLeft = this.element.scrollLeft + event.deltaY;
@@ -389,7 +374,8 @@ ${padHTML}
                         label: window.siyuan.languages.share2Liandi,
                         icon: "iconLiandi",
                         click() {
-                            confirmDialog("🚀 " + window.siyuan.languages.share2Liandi, window.siyuan.languages.share2LiandiConfirmTip, () => {
+                            confirmDialog("🤩 " + window.siyuan.languages.share2Liandi,
+                                window.siyuan.languages.share2LiandiConfirmTip.replace("${accountServer}", getCloudURL("")), () => {
                                 fetchPost("/api/export/export2Liandi", {id: protyle.block.parentID});
                             });
                         }

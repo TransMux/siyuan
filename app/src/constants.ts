@@ -464,6 +464,8 @@ export abstract class Constants {
                 switchAdjust: {default: "", custom: ""},
                 rtl: {default: "", custom: ""},
                 ltr: {default: "", custom: ""},
+                aiWriting: {default: "", custom: ""},
+                openInNewTab: {default: "", custom: ""},
             },
             insert: {
                 appearance: {default: "⌥⌘X", custom: "⌥⌘X"},

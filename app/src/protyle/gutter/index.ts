@@ -469,39 +469,6 @@ export class Gutter {
             event.preventDefault();
             event.stopPropagation();
         });
-        this.element.addEventListener("mouseover", (event: MouseEvent & { target: HTMLInputElement }) => {
-            const buttonElement = hasClosestByTag(event.target, "BUTTON");
-            if (!buttonElement) {
-                return;
-            }
-            const type = buttonElement.getAttribute("data-type");
-            if (type === "fold" || type === "NodeAttributeViewRow") {
-                Array.from(protyle.wysiwyg.element.querySelectorAll(".protyle-wysiwyg--hl, .av__row--hl")).forEach(item => {
-                    item.classList.remove("protyle-wysiwyg--hl", "av__row--hl");
-                });
-                return;
-            }
-            Array.from(protyle.wysiwyg.element.querySelectorAll(`[data-node-id="${buttonElement.getAttribute("data-node-id")}"]`)).find(item => {
-                if (!isInEmbedBlock(item) && this.isMatchNode(item)) {
-                    const rowItem = item.querySelector(`.av__row[data-id="${buttonElement.dataset.rowId}"]`);
-                    Array.from(protyle.wysiwyg.element.querySelectorAll(".protyle-wysiwyg--hl, .av__row--hl")).forEach(hlItem => {
-                        if (!item.isSameNode(hlItem)) {
-                            hlItem.classList.remove("protyle-wysiwyg--hl");
-                        }
-                        if (rowItem && !rowItem.isSameNode(hlItem)) {
-                            rowItem.classList.remove("av__row--hl");
-                        }
-                    });
-                    if (type === "NodeAttributeViewRowMenu") {
-                        rowItem.classList.add("av__row--hl");
-                    } else {
-                        item.classList.add("protyle-wysiwyg--hl");
-                    }
-                    return true;
-                }
-            });
-            event.preventDefault();
-        });
         this.element.addEventListener("mouseleave", (event: MouseEvent & { target: HTMLInputElement }) => {
             Array.from(protyle.wysiwyg.element.querySelectorAll(".protyle-wysiwyg--hl, .av__row--hl")).forEach(item => {
                 item.classList.remove("protyle-wysiwyg--hl", "av__row--hl");
@@ -516,7 +483,7 @@ export class Gutter {
         }, { passive: true });
     }
 
-    private isMatchNode(item: Element) {
+    public isMatchNode(item: Element) {
         const itemRect = item.getBoundingClientRect();
         // 原本为4，由于 https://github.com/siyuan-note/siyuan/issues/12166 改为 6
         let gutterTop = this.element.getBoundingClientRect().top + 6;
@@ -1467,6 +1434,7 @@ export class Gutter {
                 }
             }).element);
             window.siyuan.menus.menu.append(new MenuItem({
+                id: "turnInto" + (isCol ? "VLayout" : "HLayout"),
                 accelerator: window.siyuan.config.keymap.editor.general[isCol ? "vLayout" : "hLayout"].custom,
                 label: window.siyuan.languages.turnInto + " " + window.siyuan.languages[isCol ? "vLayout" : "hLayout"],
                 click() {
@@ -1568,8 +1536,9 @@ export class Gutter {
                 icon: "iconCode",
                 submenu: [{
                     id: "height",
-                    label: `${window.siyuan.languages.height}<span class="fn__space"></span>
-<input style="margin: 4px 0;width: 84px" type="number" step="1" min="148" class="b3-text-field" value="${height ? parseInt(height) : "420"}">`,
+                    iconHTML: "",
+                    type: "readonly",
+                    label: `<div class="fn__flex"><input class="b3-text-field fn__flex-1" value="${height ? parseInt(height) : "420"}" step="1" min="148" style="margin: 4px 8px 4px 0" placeholder="${window.siyuan.languages.height}"><span class="fn__flex-center">px</span></div>`,
                     bind: (element) => {
                         element.querySelector("input").addEventListener("change", (event) => {
                             const newHeight = ((event.target as HTMLInputElement).value || "420") + "px";
@@ -2186,9 +2155,7 @@ export class Gutter {
             id: "widthInput",
             iconHTML: "",
             type: "readonly",
-            label: `<div class="fn__flex-center">
-<input class="b3-text-field" value="${firstElement.style.width.endsWith("px") ? parseInt(firstElement.style.width) : ""}" type="number" style="margin: 4px" placeholder="${window.siyuan.languages.width}"> px
-</div>`,
+            label: `<div class="fn__flex"><input class="b3-text-field fn__flex-1" value="${firstElement.style.width.endsWith("px") ? parseInt(firstElement.style.width) : ""}" type="number" style="margin: 4px 8px 4px 0" placeholder="${window.siyuan.languages.width}"><span class="fn__flex-center">px</span></div>`,
             bind: (element) => {
                 const inputElement = element.querySelector("input");
                 inputElement.addEventListener("input", () => {
@@ -2221,15 +2188,13 @@ export class Gutter {
         });
         const width = firstElement.style.width.endsWith("%") ? parseInt(firstElement.style.width) : 0;
         window.siyuan.menus.menu.append(new MenuItem({
-            id: "widthDrag",
+            id: "width",
             label: window.siyuan.languages.width,
             submenu: styles.concat([{
                 id: "widthDrag",
                 iconHTML: "",
                 type: "readonly",
-                label: `<div style="margin: 4px 0;"  aria-label="${firstElement.style.width.endsWith("px") ? firstElement.style.width : (firstElement.style.width || window.siyuan.languages.default)}" class="b3-tooltips b3-tooltips__n${isMobile() ? "" : " fn__size200"}">
-    <input style="box-sizing: border-box" value="${width}" class="b3-slider fn__block" max="100" min="1" step="1" type="range">
-</div>`,
+                label: `<div style="margin: 4px 0;" aria-label="${firstElement.style.width.endsWith("px") ? firstElement.style.width : (firstElement.style.width || window.siyuan.languages.default)}" class="b3-tooltips b3-tooltips__n"><input style="box-sizing: border-box" value="${width}" class="b3-slider fn__block" max="100" min="1" step="1" type="range"></div>`,
                 bind: (element) => {
                     rangeElement = element.querySelector("input");
                     rangeElement.addEventListener("input", () => {
@@ -2276,9 +2241,7 @@ export class Gutter {
             id: "heightInput",
             iconHTML: "",
             type: "readonly",
-            label: `<div class="fn__flex-center">
-<input class="b3-text-field" value="${firstElement.style.height.endsWith("px") ? parseInt(firstElement.style.height) : ""}" type="number" style="margin: 4px" placeholder="${window.siyuan.languages.height}"> px
-</div>`,
+            label: `<div class="fn__flex"><input class="b3-text-field fn__flex-1" value="${firstElement.style.height.endsWith("px") ? parseInt(firstElement.style.height) : ""}" type="number" style="margin: 4px 8px 4px 0" placeholder="${window.siyuan.languages.height}"><span class="fn__flex-center">px</span></div>`,
             bind: (element) => {
                 const inputElement = element.querySelector("input");
                 inputElement.addEventListener("input", () => {
@@ -2315,9 +2278,7 @@ export class Gutter {
             submenu: styles.concat([{
                 iconHTML: "",
                 type: "readonly",
-                label: `<div style="margin: 4px 0;"  aria-label="${firstElement.style.height.endsWith("px") ? firstElement.style.height : (firstElement.style.height || window.siyuan.languages.default)}" class="b3-tooltips b3-tooltips__n${isMobile() ? "" : " fn__size200"}">
-    <input style="box-sizing: border-box" value="${height}" class="b3-slider fn__block" max="100" min="1" step="1" type="range">
-</div>`,
+                label: `<div style="margin: 4px 0;" aria-label="${firstElement.style.height.endsWith("px") ? firstElement.style.height : (firstElement.style.height || window.siyuan.languages.default)}" class="b3-tooltips b3-tooltips__n"><input style="box-sizing: border-box" value="${height}" class="b3-slider fn__block" max="100" min="1" step="1" type="range"></div>`,
                 bind: (element) => {
                     rangeElement = element.querySelector("input");
                     rangeElement.addEventListener("input", () => {
@@ -2399,9 +2360,9 @@ export class Gutter {
                         } else if (rowElement.querySelector('[data-dtype="block"]')?.getAttribute("data-detached") === "true") {
                             iconAriaLabel = window.siyuan.languages.rowTip.substring(0, window.siyuan.languages.rowTip.lastIndexOf("<br"));
                         }
-                        html = `<button data-type="NodeAttributeViewRowMenu" data-node-id="${dataNodeId}" data-row-id="${rowElement.dataset.id}" class="ariaLabel" data-position="right" aria-label="${iconAriaLabel}"><svg><use xlink:href="#iconDrag"></use></svg><span ${protyle.disabled ? "" : 'draggable="true" class="fn__grab"'}></span></button>`;
+                        html = `<button data-type="NodeAttributeViewRowMenu" data-node-id="${dataNodeId}" data-row-id="${rowElement.dataset.id}" class="ariaLabel" data-position="parentW" aria-label="${iconAriaLabel}"><svg><use xlink:href="#iconDrag"></use></svg><span ${protyle.disabled ? "" : 'draggable="true" class="fn__grab"'}></span></button>`;
                         if (!protyle.disabled) {
-                            html = `<button data-type="NodeAttributeViewRow" data-node-id="${dataNodeId}" data-row-id="${rowElement.dataset.id}" class="ariaLabel" data-position="right" aria-label="${isMac() ? window.siyuan.languages.addBelowAbove : window.siyuan.languages.addBelowAbove.replace("⌥", "Alt+")}"><svg><use xlink:href="#iconAdd"></use></svg></button>${html}`;
+                            html = `<button data-type="NodeAttributeViewRow" data-node-id="${dataNodeId}" data-row-id="${rowElement.dataset.id}" class="ariaLabel" data-position="parentW" aria-label="${isMac() ? window.siyuan.languages.addBelowAbove : window.siyuan.languages.addBelowAbove.replace("⌥", "Alt+")}"><svg><use xlink:href="#iconAdd"></use></svg></button>${html}`;
                         }
                         break;
                     }
@@ -2438,7 +2399,7 @@ export class Gutter {
                 if (protyle.options.backlinkData) {
                     popoverHTML = `class="popover__block" data-id="${dataNodeId}"`;
                 }
-                const buttonHTML = `<button class="ariaLabel" data-position="right" aria-label="${gutterTip}" 
+                const buttonHTML = `<button class="ariaLabel" data-position="parentW" aria-label="${gutterTip}" 
 data-type="${type}" data-subtype="${nodeElement.getAttribute("data-subtype")}" data-node-id="${dataNodeId}">
     <svg><use xlink:href="#${getIconByType(type, nodeElement.getAttribute("data-subtype"))}"></use></svg>
     <span ${popoverHTML} ${protyle.disabled ? "" : 'draggable="true"'}></span>
@@ -2449,7 +2410,7 @@ data-type="${type}" data-subtype="${nodeElement.getAttribute("data-subtype")}" d
                 let foldHTML = "";
                 if (type === "NodeListItem" && nodeElement.childElementCount > 3 || type === "NodeHeading") {
                     const fold = nodeElement.getAttribute("fold");
-                    foldHTML = `<button class="ariaLabel" data-position="right" aria-label="${window.siyuan.languages.fold}" 
+                    foldHTML = `<button class="ariaLabel" data-position="parentW" aria-label="${window.siyuan.languages.fold}" 
 data-type="fold" style="cursor:inherit;"><svg style="width: 10px${fold && fold === "1" ? "" : ";transform:rotate(90deg)"}"><use xlink:href="#iconPlay"></use></svg></button>`;
                 }
                 if (type === "NodeListItem" || type === "NodeList") {
@@ -2508,8 +2469,12 @@ data-type="fold" style="cursor:inherit;"><svg style="width: 10px${fold && fold =
         let rect = element.getBoundingClientRect();
         let marginHeight = 0;
         if (listItem && !window.siyuan.config.editor.rtl) {
-            rect = listItem.firstElementChild.getBoundingClientRect();
-            space = 0;
+            const relTempRect = listItem.firstElementChild.getBoundingClientRect();
+            // + 1 https://github.com/siyuan-note/siyuan/issues/14211
+            if (relTempRect.right <= rect.right + 1) {
+                rect = relTempRect;
+                space = 0;
+            }
         } else if (nodeElement.getAttribute("data-type") === "NodeBlockQueryEmbed") {
             rect = nodeElement.getBoundingClientRect();
             space = 0;

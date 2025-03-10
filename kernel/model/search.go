@@ -588,7 +588,17 @@ func FindReplace(keyword, replacement string, replaceTypes map[string]bool, ids 
 					}
 
 					if replaceTextNode(n, method, keyword, replacement, r, luteEngine) {
-						unlinks = append(unlinks, n)
+						if nil != n.Parent && ast.NodeBackslash == n.Parent.Type {
+							unlinks = append(unlinks, n.Parent)
+
+							prev, next := n.Parent.Previous, n.Parent.Next
+							if nil != prev && ast.NodeText == prev.Type && nil != next && ast.NodeText == next.Type {
+								prev.Tokens = append(prev.Tokens, next.Tokens...)
+								unlinks = append(unlinks, next)
+							}
+						} else {
+							unlinks = append(unlinks, n)
+						}
 					}
 				case ast.NodeLinkDest:
 					if !replaceTypes["imgSrc"] {
@@ -598,6 +608,7 @@ func FindReplace(keyword, replacement string, replaceTypes map[string]bool, ids 
 					replaceNodeTokens(n, method, keyword, strings.TrimSpace(replacement), r)
 					if 1 > len(n.Tokens) {
 						unlinks = append(unlinks, n.Parent)
+						mergeSamePreNext(n)
 					}
 				case ast.NodeLinkText:
 					if !replaceTypes["imgText"] {
@@ -647,6 +658,7 @@ func FindReplace(keyword, replacement string, replaceTypes map[string]bool, ids 
 
 						if "" == n.TextMarkTextContent {
 							unlinks = append(unlinks, n)
+							mergeSamePreNext(n)
 						}
 					} else if n.IsTextMarkType("a") {
 						if replaceTypes["aText"] {
@@ -661,6 +673,7 @@ func FindReplace(keyword, replacement string, replaceTypes map[string]bool, ids 
 							}
 							if "" == n.TextMarkTextContent {
 								unlinks = append(unlinks, n)
+								mergeSamePreNext(n)
 							}
 						}
 
@@ -690,6 +703,7 @@ func FindReplace(keyword, replacement string, replaceTypes map[string]bool, ids 
 							if "" == n.TextMarkAHref {
 								if "" == n.TextMarkTextContent {
 									unlinks = append(unlinks, n)
+									mergeSamePreNext(n)
 								} else {
 									n.Type = ast.NodeText
 									n.Tokens = []byte(n.TextMarkTextContent)
@@ -704,6 +718,7 @@ func FindReplace(keyword, replacement string, replaceTypes map[string]bool, ids 
 						replaceNodeTextMarkTextContent(n, method, keyword, replacement, r, "em")
 						if "" == n.TextMarkTextContent {
 							unlinks = append(unlinks, n)
+							mergeSamePreNext(n)
 						}
 					} else if n.IsTextMarkType("strong") {
 						if !replaceTypes["strong"] {
@@ -713,6 +728,7 @@ func FindReplace(keyword, replacement string, replaceTypes map[string]bool, ids 
 						replaceNodeTextMarkTextContent(n, method, keyword, replacement, r, "strong")
 						if "" == n.TextMarkTextContent {
 							unlinks = append(unlinks, n)
+							mergeSamePreNext(n)
 						}
 					} else if n.IsTextMarkType("kbd") {
 						if !replaceTypes["kbd"] {
@@ -731,6 +747,7 @@ func FindReplace(keyword, replacement string, replaceTypes map[string]bool, ids 
 						replaceNodeTextMarkTextContent(n, method, keyword, replacement, r, "mark")
 						if "" == n.TextMarkTextContent {
 							unlinks = append(unlinks, n)
+							mergeSamePreNext(n)
 						}
 					} else if n.IsTextMarkType("s") {
 						if !replaceTypes["s"] {
@@ -740,6 +757,7 @@ func FindReplace(keyword, replacement string, replaceTypes map[string]bool, ids 
 						replaceNodeTextMarkTextContent(n, method, keyword, replacement, r, "s")
 						if "" == n.TextMarkTextContent {
 							unlinks = append(unlinks, n)
+							mergeSamePreNext(n)
 						}
 					} else if n.IsTextMarkType("sub") {
 						if !replaceTypes["sub"] {
@@ -776,6 +794,7 @@ func FindReplace(keyword, replacement string, replaceTypes map[string]bool, ids 
 						replaceNodeTextMarkTextContent(n, method, keyword, replacement, r, "u")
 						if "" == n.TextMarkTextContent {
 							unlinks = append(unlinks, n)
+							mergeSamePreNext(n)
 						}
 					} else if n.IsTextMarkType("inline-math") {
 						if !replaceTypes["inlineMath"] {
@@ -824,6 +843,7 @@ func FindReplace(keyword, replacement string, replaceTypes map[string]bool, ids 
 						replaceNodeTextMarkTextContent(n, method, keyword, replacement, r, "text")
 						if "" == n.TextMarkTextContent {
 							unlinks = append(unlinks, n)
+							mergeSamePreNext(n)
 						}
 					} else if n.IsTextMarkType("block-ref") {
 						if !replaceTypes["blockRef"] {
@@ -995,6 +1015,34 @@ func replaceNodeTokens(n *ast.Node, method int, keyword string, replacement stri
 	} else if 3 == method {
 		if nil != r && r.MatchString(string(n.Tokens)) {
 			n.Tokens = []byte(r.ReplaceAllString(string(n.Tokens), replacement))
+		}
+	}
+}
+
+func mergeSamePreNext(n *ast.Node) {
+	prev, next := n.Previous, n.Next
+	if nil != n.Parent && ast.NodeImage == n.Parent.Type {
+		prev = n.Parent.Previous
+		next = n.Parent.Next
+	}
+
+	if nil == prev || nil == next || prev.Type != next.Type || ast.NodeKramdownSpanIAL == prev.Type {
+		return
+	}
+
+	switch prev.Type {
+	case ast.NodeText:
+		prev.Tokens = append(prev.Tokens, next.Tokens...)
+		next.Unlink()
+	case ast.NodeTextMark:
+		if prev.TextMarkType != next.TextMarkType {
+			break
+		}
+
+		switch prev.TextMarkType {
+		case "em", "strong", "mark", "s", "u", "text":
+			prev.TextMarkTextContent += next.TextMarkTextContent
+			next.Unlink()
 		}
 	}
 }

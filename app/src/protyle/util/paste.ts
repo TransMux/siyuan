@@ -83,8 +83,16 @@ export const getPlainText = (blockElement: HTMLElement, isNested = false) => {
     } else if (blockElement.classList.contains("render-node")) {
         // 需在嵌入块后，代码块前
         text += Lute.UnEscapeHTMLStr(blockElement.getAttribute("data-content"));
-    } else if (["NodeHeading", "NodeParagraph", "NodeCodeBlock", "NodeTable"].includes(dataType)) {
+    } else if (["NodeHeading", "NodeParagraph", "NodeCodeBlock"].includes(dataType)) {
         text += blockElement.querySelector("[spellcheck]").textContent;
+    } else if (dataType ==="NodeTable") {
+        blockElement.querySelectorAll("th, td").forEach((item) => {
+            text += item.textContent.trim() + "\t";
+            if (!item.nextElementSibling) {
+                text = text.slice(0, -1) + "\n";
+            }
+        });
+        text = text.slice(0, -1);
     } else if (!isNested && ["NodeBlockquote", "NodeList", "NodeSuperBlock", "NodeListItem"].includes(dataType)) {
         blockElement.querySelectorAll("[data-node-id]").forEach((item: HTMLElement) => {
             const nestedText = getPlainText(item, true);
@@ -129,7 +137,7 @@ export const pasteEscaped = async (protyle: IProtyle, nodeElement: Element) => {
             .replace(/\|/g, "\\|")
             .replace(/\./g, "\\.");
         // 转义文本不能使用 DOM 结构 https://github.com/siyuan-note/siyuan/issues/11778
-        paste(protyle, {textPlain: clipText, target: nodeElement as HTMLElement});
+        paste(protyle, {textPlain: clipText, textHTML: "", target: nodeElement as HTMLElement});
     } catch (e) {
         console.log(e);
     }
@@ -256,6 +264,7 @@ const readLocalFile = async (protyle: IProtyle, localFiles: string[]) => {
 export const paste = async (protyle: IProtyle, event: (ClipboardEvent | DragEvent | {
     textHTML?: string,
     textPlain?: string,
+    files?: File[],
 }) & {
     target: HTMLElement
 }) => {
@@ -266,7 +275,7 @@ export const paste = async (protyle: IProtyle, event: (ClipboardEvent | DragEven
     let textHTML: string;
     let textPlain: string;
     let siyuanHTML: string;
-    let files: FileList | DataTransferItemList;
+    let files: FileList | DataTransferItemList | File[];
 
     // 从剪贴板或拖放事件中获取数据
     if ("clipboardData" in event) {
@@ -284,6 +293,7 @@ export const paste = async (protyle: IProtyle, event: (ClipboardEvent | DragEven
     } else {
         textHTML = event.textHTML;
         textPlain = event.textPlain;
+        files = event.files;
     }
 
     // Improve the pasting of selected text in PDF rectangular annotation https://github.com/siyuan-note/siyuan/issues/11629
@@ -479,8 +489,8 @@ export const paste = async (protyle: IProtyle, event: (ClipboardEvent | DragEven
                 isHTML = true;
             }
 
-            if (textPlain && "" !== textPlain.trim() && textHTML.startsWith("<span") && -1 < textHTML.indexOf("white-space: pre;")) {
-                // 豆包复制粘贴问题 https://github.com/siyuan-note/siyuan/issues/13265
+            if (textPlain && "" !== textPlain.trim() && (textHTML.startsWith("<span") || textHTML.startsWith("<br"))) {
+                // 豆包复制粘贴问题 https://github.com/siyuan-note/siyuan/issues/13265 https://github.com/siyuan-note/siyuan/issues/14313
                 isHTML = false;
             }
         }
@@ -518,7 +528,7 @@ export const paste = async (protyle: IProtyle, event: (ClipboardEvent | DragEven
         } else if (files && files.length > 0) {
             uploadFiles(protyle, files);
             return;
-        } else if (textPlain.trim() !== "" && files && files.length === 0) {
+        } else if (textPlain.trim() !== "" && (files && files.length === 0 || !files)) {
             if (range.toString() !== "") {
                 const firstLine = textPlain.split("\n")[0];
                 if (isDynamicRef(textPlain)) {

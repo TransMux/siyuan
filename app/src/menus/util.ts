@@ -9,16 +9,17 @@ import {Constants} from "../constants";
 import {openNewWindowById} from "../window/openNewWindow";
 import {MenuItem} from "./Menu";
 import {App} from "../index";
-import {isInAndroid, openByMobile, updateHotkeyTip} from "../protyle/util/compatibility";
+import {exportByMobile, isInAndroid, updateHotkeyTip} from "../protyle/util/compatibility";
 import {checkFold} from "../util/noRelyPCFunction";
 
 export const exportAsset = (src: string) => {
     return {
+        id: "export",
         label: window.siyuan.languages.export,
         icon: "iconUpload",
         async click() {
             /// #if BROWSER
-            openByMobile(src);
+            exportByMobile(src);
             /// #else
             const result = await ipcRenderer.invoke(Constants.SIYUAN_GET, {
                 cmd: "showSaveDialog",
