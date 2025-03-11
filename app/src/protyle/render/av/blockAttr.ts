@@ -369,7 +369,8 @@ class="fn__flex-1 fn__flex${["url", "text", "number", "email", "phone", "block"]
                 }
             });
             element.addEventListener("click", (event) => {
-                const removeElement = hasClosestByAttribute(event.target as HTMLElement, "data-type", "remove");
+                const target = event.target as HTMLElement;
+                const removeElement = hasClosestByAttribute(target, "data-type", "remove");
                 if (removeElement) {
                     const blockElement = hasClosestBlock(removeElement);
                     if (blockElement) {
@@ -397,8 +398,16 @@ class="fn__flex-1 fn__flex${["url", "text", "number", "email", "phone", "block"]
                 }
                 openEdit(protyle, element, event);
                 // https://x.transmux.top/j/20241105132235-xxwvst1 副作用有待观察
-                event.stopPropagation();
-                event.preventDefault();
+                // https://x.transmux.top/j/20250311170313-uw7mlru
+                let preventDefault = true;
+                if (target.tagName === "A") {
+                    preventDefault = false;
+                }
+
+                if (preventDefault) {
+                    event.stopPropagation();
+                    event.preventDefault();
+                }
             });
             element.addEventListener("contextmenu", (event) => {
                 openEdit(protyle, element, event);
