@@ -42,22 +42,15 @@ export async function 自定义获取av主键的所有值(data: any, callback: a
 }
 
 export function 获取当前ISO周数() {
-    // 克隆传入的日期对象
-    const tmpDate = new Date();
-    // 设置时间为午夜，避免时区影响
-    tmpDate.setHours(0, 0, 0, 0);
-    // 获取当前周的星期几（注意：JavaScript中星期日返回0，所以调整为7）
-    const day = tmpDate.getDay() === 0 ? 7 : tmpDate.getDay();
-    // 将日期调整到本周的星期四（ISO周数规则依据星期四）
-    tmpDate.setDate(tmpDate.getDate() + 4 - day);
-    // 计算当年第一周的开始日期，1月4日一定在第一周内
-    const yearStart = new Date(tmpDate.getFullYear(), 0, 4);
-    // 计算第一周偏移量（调整yearStart的星期数，同样星期日返回0时作调整）
-    const yearStartDay = yearStart.getDay() === 0 ? 7 : yearStart.getDay();
-    // 计算天数差，并转换为周数，注意除以一天的毫秒数
-    const diffInDays = (tmpDate.getTime() - yearStart.getTime()) / 86400000;
-    const week = Math.floor((diffInDays - (yearStartDay - 1)) / 7) + 1;
-    return week;
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    // 调整到最近的周四：ISO周从周一开始，但计算基于周四的年份
+    d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+    const yearStart = new Date(d.getFullYear(), 0, 1);
+    // 计算与年份第一天的差异（天数），然后计算周数
+    // @ts-ignore
+    const weekNumber = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return weekNumber;
 }
 
 export async function 获取文件ID(笔记本ID: string, hpath: string) {

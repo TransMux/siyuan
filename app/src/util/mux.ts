@@ -1,4 +1,7 @@
-import { fetchPost } from "./fetch";
+import { openFileById } from "../editor/util";
+import { 未读笔记本 } from "../mux/settings";
+import { 获取当前ISO周数 } from "../mux/utils";
+import { fetchPost, fetchSyncPost } from "./fetch";
 
 function randomBlockId() {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -27,4 +30,21 @@ export function muxInsertAnnotationAfterBlock(blockId: string, idPath: string, c
             callback(newBlockId);
         }
     );
+}
+
+
+export function openUnreadWeekArticle() {
+    const 当前周数 = 获取当前ISO周数();
+    // const stmt = `SELECT * FROM blocks WHERE box = '${未读笔记本}' AND hpath like '/Week ${当前周数}%' limit 5`;
+    fetchSyncPost("/api/filetree/listDocsByPath", {
+        notebook: 未读笔记本,
+        // TODO: 获取当前周数对应的文件id，难点：不在索引中，所以无法从数据库中sql获取
+        path: `/20250310190938-ekir011.sy`,
+    }).then((response) => {
+        const blockIds = response.data.files.map((item: any) => item.id);
+        console.log(blockIds);
+        for (const blockId of blockIds) {
+            openFileById(blockId);
+        }
+    });
 }
