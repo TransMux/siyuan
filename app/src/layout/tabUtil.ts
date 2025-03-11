@@ -273,7 +273,7 @@ export const newCenterEmptyTab = (app: App) => {
                         event.preventDefault();
                         break;
                     } else if (target.id === "openUnreadWeekArticle") {
-                        openUnreadWeekArticle();
+                        openUnreadWeekArticle(app);
                         event.stopPropagation();
                         event.preventDefault();
                         break;
