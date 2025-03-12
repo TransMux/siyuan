@@ -18,6 +18,12 @@ export async function 自定义获取av主键的所有值(data: any, callback: a
     const cb = (response: any) => {
         if (data.id === 标签之树avID) {
             let filteredValues: any[] = [];
+            // https://x.transmux.top/j/20250312114757-uvd6k0j
+            if (!response.data.rows.values) {
+                // 没有检索出数据
+                callback(response);
+                return;
+            }
             if (data.keyword === "") {
                 // 默认展示全部根标签
                 filteredValues = response.data.rows.values.filter((item: any) => item.block.content.match(/^[A-Z] - /));
