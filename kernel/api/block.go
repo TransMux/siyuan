@@ -455,7 +455,7 @@ func getRefIDsByFileAnnotationID(c *gin.Context) {
 	}
 
 	id := arg["id"].(string)
-	refIDs := model.GetBlockRefIDsByFileAnnotationID(id)
+	refIDs, refTexts := model.GetBlockRefIDsByFileAnnotationID(id)
 	var retRefDefs []model.RefDefs
 	for _, blockID := range refIDs {
 		retRefDefs = append(retRefDefs, model.RefDefs{RefID: blockID, DefIDs: []string{}})
@@ -465,7 +465,8 @@ func getRefIDsByFileAnnotationID(c *gin.Context) {
 	}
 
 	ret.Data = map[string]any{
-		"refDefs": retRefDefs,
+		"refDefs":  retRefDefs,
+		"refTexts": refTexts,
 	}
 }
 

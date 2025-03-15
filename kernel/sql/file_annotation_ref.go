@@ -32,21 +32,22 @@ type FileAnnotationRef struct {
 	Type         string
 }
 
-func QueryRefIDsByAnnotationID(annotationID string) (refIDs []string) {
+func QueryRefIDsByAnnotationID(annotationID string) (refIDs, refTexts []string) {
 	refIDs = []string{}
-	rows, err := query("SELECT block_id FROM file_annotation_refs WHERE annotation_id = ?", annotationID)
+	rows, err := query("SELECT block_id, content FROM file_annotation_refs WHERE annotation_id = ?", annotationID)
 	if err != nil {
 		logging.LogErrorf("sql query failed: %s", err)
 		return
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var id string
-		if err = rows.Scan(&id); err != nil {
+		var id, content string
+		if err = rows.Scan(&id, &content); err != nil {
 			logging.LogErrorf("query scan field failed: %s", err)
 			return
 		}
 		refIDs = append(refIDs, id)
+		refTexts = append(refTexts, content)
 	}
 	return
 }
