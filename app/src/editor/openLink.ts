@@ -54,6 +54,7 @@ export const openLink = (protyle: IProtyle, aLink: string, event?: MouseEvent, c
                 openByMobile(linkAddress);
                 /// #endif
             } else {
+                console.log("你更改了PDF打开的按键，现在直接点击并不会打开PDF，alt：右侧，shift：外部，ctrl：文件夹")
                 // openAsset(protyle.app, linkAddress, pdfParams, "right");
             }
         } else {
