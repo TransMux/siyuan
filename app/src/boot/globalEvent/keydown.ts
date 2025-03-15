@@ -75,6 +75,7 @@ import {duplicateCompletely} from "../../protyle/render/av/action";
 import {copyTextByType} from "../../protyle/toolbar/util";
 import {onlyProtyleCommand} from "./command/protyle";
 import {cancelDrag} from "./dragover";
+import {bindAVPanelKeydown} from "../../protyle/render/av/keydown";
 
 const switchDialogEvent = (app: App, event: MouseEvent) => {
     event.preventDefault();
@@ -557,6 +558,9 @@ const fileTreeKeydown = (app: App, event: KeyboardEvent) => {
         return false;
     }
     const files = dockFile.data.file as Files;
+    if (typeof dockFile.data.file === "boolean") {
+        return true;
+    }
 
     if (matchHotKey(window.siyuan.config.keymap.general.selectOpen1.custom, event)) {
         event.preventDefault();
@@ -1269,6 +1273,11 @@ export const windowKeyDown = (app: App, event: KeyboardEvent) => {
     }
 
     if (bindMenuKeydown(event)) {
+        event.preventDefault();
+        return;
+    }
+
+    if (bindAVPanelKeydown(event)) {
         event.preventDefault();
         return;
     }

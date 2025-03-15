@@ -152,6 +152,7 @@ export const openMenuPanel = (options: {
                 });
             } else if (options.type === "rollup") {
                 bindRollupData({protyle: options.protyle, data, menuElement});
+                (avPanelElement.querySelector(".b3-menu__item") as HTMLButtonElement).focus();
             }
             if (["select", "date", "relation", "rollup"].includes(options.type)) {
                 const inputElement = menuElement.querySelector("input");
@@ -970,7 +971,7 @@ export const openMenuPanel = (options: {
                     break;
                 } else if (type === "goSearchRollupCol") {
                     goSearchRollupCol({
-                        target,
+                        target: avPanelElement.querySelector('[data-type="goSearchRollupCol"]'),
                         data,
                         isRelation: true,
                         protyle: options.protyle,
@@ -981,7 +982,7 @@ export const openMenuPanel = (options: {
                     break;
                 } else if (type === "goSearchRollupTarget") {
                     goSearchRollupCol({
-                        target,
+                        target: avPanelElement.querySelector('[data-type="goSearchRollupTarget"]'),
                         data,
                         isRelation: false,
                         protyle: options.protyle,
@@ -991,7 +992,7 @@ export const openMenuPanel = (options: {
                     event.stopPropagation();
                     break;
                 } else if (type === "goSearchRollupCalc") {
-                    openCalcMenu(options.protyle, target, {
+                    openCalcMenu(options.protyle, avPanelElement.querySelector('[data-type="goSearchRollupTarget"]'), {
                         data,
                         colId: options.colId || menuElement.querySelector(".b3-menu__item").getAttribute("data-col-id"),
                         blockID
@@ -1185,11 +1186,15 @@ export const openMenuPanel = (options: {
                     event.stopPropagation();
                     break;
                 } else if (type === "setRelationCell") {
+                    menuElement.querySelector(".b3-menu__item--current")?.classList.remove("b3-menu__item--current");
+                    target.classList.add("b3-menu__item--current");
                     setRelationCell(options.protyle, options.blockElement as HTMLElement, target, options.cellElements);
                     event.preventDefault();
                     event.stopPropagation();
                     break;
                 } else if (type === "addColOptionOrCell") {
+                    menuElement.querySelector(".b3-menu__item--current")?.classList.remove("b3-menu__item--current");
+                    target.classList.add("b3-menu__item--current");
                     if (target.querySelector(".b3-menu__checked")) {
                         removeCellOption(options.protyle, options.cellElements, menuElement.querySelector(`.b3-chips .b3-chip[data-content="${escapeAttr(target.dataset.name)}"]`), options.blockElement);
                     } else {
