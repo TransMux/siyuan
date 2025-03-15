@@ -467,6 +467,7 @@ func getRefIDsByFileAnnotationID(c *gin.Context) {
 	ret.Data = map[string]any{
 		"refDefs":  retRefDefs,
 		"refTexts": refTexts,
+		"refIDs":   refIDs,
 	}
 }
 
