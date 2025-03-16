@@ -1080,10 +1080,11 @@ app.whenReady().then(() => {
             }
             event.preventDefault();
         });
-        const targetScreen = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
-        if (mainScreen.id !== targetScreen.id) {
-            win.setBounds(targetScreen.workArea);
-        }
+        // 禁止“当主窗口和目标屏幕不在同一个显示器时，自动全屏”
+        // const targetScreen = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+        // if (mainScreen.id !== targetScreen.id) {
+        //     win.setBounds(targetScreen.workArea);
+        // }
     });
     ipcMain.on("siyuan-open-workspace", (event, data) => {
         const foundWorkspace = workspaces.find((item) => {
