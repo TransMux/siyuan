@@ -808,8 +808,24 @@ export const dropEvent = (protyle: IProtyle, editorElement: HTMLElement) => {
     editorElement.addEventListener("dragstart", (event) => {
         const target = event.target as HTMLElement;
         if (target.tagName === "IMG") {
-            window.siyuan.dragElement = undefined;
-            event.preventDefault();
+            // 在编辑器内点击图片并拖拽的时候，支持拖拽到浏览器中（以文件的形式）
+            const imgElement = target as HTMLImageElement;
+            const imgSrc = imgElement.getAttribute("src");
+            if (imgSrc) {
+                if (imgSrc.startsWith("assets/")) {
+                    // For local assets, get the file path
+                    fetchPost("/api/asset/resolveAssetPath", {path: imgSrc}, (response) => {
+                        if (response.code === 0) {
+                            event.dataTransfer.setData("text/uri-list", response.data);
+                            event.dataTransfer.effectAllowed = "copy";
+                        }
+                    });
+                } else {
+                    // For external images, use the src directly
+                    event.dataTransfer.setData("text/uri-list", imgSrc);
+                    event.dataTransfer.effectAllowed = "copy";
+                }
+            }
             return;
         }
         if (target.classList) {
@@ -1457,7 +1473,7 @@ export const dropEvent = (protyle: IProtyle, editorElement: HTMLElement) => {
 
         if (fileTreeIds.indexOf("-") > -1) {
             if (fileTreeIds.split(",").includes(protyle.block.rootID) && !targetElement.classList.contains("av__row") &&
-                !targetElement.classList.contains("av__row--util") && event.altKey) {
+                !targetElement.classList.contains("av__row--util")) {
                 dragoverElement = undefined;
                 editorElement.querySelectorAll(".dragover__left, .dragover__right, .dragover__bottom, .dragover__top, .dragover").forEach((item: HTMLElement) => {
                     item.classList.remove("dragover__top", "dragover__bottom", "dragover__left", "dragover__right", "dragover");
