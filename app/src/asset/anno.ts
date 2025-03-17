@@ -9,7 +9,7 @@ import { Dialog } from "../dialog";
 import { showMessage } from "../dialog/message";
 import { translateText } from "../protyle/util/mux/translate";
 import { openFileById } from "../editor/util";
-import { muxInsertAnnotationAfterBlock } from "../util/mux";
+import { muxInsertAnnotationAfterBlock, muxInsertPictureAnnotationAfterBlock } from "../util/mux";
 
 export const initAnno = (element: HTMLElement, pdf: any) => {
     getConfig(pdf);
@@ -110,7 +110,7 @@ export const initAnno = (element: HTMLElement, pdf: any) => {
             documentSelf.onselect = null;
             rectAnnoElement.classList.remove("toggled");
             pdfConfig.mainContainer.classList.remove("rect-to-annotation");
-
+            debugger
             const coords = getHightlightCoordsByRect(pdf, window.siyuan.storage[Constants.LOCAL_PDFTHEME].annoColor || "var(--b3-pdf-background1)", rectResizeElement,
                 rectResizeElement.style.backgroundColor ? "text" : "border");
             rectResizeElement.classList.add("fn__none");
@@ -782,10 +782,10 @@ height: ${Math.abs(bounds[1] - bounds[3])}px; font-size: calc(var(--scale-factor
                 if (annotationIndex === -1) {
                     return;
                 }
-                
+
                 const annotationText = refBlockData.refTexts[annotationIndex];
                 const annotationID = refBlockData.refIDs[annotationIndex];
-                
+
                 annotationPlaceholder.outerHTML = `<div style="color: red;
 ${renderSide}: 10px;
 top:${textTop}px;
@@ -841,9 +841,21 @@ const copyAnno = (idPath: string, fileName: string, pdf: any) => {
                     formData.append("file[]", blob, imageName);
                     formData.append("skipIfDuplicated", "true");
                     // TODO：支持自动插入图片
+                    // https://x.transmux.top/j/20250317164731-x3pwupk
+                    // succmap中返回的只有assignmentAI-P1-20250317165203-s8miwhm.png: "assets/assignmentAI-P1-20250317165203-s8miwhm.png"
+                    // 但是图片是带年份和月份的
                     fetchPost(Constants.UPLOAD_ADDRESS, formData, (response) => {
+                        const firstImageUrl = Object.values(response.data.succMap)[0];
                         writeText(`<<${idPath} "${content}">>
-![](${response.data.succMap[imageName]})`);
+![](${firstImageUrl})`);
+                        // https://x.transmux.top/j/20241130230724-5m71mlx
+                        const insertBlockElement = pdf.appConfig.appContainer.querySelector("#muxPdfInsertBlock") as HTMLInputElement;
+                        if (insertBlockElement?.value) {
+                            // insert block after this block
+                            muxInsertPictureAnnotationAfterBlock(insertBlockElement.value, idPath, firstImageUrl, (newBlockId: string) => {
+                                insertBlockElement.value = newBlockId;
+                            });
+                        }
                     });
                 });
             });
