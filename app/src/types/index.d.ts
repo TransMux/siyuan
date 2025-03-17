@@ -448,6 +448,7 @@ interface ISiyuan {
         }[]
     },
     dragElement?: HTMLElement,
+    dragImage?: boolean,
     currentDragOverTabHeadersElement?: HTMLElement
     layout?: {
         layout?: import("../layout").Layout,

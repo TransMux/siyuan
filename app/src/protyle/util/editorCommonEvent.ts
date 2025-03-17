@@ -812,6 +812,9 @@ export const dropEvent = (protyle: IProtyle, editorElement: HTMLElement) => {
             const imgElement = target as HTMLImageElement;
             const imgSrc = imgElement.getAttribute("src");
             if (imgSrc) {
+                // 标记正在拖拽图片，避免拖拽出应用后鼠标返回触发选择
+                window.siyuan.dragImage = true;
+                
                 if (imgSrc.startsWith("assets/")) {
                     // For local assets, get the file path
                     fetchPost("/api/asset/resolveAssetPath", {path: imgSrc}, (response) => {
@@ -863,6 +866,13 @@ export const dropEvent = (protyle: IProtyle, editorElement: HTMLElement) => {
     });
     editorElement.addEventListener("drop", async (event: DragEvent & { target: HTMLElement }) => {
         counter = 0;
+        // 重置图片拖拽状态
+        if (window.siyuan.dragImage) {
+            window.siyuan.dragImage = false;
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+        }
         if (protyle.disabled || event.dataTransfer.getData(Constants.SIYUAN_DROP_EDITOR)) {
             // 只读模式/编辑器内选中文字拖拽
             event.preventDefault();
@@ -1252,10 +1262,16 @@ export const dropEvent = (protyle: IProtyle, editorElement: HTMLElement) => {
             window.siyuan.dragElement = undefined;
         }
     });
+    editorElement.addEventListener("dragend", (event) => {
+        // 重置图片拖拽状态
+        if (window.siyuan.dragImage) {
+            window.siyuan.dragImage = false;
+        }
+    });
     let dragoverElement: Element;
     let disabledPosition: string;
     editorElement.addEventListener("dragover", (event: DragEvent & { target: HTMLElement }) => {
-        if (protyle.disabled || event.dataTransfer.types.includes(Constants.SIYUAN_DROP_EDITOR)) {
+        if (protyle.disabled || event.dataTransfer.types.includes(Constants.SIYUAN_DROP_EDITOR) || window.siyuan.dragImage) {
             event.preventDefault();
             event.stopPropagation();
             event.dataTransfer.dropEffect = "none";
