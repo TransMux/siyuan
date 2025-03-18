@@ -1,5 +1,5 @@
-import {hideElements} from "../ui/hideElements";
-import {isMac, isNotCtrl, isOnlyMeta, writeText} from "../util/compatibility";
+import { hideElements } from "../ui/hideElements";
+import { isMac, isNotCtrl, isOnlyMeta, writeText } from "../util/compatibility";
 import {
     focusBlock,
     focusByRange,
@@ -18,7 +18,7 @@ import {
     hasTopClosestByAttribute,
     isInEmbedBlock
 } from "../util/hasClosest";
-import {removeBlock, removeImage} from "./remove";
+import { removeBlock, removeImage } from "./remove";
 import {
     getContenteditableElement,
     getFirstBlock,
@@ -30,9 +30,9 @@ import {
     hasPreviousSibling, isEndOfBlock,
     isNotEditBlock,
 } from "./getBlock";
-import {matchHotKey} from "../util/hotKey";
-import {enter, softEnter} from "./enter";
-import {clearTableCell, fixTable} from "../util/table";
+import { matchHotKey } from "../util/hotKey";
+import { enter, softEnter } from "./enter";
+import { clearTableCell, fixTable } from "../util/table";
 import {
     transaction,
     turnsIntoOneTransaction,
@@ -41,36 +41,37 @@ import {
     updateBatchTransaction,
     updateTransaction
 } from "./transaction";
-import {fontEvent} from "../toolbar/Font";
-import {addSubList, listIndent, listOutdent} from "./list";
-import {newFileContentBySelect, rename, replaceFileName} from "../../editor/rename";
-import {cancelSB, insertEmptyBlock, jumpToParent} from "../../block/util";
-import {isLocalPath} from "../../util/pathName";
+import { fontEvent } from "../toolbar/Font";
+import { addSubList, listIndent, listOutdent } from "./list";
+import { newFileContentBySelect, rename, replaceFileName } from "../../editor/rename";
+import { cancelSB, insertEmptyBlock, jumpToParent } from "../../block/util";
+import { isLocalPath } from "../../util/pathName";
 /// #if !MOBILE
-import {openBy, openFileById} from "../../editor/util";
+import { openBy, openFileById } from "../../editor/util";
 /// #endif
-import {alignImgCenter, alignImgLeft, commonHotkey, downSelect, getStartEndElement, upSelect} from "./commonHotkey";
-import {fileAnnotationRefMenu, inlineMathMenu, linkMenu, refMenu, setFold, tagMenu} from "../../menus/protyle";
-import {openAttr} from "../../menus/commonMenuItem";
-import {Constants} from "../../constants";
-import {fetchPost} from "../../util/fetch";
-import {scrollCenter} from "../../util/highlightById";
-import {BlockPanel} from "../../block/Panel";
+import { alignImgCenter, alignImgLeft, commonHotkey, downSelect, getStartEndElement, upSelect } from "./commonHotkey";
+import { fileAnnotationRefMenu, inlineMathMenu, linkMenu, refMenu, setFold, tagMenu } from "../../menus/protyle";
+import { openAttr } from "../../menus/commonMenuItem";
+import { Constants } from "../../constants";
+import { fetchPost } from "../../util/fetch";
+import { scrollCenter } from "../../util/highlightById";
+import { BlockPanel } from "../../block/Panel";
 import * as dayjs from "dayjs";
-import {highlightRender} from "../render/highlightRender";
-import {countBlockWord} from "../../layout/status";
-import {moveToDown, moveToUp} from "./move";
-import {pasteAsPlainText} from "../util/paste";
-import {preventScroll} from "../scroll/preventScroll";
-import {getSavePath, newFileBySelect} from "../../util/newFile";
-import {removeSearchMark} from "../toolbar/util";
-import {avKeydown} from "../render/av/keydown";
-import {checkFold} from "../../util/noRelyPCFunction";
-import {AIActions} from "../../ai/actions";
-import {openLink} from "../../editor/openLink";
-import {onlyProtyleCommand} from "../../boot/globalEvent/command/protyle";
-import {AIChat} from "../../ai/chat";
+import { highlightRender } from "../render/highlightRender";
+import { countBlockWord } from "../../layout/status";
+import { moveToDown, moveToUp } from "./move";
+import { pasteAsPlainText } from "../util/paste";
+import { preventScroll } from "../scroll/preventScroll";
+import { getSavePath, newFileBySelect } from "../../util/newFile";
+import { removeSearchMark } from "../toolbar/util";
+import { avKeydown } from "../render/av/keydown";
+import { checkFold } from "../../util/noRelyPCFunction";
+import { AIActions } from "../../ai/actions";
+import { openLink } from "../../editor/openLink";
+import { onlyProtyleCommand } from "../../boot/globalEvent/command/protyle";
+import { AIChat } from "../../ai/chat";
 import { altx上色顺序Keys, altx上色顺序Values } from "../../mux/settings";
+import { translateText } from "../util/mux/translate";
 
 export const getContentByInlineHTML = (range: Range, cb: (content: string) => void) => {
     let html = "";
@@ -81,7 +82,7 @@ export const getContentByInlineHTML = (range: Range, cb: (content: string) => vo
             html += item.outerHTML;
         }
     });
-    fetchPost("/api/block/getDOMText", {dom: html}, (response) => {
+    fetchPost("/api/block/getDOMText", { dom: html }, (response) => {
         cb(response.data);
     });
 };
@@ -624,7 +625,7 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                 protyle.gutter.renderMultipleMenu(protyle, selectElements);
             }
             const rect = nodeElement.getBoundingClientRect();
-            window.siyuan.menus.menu.popup({x: rect.left, y: rect.top, isLeft: true});
+            window.siyuan.menus.menu.popup({ x: rect.left, y: rect.top, isLeft: true });
             return;
         }
 
@@ -660,9 +661,9 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
             } else if (event.key === "ArrowUp") {
                 const firstEditElement = getContenteditableElement(protyle.wysiwyg.element.firstElementChild);
                 if ((
-                        !getPreviousBlock(nodeElement) &&  // 列表第一个块为嵌入块，第二个块为段落块，上键应选中第一个块 https://ld246.com/article/1652667912155
-                        nodeElement.contains(firstEditElement)
-                    ) ||
+                    !getPreviousBlock(nodeElement) &&  // 列表第一个块为嵌入块，第二个块为段落块，上键应选中第一个块 https://ld246.com/article/1652667912155
+                    nodeElement.contains(firstEditElement)
+                ) ||
                     (!firstEditElement && nodeElement.isSameNode(protyle.wysiwyg.element.firstElementChild))) {
                     // 不能用\n判断，否则文字过长折行将错误 https://github.com/siyuan-note/siyuan/issues/6156
                     if (getSelectionPosition(nodeEditableElement, range).top - nodeEditableElement.getBoundingClientRect().top < 20 || nodeElement.classList.contains("av")) {
@@ -1914,7 +1915,7 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                     app: protyle.app,
                     isBacklink: false,
                     targetElement: refElement,
-                    refDefs: [{refID: id}]
+                    refDefs: [{ refID: id }]
                 }));
                 event.preventDefault();
                 event.stopPropagation();
@@ -1975,6 +1976,48 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
             event.preventDefault();
             event.stopPropagation();
             return;
+        }
+
+        // Handle translate shortcut
+        if (matchHotKey(window.siyuan.config.keymap.editor.insert.translate.custom, event)) {
+            hideElements(["select"], protyle);
+            const range = getSelection().getRangeAt(0);
+            if (range.toString() === "") {
+                return true;
+            }
+
+            // Get the selected text and translate
+            const selectedText = range.toString();
+            translateText(selectedText).then(translatedText => {
+                // Store the current block element and its HTML before making changes
+                const currentBlock = hasClosestBlock(range.startContainer);
+                const oldHTML = currentBlock ? currentBlock.outerHTML : "";
+                
+                // Insert as inline-memo
+                const newNodes = protyle.toolbar.setInlineMark(protyle, "inline-memo", "range", {
+                    type: "inline-memo"
+                }, true);
+
+                if (newNodes.length > 0) {
+                    // Get the last memo element, which should be the one we just created
+                    const lastMemo = newNodes[newNodes.length - 1];
+                    (lastMemo as HTMLElement).setAttribute("data-inline-memo-content", translatedText);
+                    
+                    // Get the closest block element and update transaction
+                    const nodeElement = hasClosestBlock(lastMemo);
+                    if (nodeElement) {
+                        const id = nodeElement.getAttribute("data-node-id");
+                        // Update the transaction with old and new HTML
+                        nodeElement.setAttribute("updated", dayjs().format("YYYYMMDDHHmmss"));
+                        updateTransaction(protyle, id, nodeElement.outerHTML, oldHTML);
+                    }
+                }
+            }).catch(error => {
+                console.error("Translation error:", error);
+            });
+
+            event.preventDefault();
+            return true;
         }
     });
 };

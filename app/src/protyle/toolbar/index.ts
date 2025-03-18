@@ -227,7 +227,7 @@ export class Toolbar {
         return types;
     }
 
-    public setInlineMark(protyle: IProtyle, type: string, action: "range" | "toolbar", textObj?: ITextOption) {
+    public setInlineMark(protyle: IProtyle, type: string, action: "range" | "toolbar", textObj?: ITextOption, returnNewNodesOnly: boolean = false) {
         const nodeElement = hasClosestBlock(this.range.startContainer);
         if (!nodeElement || nodeElement.getAttribute("data-type") === "NodeCodeBlock") {
             return;
@@ -742,6 +742,9 @@ export class Toolbar {
         }
         if (nextElement) {
             this.mergeNode(nextElement.childNodes);
+        }
+        if (returnNewNodesOnly){
+            return newNodes;
         }
         if (previousIndex) {
             this.range.setStart(previousElement.firstChild, previousIndex);

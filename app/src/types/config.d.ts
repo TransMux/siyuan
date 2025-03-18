@@ -953,6 +953,7 @@ declare namespace Config {
         table: IKey;
         tag: IKey;
         underline: IKey;
+        translate: IKey;
     }
 
     /**
