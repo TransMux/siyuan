@@ -58,12 +58,16 @@ export const avKeydown = (event: KeyboardEvent, nodeElement: HTMLElement, protyl
         if (event.key === "ArrowLeft" || matchHotKey("⇧⇥", event)) {
             const previousRowElement = rowElement.previousElementSibling;
             if (selectCellElement.previousElementSibling && !selectCellElement.previousElementSibling.classList.contains("av__firstcol")) {
-                if (selectCellElement.previousElementSibling.classList.contains("av__cell")) {
-                    newCellElement = selectCellElement.previousElementSibling;
-                } else {
+                if (selectCellElement.previousElementSibling.classList.contains("av__colsticky")) {
                     newCellElement = selectCellElement.previousElementSibling.lastElementChild;
+                    if (newCellElement.classList.contains("av__firstcol")) {
+                        newCellElement = undefined;
+                    }
+                } else if (selectCellElement.previousElementSibling.classList.contains("av__cell")) {
+                    newCellElement = selectCellElement.previousElementSibling;
                 }
-            } else if (previousRowElement && !previousRowElement.classList.contains("av__row--header")) {
+            }
+            if (!newCellElement && previousRowElement && !previousRowElement.classList.contains("av__row--header")) {
                 const previousCellElements = previousRowElement.querySelectorAll(".av__cell");
                 newCellElement = previousCellElements[previousCellElements.length - 1];
             }
@@ -202,21 +206,40 @@ export const avKeydown = (event: KeyboardEvent, nodeElement: HTMLElement, protyl
 
 export const bindAVPanelKeydown = (event: KeyboardEvent) => {
     const avPanelElement = document.querySelector(".av__panel");
-    if (avPanelElement && avPanelElement.querySelector('[data-type="goSearchRollupCol"]') &&
-        !avPanelElement.querySelector(".b3-text-field") &&
-        window.siyuan.menus.menu.element.classList.contains("fn__none")) {
-        const menuElement = avPanelElement.querySelector(".b3-menu__items")
-        if (event.key === "Enter") {
-            const currentElement = menuElement.querySelector(".b3-menu__item--current");
-            if (currentElement) {
-                avPanelElement.dispatchEvent(new CustomEvent("click", {detail: currentElement.getAttribute("data-type")}));
+    if (avPanelElement && window.siyuan.menus.menu.element.classList.contains("fn__none")) {
+        if ((avPanelElement.querySelector('[data-type="goSearchRollupCol"]') && !avPanelElement.querySelector(".b3-text-field")) ||
+            avPanelElement.querySelector('[data-type="addAssetExist"]')) {
+            const menuElement = avPanelElement.querySelector(".b3-menu__items");
+            if (event.key === "Enter") {
+                const currentElement = menuElement.querySelector(".b3-menu__item--current");
+                if (currentElement) {
+                    const editElement = currentElement.querySelector('[data-type="editAssetItem"]');
+                    const uploadElement = currentElement.querySelector(".b3-form__upload");
+                    if (editElement) {
+                        avPanelElement.dispatchEvent(new CustomEvent("click", {
+                            detail: {
+                                type: editElement.getAttribute("data-type"),
+                                target: editElement
+                            }
+                        }));
+                    } else if (uploadElement) {
+                        uploadElement.dispatchEvent(new MouseEvent("click", {bubbles: true}));
+                    } else {
+                        avPanelElement.dispatchEvent(new CustomEvent("click", {
+                            detail: {
+                                type: currentElement.getAttribute("data-type"),
+                                target: currentElement
+                            }
+                        }));
+                    }
+                }
+            } else if (event.key === "Escape") {
+                avPanelElement.dispatchEvent(new CustomEvent("click", {detail: "close"}));
+            } else {
+                upDownHint(menuElement, event, "b3-menu__item--current", menuElement.firstElementChild);
             }
-        } else if (event.key === "Escape") {
-            avPanelElement.dispatchEvent(new CustomEvent("click", {detail: "close"}));
-        } else {
-            upDownHint(menuElement, event, "b3-menu__item--current", menuElement.firstElementChild)
+            return true;
         }
-        return true;
     }
     return false;
-}
+};
