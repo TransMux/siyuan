@@ -59,6 +59,12 @@ export const commonClick = (event: MouseEvent & {
     // siyuan://blocks/20241026162411-x83o4e9
     const avMuxElement = hasClosestByClassName(event.target, "mux-av-attr-inline");
     if (avMuxElement) {
+        // 如果点击的是button，那么不进行任何操作 https://x.transmux.top/j/20250322002542-wy5q11a
+        if (event.target.tagName === "BUTTON") {
+            event.preventDefault();
+            event.stopPropagation();
+            return true;
+        }
         // 如果按住了ctrl，那么直接打开数据库页面
         if (event.ctrlKey) {
             if (avMuxElement.getAttribute("data-av-block-id")) {
