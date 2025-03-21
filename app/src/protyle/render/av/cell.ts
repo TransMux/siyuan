@@ -376,6 +376,10 @@ export const popTextCell = (protyle: IProtyle, cellElements: HTMLElement[], type
     if (type === "updated" || type === "created" || document.querySelector(".av__mask")) {
         return;
     }
+    // https://x.transmux.top/j/20250322002647-2hgfy9v
+    if (type === "template") {
+        return;
+    }
     const blockElement = hasClosestBlock(cellElements[0]);
     if (!blockElement) {
         return;
