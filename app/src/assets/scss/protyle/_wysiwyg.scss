@@ -547,8 +547,9 @@
 
     & > div:not(.protyle-attr--memo):not(.protyle-attr--refcount) {
       cursor: pointer;
-      @include text-clamp(1);
-      max-width: 25vw;
+      // https://x.transmux.top/j/20250322002431-zkre9uu
+      // @include text-clamp(1);
+      // max-width: 25vw;
     }
   }
 
