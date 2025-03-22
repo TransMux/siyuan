@@ -42,8 +42,7 @@ import { isIPhone, isNotCtrl, isOnlyMeta } from "../util/compatibility";
 import { avRender } from "../render/av/render";
 import { genIconHTML } from "../render/util";
 import { updateAttrViewCellAnimation } from "../render/av/action";
-import { fetchNewDailyNote } from "../../util/mount";
-import { pasteText } from "../util/paste";
+import { paste } from "../util/paste";
 
 export class Hint {
     public timeId: number;
@@ -676,7 +675,8 @@ ${genHintItemHTML(item)}
                         // dayString = 02-17
                         const dayString = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
                         range.deleteContents();
-                        pasteText(protyle, `((${response.data.id} '${dayString}'))`, nodeElement);
+                        const text = `((${response.data.id} '${dayString}'))`;
+                        paste(protyle, { textHTML: text, textPlain: text, target: nodeElement as HTMLElement });
                     });
                 }
                 return;
