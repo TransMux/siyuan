@@ -1401,6 +1401,7 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
             } else {
                 // 如果选择的元素没有跨block，也就是说，在一个block中选择的
 
+                // https://x.transmux.top/j/20250216021533-x30zdsr
                 // 1. 获取当前range的commonAncestorContainer的color样式
                 const commonAncestorContainer = range.commonAncestorContainer;
                 // 如果 commonAncestorContainer 不是元素节点，则使用其父元素
@@ -1408,7 +1409,16 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                     ? (commonAncestorContainer as HTMLElement)
                     : (commonAncestorContainer.parentElement as HTMLElement);
 
-                const computedColor = containerElement.style.color;
+                let computedColor = containerElement.style.color;
+
+                // 如果选中的部分包含其他inline元素，这时候dom结构会选择到最上层的div contenteditable="true"，此时判断第一个元素和最后一个元素是否相同color
+                if (!computedColor && containerElement.children.length > 0) {
+                    const firstElement = containerElement.children[0] as HTMLElement;
+                    const lastElement = containerElement.children[containerElement.children.length - 1] as HTMLElement;
+                    if (firstElement.style.color === lastElement.style.color) {
+                        computedColor = firstElement.style.color;
+                    }
+                }
 
                 // 2. 匹配 altx上色顺序，应用匹配到的下一个颜色
                 const matchColorIndex = altx上色顺序Keys.findIndex(key => computedColor.includes(key));
@@ -1992,7 +2002,7 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                 // Store the current block element and its HTML before making changes
                 const currentBlock = hasClosestBlock(range.startContainer);
                 const oldHTML = currentBlock ? currentBlock.outerHTML : "";
-                
+
                 // Insert as inline-memo
                 const newNodes = protyle.toolbar.setInlineMark(protyle, "inline-memo", "range", {
                     type: "inline-memo"
@@ -2002,7 +2012,7 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                     // Get the last memo element, which should be the one we just created
                     const lastMemo = newNodes[newNodes.length - 1];
                     (lastMemo as HTMLElement).setAttribute("data-inline-memo-content", translatedText);
-                    
+
                     // Get the closest block element and update transaction
                     const nodeElement = hasClosestBlock(lastMemo);
                     if (nodeElement) {
