@@ -1702,6 +1702,30 @@ style="margin:4px 0;width: ${isMobile() ? "100%" : "360px"}" class="b3-text-fiel
                 html = nodeElement.outerHTML;
             }
         }).element);
+        // 支持拖动文件 https://x.transmux.top/j/20250324163621-zddqmes
+        // window.siyuan.menus.menu.append(new MenuItem({
+        //     id: "dragFile",
+        //     label: "拖动文件",
+        //     icon: "iconDrag",
+        //     iconClass: "fn__grab",
+        //     bind(element) {
+        //         const iconElement = element.querySelector(".fn__grab") as HTMLElement;
+        //         if (iconElement) {
+        //             iconElement.draggable = true;
+        //             iconElement.addEventListener("dragstart", (event) => {
+        //                 window.siyuan.dragElement = element;
+        //                 window.siyuan.dragElement.style.opacity = "0.1";
+        //             });
+                    
+        //             iconElement.addEventListener("dragend", () => {
+        //                 if (window.siyuan.dragElement) {
+        //                     window.siyuan.dragElement.style.opacity = "1";
+        //                     window.siyuan.dragElement = null;
+        //                 }
+        //             });
+        //         }
+        //     }
+        // }).element);
     }
 
     if (linkAddress) {
