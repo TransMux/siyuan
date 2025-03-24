@@ -1,4 +1,5 @@
 import { bulletMain } from "./focus-block";
+import { foo } from "./handler";
 
 // 隐藏已完成 https://x.transmux.top/j/20250207000640-w6qpyf9
 const css_隐藏已完成 = `
@@ -43,3 +44,5 @@ export function toggle() {
 enable()
 
 bulletMain();
+
+foo();
