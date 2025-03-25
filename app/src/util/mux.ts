@@ -83,7 +83,7 @@ export function openUnreadWeekArticle(app: App) {
     fetchSyncPost("/api/filetree/listDocsByPath", {
         notebook: 未读笔记本,
         // TODO: 获取当前周数对应的文件id，难点：不在索引中，所以无法从数据库中sql获取
-        path: `/20250320120525-d8ejwxt.sy`,
+        path: `/20250324122103-smtgge0.sy`,
     }).then((response) => {
         const blockIds = response.data.files.map((item: any) => item.id).slice(0, 5);
         console.log(blockIds);
