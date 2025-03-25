@@ -39,7 +39,7 @@ export const initMessage = () => {
     }
 };
 
-// type: info/error; timeout: 0 手动关闭；-1 用不关闭
+// type: info/error; timeout: 0 手动关闭；-1 永不关闭
 export const showMessage = (message: string, timeout = 6000, type = "info", messageId?: string) => {
     // 不允许永不关闭的提示
     if (timeout === -1 || timeout === 0) {
