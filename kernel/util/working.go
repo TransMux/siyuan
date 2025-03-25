@@ -39,6 +39,7 @@ import (
 	"github.com/siyuan-note/filelock"
 	"github.com/siyuan-note/httpclient"
 	"github.com/siyuan-note/logging"
+	"github.com/siyuan-note/siyuan/kernel/mux"
 )
 
 // var Mode = "dev"
@@ -225,6 +226,9 @@ func SetBooted() {
 	setBootDetails("Finishing boot...")
 	bootProgress.Store(100)
 	logging.LogInfof("kernel booted")
+	mux.SendWebhook("kernelBooted", map[string]interface{}{
+		"now": time.Now().Unix(),
+	})
 }
 
 var (

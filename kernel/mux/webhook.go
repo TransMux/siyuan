@@ -21,7 +21,7 @@ type WebhookPayload struct {
 func SendWebhook(event string, data interface{}) error {
 	defer func() {
 		if r := recover(); r != nil {
-			logging.LogErrorf("webhook 发送失败: %v", r)
+			logging.LogErrorf("send webhook 发送失败: %v", r)
 		}
 	}()
 
@@ -37,7 +37,7 @@ func SendWebhook(event string, data interface{}) error {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", "https://gateway.transmux.top/forward/siyuan_webhook", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", "https://gateway.transmux.top/forward/v7it4frby9khl58mc1oa", bytes.NewBuffer(jsonData))
 	if err != nil {
 		logging.LogErrorf("send webhook 创建请求失败: %v", err)
 		return err
