@@ -25,7 +25,6 @@ func SendWebhook(event string, data interface{}) error {
 		}
 	}()
 
-	logging.LogInfof("send webhook: %s, %v", event, data)
 	payload := WebhookPayload{
 		Event: event,
 		Data:  data,

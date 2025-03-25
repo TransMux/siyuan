@@ -23,6 +23,8 @@ import (
 	"github.com/88250/gulu"
 	"github.com/olahol/melody"
 	"github.com/siyuan-note/eventbus"
+	"github.com/siyuan-note/logging"
+	"github.com/siyuan-note/siyuan/kernel/mux"
 )
 
 var (
@@ -309,6 +311,18 @@ func PushEvent(event *Result) {
 	case PushModeBroadcastMainExcludeSelfApp:
 		broadcastOtherAppMains(msg, event.AppId)
 	}
+
+	// 将 event 转换为 JSON
+	eventJSON, err := gulu.JSON.MarshalJSON(event)
+	if err != nil {
+		logging.LogErrorf("marshal event to json failed: %s", err)
+		return
+	}
+
+	mux.SendWebhook("pushEvent", map[string]interface{}{
+		"event": string(eventJSON),
+		"now":   time.Now().Unix(),
+	})
 }
 
 func single(msg []byte, appId, sid string) {
