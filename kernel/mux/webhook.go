@@ -17,7 +17,7 @@ type WebhookPayload struct {
 	Data      interface{} `json:"data"`
 }
 
-// SendWebhook 发送 webhook 请求到指定的 URL
+// SendWebhook 发送 webhook 请求到指定的 URL https://x.transmux.top/j/20250325160653-iwgbfsp
 func SendWebhook(event string, data interface{}) error {
 	defer func() {
 		if r := recover(); r != nil {
