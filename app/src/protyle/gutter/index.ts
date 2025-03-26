@@ -69,6 +69,8 @@ import { openFileById } from "../../editor/util";
 import { checkFold } from "../../util/noRelyPCFunction";
 import { copyTextByType } from "../toolbar/util";
 import { showMessage } from "../../dialog/message";
+import { debug } from "console";
+import { 发送到第一个反链 } from "../../mux/utils";
 
 export class Gutter {
     public element: HTMLElement;
@@ -856,6 +858,15 @@ export class Gutter {
                 });
             }
         }).element);
+        // https://x.transmux.top/j/20250324175834-qrru5bq
+        window.siyuan.menus.menu.append(new MenuItem({
+            id: "sendToFirstBacklink",
+            label: "发送到第一个反链",
+            icon: "iconScrollHoriz",
+            click: () => {
+                发送到第一个反链(selectsElement, protyle);
+            }
+        }).element);
         const range = getSelection().rangeCount > 0 ? getSelection().getRangeAt(0) : undefined;
         window.siyuan.menus.menu.append(new MenuItem({
             id: "addToDatabase",
@@ -1393,6 +1404,15 @@ export class Gutter {
                         hintMoveBlock(undefined, [nodeElement], protyle, parentID);
                         showMessage("追加到日记下", 1000);
                     });
+                }
+            }).element);
+            // https://x.transmux.top/j/20250324175834-qrru5bq
+            window.siyuan.menus.menu.append(new MenuItem({
+                id: "sendToFirstBacklink",
+                label: "发送到第一个反链",
+                icon: "iconScrollHoriz",
+                click: () => {
+                    发送到第一个反链([nodeElement], protyle);
                 }
             }).element);
             const range = getSelection().rangeCount > 0 ? getSelection().getRangeAt(0) : undefined;

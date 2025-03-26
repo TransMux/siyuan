@@ -1,4 +1,6 @@
 import { showMessage } from "../dialog/message";
+import { hintMoveBlock } from "../protyle/hint/extend";
+import { transaction } from "../protyle/wysiwyg/transaction";
 import { fetchPost, fetchSyncPost } from "../util/fetch";
 import { 标签之树avID } from "./settings";
 
@@ -75,4 +77,67 @@ export async function 获取文件ID(笔记本ID: string, hpath: string) {
         return createDocResponse.data;
     }
     return response.data[0].id;
+}
+
+export async function 发送到第一个反链(selectsElement: Element[], protyle: IProtyle) {
+    debugger;
+    // 1. 获取第一个反链
+    let firstBacklink = null;
+    for (const element of selectsElement) {
+        const backlink = element.querySelector('[data-type="block-ref"]');
+        if (backlink) {
+            firstBacklink = backlink;
+            break;
+        }
+    }
+    if (!firstBacklink) {
+        showMessage("没有找到反链", 3000);
+        return;
+    }
+    // 2. 移除所有指向这个data-id的反链
+    const targetBlockID = firstBacklink.getAttribute("data-id");
+    for (const element of selectsElement) {
+        await 移除反链(element, targetBlockID, protyle);
+    }
+    hintMoveBlock(undefined, selectsElement, protyle, targetBlockID);
+    showMessage("发送成功", 3000);
+}
+
+async function 移除反链(element: Element, targetBlockID: string, protyle: IProtyle) {
+    // 查找元素 span data-type="block-ref" data-id="{blockId}"
+    // 全部把这个元素直接去掉，只留下文本
+    const refEls = element.querySelectorAll(
+        `span[data-type*="block-ref"][data-id="${targetBlockID}"]`
+    );
+    // 替换文本
+    refEls.forEach((el) => {
+        // 如果data-subtype="d"，那么为静态锚文本，直接移除整个引用
+        if (el.getAttribute("data-subtype") === "d") {
+            el.remove();
+        } else {
+            let dataType = el.getAttribute("data-type");
+            // 去除"block-ref"，并添加"u"
+            let newTypes = dataType
+                .split(" ")
+                .filter((type) => type !== "block-ref"); // 移除"block-ref"
+            newTypes.push("u"); // 添加"u"
+
+            // 将修改后的数组转回字符串，并设置为新的data-type值
+            el.setAttribute("data-type", newTypes.join(" "));
+
+            // 移除data-id属性
+            el.removeAttribute("data-id");
+
+            // 移除data-subtype属性
+            el.removeAttribute("data-subtype");
+        }
+    });
+
+    transaction(protyle,
+        [{
+            action: "update",
+            id: element.getAttribute("data-node-id"),
+            data: element.outerHTML
+        }]
+    );
 }
