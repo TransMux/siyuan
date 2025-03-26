@@ -11,6 +11,14 @@ export async function afterAddedFileToDatabase(file_ids: Array<string>, avID: st
     for (const file_id of file_ids) {
         const blockInfo = await getBlockInfoByIDSQL(file_id);
 
+        // https://x.transmux.top/j/20250325184853-0ut3yb4
+        if (!blockInfo || blockInfo.length === 0) {
+            // 如果不存在 Block 信息，那么这个文档肯定不在知识卡片下（因为这下面的文档肯定会被索引）
+            // 所以肯定需要移动
+            filteredFileIDs.push(file_id);
+            continue;
+        }
+
         // 如果 path 不包含任何关键字，则保留该 file_id
         if (![知识单元目录, 关系笔记目录, 标签之树目录].some(keyword => blockInfo[0].path.includes(keyword))) {
             filteredFileIDs.push(file_id);

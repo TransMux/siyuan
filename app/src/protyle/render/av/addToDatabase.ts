@@ -30,8 +30,8 @@ export const addFilesToDatabase = (fileLiElements: Element[]) => {
                 id: listItemElement.dataset.blockId,
                 data: dayjs().format("YYYYMMDDHHmmss"),
             }]);
+            afterAddedFileToDatabase(srcs.map(item => item.id), avID);
         });
-        afterAddedFileToDatabase(srcs.map(item => item.id), avID);
     }
 };
 
