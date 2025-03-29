@@ -27,7 +27,7 @@ type SQLResponse struct {
 
 // InitPluginDatabase 初始化插件数据库
 func InitPluginDatabase() error {
-	dbPath := filepath.Join(util.DataDir, "plugin", "plugin.db")
+	dbPath := filepath.Join(util.DataDir, "storage", "extra.db")
 	var err error
 	db, err = sql.Open("sqlite3", dbPath)
 	if err != nil {
