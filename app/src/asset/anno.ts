@@ -110,7 +110,6 @@ export const initAnno = (element: HTMLElement, pdf: any) => {
             documentSelf.onselect = null;
             rectAnnoElement.classList.remove("toggled");
             pdfConfig.mainContainer.classList.remove("rect-to-annotation");
-            debugger
             const coords = getHightlightCoordsByRect(pdf, window.siyuan.storage[Constants.LOCAL_PDFTHEME].annoColor || "var(--b3-pdf-background1)", rectResizeElement,
                 rectResizeElement.style.backgroundColor ? "text" : "border");
             rectResizeElement.classList.add("fn__none");

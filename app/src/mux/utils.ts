@@ -80,7 +80,6 @@ export async function 获取文件ID(笔记本ID: string, hpath: string) {
 }
 
 export async function 发送到第一个反链(selectsElement: Element[], protyle: IProtyle) {
-    debugger;
     // 1. 获取第一个反链
     let firstBacklink = null;
     for (const element of selectsElement) {
