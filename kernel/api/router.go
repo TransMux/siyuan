@@ -477,4 +477,8 @@ func ServeAPI(ginServer *gin.Engine) {
 	// 如果思源不是运行在当前电脑上，那么浏览器打开对应的页面？
 	// ginServer.Handle("GET", "/j/:block_id", model.CheckAuth, mux.Jump)
 	ginServer.Handle("GET", "/j/:block_id", mux.Jump)
+
+	// 插件数据库路由
+	ginServer.Handle("POST", "/api/db/query", model.CheckAuth, mux.HandleQuery)
+	ginServer.Handle("POST", "/api/db/exec", model.CheckAuth, mux.HandleExec)
 }

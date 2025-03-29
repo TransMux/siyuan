@@ -19,9 +19,11 @@
 package main
 
 import (
+	"github.com/siyuan-note/logging"
 	"github.com/siyuan-note/siyuan/kernel/cache"
 	"github.com/siyuan-note/siyuan/kernel/job"
 	"github.com/siyuan-note/siyuan/kernel/model"
+	"github.com/siyuan-note/siyuan/kernel/mux"
 	"github.com/siyuan-note/siyuan/kernel/server"
 	"github.com/siyuan-note/siyuan/kernel/sql"
 	"github.com/siyuan-note/siyuan/kernel/util"
@@ -38,6 +40,11 @@ func main() {
 	sql.InitAssetContentDatabase(false)
 	sql.SetCaseSensitive(model.Conf.Search.CaseSensitive)
 	sql.SetIndexAssetPath(model.Conf.Search.IndexAssetPath)
+
+	// Initialize plugin database
+	if err := mux.InitPluginDatabase(); err != nil {
+		logging.LogErrorf("init plugin database failed: %s", err)
+	}
 
 	model.BootSyncData()
 	model.InitBoxes()
