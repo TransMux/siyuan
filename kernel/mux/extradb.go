@@ -15,7 +15,8 @@ var (
 
 // SQLRequest 定义 SQL 请求结构
 type SQLRequest struct {
-	Stmt string `json:"stmt"` // SQL 语句
+	Stmt string        `json:"stmt"` // SQL 语句
+	Args []interface{} `json:"args"` // SQL 参数
 }
 
 // SQLResponse 定义 SQL 响应结构
@@ -65,7 +66,7 @@ func HandleQuery(c *gin.Context) {
 	}
 
 	// 执行查询
-	rows, err := db.Query(req.Stmt)
+	rows, err := db.Query(req.Stmt, req.Args...)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, SQLResponse{
 			Code: 1,
@@ -145,7 +146,7 @@ func HandleExec(c *gin.Context) {
 	}
 
 	// 执行 SQL 语句
-	result, err := db.Exec(req.Stmt)
+	result, err := db.Exec(req.Stmt, req.Args...)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, SQLResponse{
 			Code: 1,
