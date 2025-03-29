@@ -153,7 +153,7 @@ export const genAVValueHTML = (value: IAVCellValue) => {
     return html;
 };
 
-export const renderAVAttribute = (element: HTMLElement, id: string, protyle: IProtyle, cb?: (element: HTMLElement) => void, renderAddButton?: boolean = true) => {
+export const renderAVAttribute = (element: HTMLElement, id: string, protyle: IProtyle, cb?: (element: HTMLElement) => void, renderInFloatPanel: boolean = true) => {
     fetchPost("/api/av/getAttributeViewKeys", { id }, (response) => {
         let html = "";
         response.data.forEach((table: {
@@ -195,6 +195,11 @@ export const renderAVAttribute = (element: HTMLElement, id: string, protyle: IPr
                 if (item.key.type === "block") {
                     continue;
                 }
+                // 根据field备注进行操作 https://x.transmux.top/j/20250324180505-b1bktfg
+                // https://x.transmux.top/j/20250324180534-oa55tov
+                if (item.key.desc.includes("hide_on_document_av")) {
+                    continue;
+                }
 
                 innerHTML += `<div class="block__icons av__row" data-id="${id}" data-col-id="${item.key.id}">
     <div class="block__icon" draggable="true"><svg><use xlink:href="#iconDrag"></use></svg></div>
@@ -208,7 +213,7 @@ ${["text", "number", "date", "url", "phone", "template", "email"].includes(item.
 class="fn__flex-1 fn__flex${["url", "text", "number", "email", "phone", "block"].includes(item.values[0].type) ? "" : " custom-attr__avvalue"}${["created", "updated"].includes(item.values[0].type) ? " custom-attr__avvalue--readonly" : ""}">${genAVValueHTML(item.values[0])}</div>
 </div>`;
             }
-            if (renderAddButton) {
+            if (renderInFloatPanel) {
                 innerHTML += `<div class="fn__hr"></div>
 <button data-type="addColumn" class="b3-button b3-button--cancel"><svg><use xlink:href="#iconAdd"></use></svg>${window.siyuan.languages.newCol}</button>
 <div class="fn__hr--b"></div><div class="fn__hr--b"></div>`;
