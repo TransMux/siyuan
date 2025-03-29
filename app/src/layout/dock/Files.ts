@@ -322,6 +322,13 @@ export class Files extends Model {
                                     x: event.clientX,
                                     y: event.clientY
                                 });
+                            } else if (type === "addLocal") {
+                                fetchPost("/api/filetree/moveLocalShorthands", {
+                                    "notebook": notebookId
+                                });
+                                this.element.querySelectorAll('[data-type="addLocal"]').forEach(item => {
+                                    item.remove();
+                                });
                             }
                         }
                         if (type === "more-file") {
@@ -520,11 +527,10 @@ export class Files extends Model {
                 return;
             }
             const notebookSort = notebookElement.getAttribute("data-sortmode");
-            if ((
-                    notebookSort === "6" || (window.siyuan.config.fileTree.sort === 6 && notebookSort === "15")
-                ) &&
-                // 防止文档拖拽到笔记本外
-                !(!sourceOnlyRoot && targetType === "navigation-root")) {
+            if ((sourceOnlyRoot && targetType === "navigation-root" && window.siyuan.config.fileTree.sort === 6) ||
+                (!sourceOnlyRoot && targetType !== "navigation-root" &&
+                    (notebookSort === "6" || (window.siyuan.config.fileTree.sort === 6 && notebookSort === "15")))
+            ) {
                 const nodeRect = liElement.getBoundingClientRect();
                 const dragHeight = nodeRect.height * .2;
                 if (targetType === "navigation-root" && sourceOnlyRoot) {

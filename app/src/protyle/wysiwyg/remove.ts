@@ -18,6 +18,7 @@ import {hideElements} from "../ui/hideElements";
 import {Constants} from "../../constants";
 import {scrollCenter} from "../../util/highlightById";
 import {isMobile} from "../../util/functions";
+import {mathRender} from "../render/mathRender";
 
 export const removeBlock = (protyle: IProtyle, blockElement: Element, range: Range, type: "Delete" | "Backspace" | "remove") => {
     // 删除后，防止滚动条滚动后调用 get 请求，因为返回的请求已查找不到内容块了
@@ -199,7 +200,9 @@ export const removeBlock = (protyle: IProtyle, blockElement: Element, range: Ran
     }
 
     if (!blockElement.previousElementSibling && blockElement.parentElement.getAttribute("data-type") === "NodeBlockquote") {
-        range.insertNode(document.createElement("wbr"));
+        if (type !== "Delete") {
+            range.insertNode(document.createElement("wbr"));
+        }
         const blockParentElement = blockElement.parentElement;
         blockParentElement.insertAdjacentElement("beforebegin", blockElement);
         if (blockParentElement.childElementCount === 1) {
@@ -235,7 +238,11 @@ export const removeBlock = (protyle: IProtyle, blockElement: Element, range: Ran
                 parentID: blockParentElement.getAttribute("data-node-id")
             }]);
         }
-        focusByWbr(blockElement, range);
+        if (type === "Delete") {
+            moveToPrevious(blockElement, range, true);
+        } else {
+            focusByWbr(blockElement, range);
+        }
         return;
     }
 
@@ -409,6 +416,7 @@ export const removeBlock = (protyle: IProtyle, blockElement: Element, range: Ran
         range.insertNode(leftNodes);
         // 图片前删除到上一个文字块时，图片前有 zwsp
         previousLastElement.outerHTML = protyle.lute.SpinBlockDOM(previousLastElement.outerHTML);
+        mathRender(getPreviousBlock(removeElement) as HTMLElement);
         removeElement.remove();
         // extractContents 内容过多时需要进行滚动条重置，否则位置会错位
         protyle.contentElement.scrollTop = scroll;

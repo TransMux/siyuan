@@ -703,6 +703,13 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                                     scrollCenter(protyle, foldElement);
                                     event.stopPropagation();
                                     event.preventDefault();
+                                } else {
+                                    // 修正光标上移至 \n 结尾的块时落点错误 https://github.com/siyuan-note/siyuan/issues/14443
+                                    const prevEditableElement = getContenteditableElement(previousElement) as HTMLElement;
+                                    if (prevEditableElement &&  prevEditableElement.lastChild.nodeType === 3 &&
+                                        prevEditableElement.lastChild.textContent.endsWith("\n")) {
+                                        prevEditableElement.lastChild.textContent = prevEditableElement.lastChild.textContent.replace(/\n$/, "");
+                                    }
                                 }
                             }
                         }
