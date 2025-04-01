@@ -6,76 +6,76 @@ import {
     updateHotkeyTip,
     writeText
 } from "../../protyle/util/compatibility";
-import {matchAuxiliaryHotKey, matchHotKey} from "../../protyle/util/hotKey";
+import { matchAuxiliaryHotKey, matchHotKey } from "../../protyle/util/hotKey";
 import {
     hasClosestBlock,
     hasClosestByAttribute,
     hasClosestByClassName,
     hasTopClosestByTag,
 } from "../../protyle/util/hasClosest";
-import {newFile} from "../../util/newFile";
-import {Constants} from "../../constants";
-import {openSetting} from "../../config";
-import {getInstanceById} from "../../layout/util";
-import {getActiveTab, getDockByType, switchTabByIndex} from "../../layout/tabUtil";
-import {Tab} from "../../layout/Tab";
-import {Editor} from "../../editor";
-import {setEditMode} from "../../protyle/util/setEditMode";
-import {rename} from "../../editor/rename";
-import {Files} from "../../layout/dock/Files";
-import {newDailyNote} from "../../util/mount";
-import {hideElements} from "../../protyle/ui/hideElements";
-import {fetchPost} from "../../util/fetch";
-import {goBack, goForward} from "../../util/backForward";
-import {onGet} from "../../protyle/util/onGet";
-import {getDisplayName, getNotebookName} from "../../util/pathName";
-import {openFileById} from "../../editor/util";
-import {getAllDocks, getAllModels, getAllTabs} from "../../layout/getAll";
-import {focusBlock, focusByOffset, focusByRange, getSelectionOffset} from "../../protyle/util/selection";
-import {initFileMenu, initNavigationMenu} from "../../menus/navigation";
-import {bindMenuKeydown} from "../../menus/Menu";
-import {Dialog} from "../../dialog";
-import {unicode2Emoji} from "../../emoji";
-import {deleteFiles} from "../../editor/deleteFile";
-import {escapeHtml} from "../../util/escape";
-import {syncGuide} from "../../sync/syncGuide";
-import {duplicateBlock, getStartEndElement, goEnd, goHome} from "../../protyle/wysiwyg/commonHotkey";
-import {getNextFileLi, getPreviousFileLi} from "../../protyle/wysiwyg/getBlock";
-import {Backlink} from "../../layout/dock/Backlink";
+import { newFile } from "../../util/newFile";
+import { Constants } from "../../constants";
+import { openSetting } from "../../config";
+import { getInstanceById } from "../../layout/util";
+import { getActiveTab, getDockByType, switchTabByIndex } from "../../layout/tabUtil";
+import { Tab } from "../../layout/Tab";
+import { Editor } from "../../editor";
+import { setEditMode } from "../../protyle/util/setEditMode";
+import { rename } from "../../editor/rename";
+import { Files } from "../../layout/dock/Files";
+import { newDailyNote } from "../../util/mount";
+import { hideElements } from "../../protyle/ui/hideElements";
+import { fetchPost } from "../../util/fetch";
+import { goBack, goForward } from "../../util/backForward";
+import { onGet } from "../../protyle/util/onGet";
+import { getDisplayName, getNotebookName } from "../../util/pathName";
+import { openFileById } from "../../editor/util";
+import { getAllDocks, getAllModels, getAllTabs } from "../../layout/getAll";
+import { focusBlock, focusByOffset, focusByRange, getSelectionOffset } from "../../protyle/util/selection";
+import { initFileMenu, initNavigationMenu } from "../../menus/navigation";
+import { bindMenuKeydown } from "../../menus/Menu";
+import { Dialog } from "../../dialog";
+import { unicode2Emoji } from "../../emoji";
+import { deleteFiles } from "../../editor/deleteFile";
+import { escapeHtml } from "../../util/escape";
+import { syncGuide } from "../../sync/syncGuide";
+import { duplicateBlock, getStartEndElement, goEnd, goHome } from "../../protyle/wysiwyg/commonHotkey";
+import { getNextFileLi, getPreviousFileLi } from "../../protyle/wysiwyg/getBlock";
+import { Backlink } from "../../layout/dock/Backlink";
 /// #if !BROWSER
-import {setZoom} from "../../layout/topBar";
-import {ipcRenderer} from "electron";
+import { setZoom } from "../../layout/topBar";
+import { ipcRenderer } from "electron";
 /// #endif
-import {openHistory} from "../../history/history";
-import {openCard, openCardByData} from "../../card/openCard";
-import {lockScreen} from "../../dialog/processSystem";
-import {isWindow} from "../../util/functions";
-import {reloadProtyle} from "../../protyle/util/reload";
-import {fullscreen} from "../../protyle/breadcrumb/action";
-import {openRecentDocs} from "../../business/openRecentDocs";
-import {App} from "../../index";
-import {openBacklink, openGraph, openOutline, toggleDockBar} from "../../layout/dock/util";
-import {workspaceMenu} from "../../menus/workspace";
-import {resize} from "../../protyle/util/resize";
-import {Search} from "../../search";
-import {Custom} from "../../layout/dock/Custom";
-import {transaction} from "../../protyle/wysiwyg/transaction";
-import {quickMakeCard} from "../../card/makeCard";
-import {getContentByInlineHTML} from "../../protyle/wysiwyg/keydown";
-import {searchKeydown} from "./searchKeydown";
-import {historyKeydown} from "../../history/keydown";
-import {zoomOut} from "../../menus/protyle";
-import {getPlainText} from "../../protyle/util/paste";
-import {commandPanel, execByCommand} from "./command/panel";
-import {filterHotkey} from "./commonHotkey";
-import {setReadOnly} from "../../config/util/setReadOnly";
-import {copyPNGByLink} from "../../menus/util";
-import {globalCommand} from "./command/global";
-import {duplicateCompletely} from "../../protyle/render/av/action";
-import {copyTextByType} from "../../protyle/toolbar/util";
-import {onlyProtyleCommand} from "./command/protyle";
-import {cancelDrag} from "./dragover";
-import {bindAVPanelKeydown} from "../../protyle/render/av/keydown";
+import { openHistory } from "../../history/history";
+import { openCard, openCardByData } from "../../card/openCard";
+import { lockScreen } from "../../dialog/processSystem";
+import { isWindow } from "../../util/functions";
+import { reloadProtyle } from "../../protyle/util/reload";
+import { fullscreen } from "../../protyle/breadcrumb/action";
+import { openRecentDocs } from "../../business/openRecentDocs";
+import { App } from "../../index";
+import { openBacklink, openGraph, openOutline, toggleDockBar } from "../../layout/dock/util";
+import { workspaceMenu } from "../../menus/workspace";
+import { resize } from "../../protyle/util/resize";
+import { Search } from "../../search";
+import { Custom } from "../../layout/dock/Custom";
+import { transaction } from "../../protyle/wysiwyg/transaction";
+import { quickMakeCard } from "../../card/makeCard";
+import { getContentByInlineHTML } from "../../protyle/wysiwyg/keydown";
+import { searchKeydown } from "./searchKeydown";
+import { historyKeydown } from "../../history/keydown";
+import { zoomOut } from "../../menus/protyle";
+import { getPlainText } from "../../protyle/util/paste";
+import { commandPanel, execByCommand } from "./command/panel";
+import { filterHotkey } from "./commonHotkey";
+import { setReadOnly } from "../../config/util/setReadOnly";
+import { copyPNGByLink } from "../../menus/util";
+import { globalCommand } from "./command/global";
+import { duplicateCompletely } from "../../protyle/render/av/action";
+import { copyTextByType } from "../../protyle/toolbar/util";
+import { onlyProtyleCommand } from "./command/protyle";
+import { cancelDrag } from "./dragover";
+import { bindAVPanelKeydown } from "../../protyle/render/av/keydown";
 
 const switchDialogEvent = (app: App, event: MouseEvent) => {
     event.preventDefault();
@@ -279,10 +279,18 @@ const editKeydown = (app: App, event: KeyboardEvent) => {
         }
         event.preventDefault();
         event.stopPropagation();
+        const selectedText = range.toString();
+        // @ts-ignore
+        let refInfo = window.上一次设置的反链;
+        if (selectedText) {
+            // @ts-ignore
+            const refId = window.上一次设置的反链.split(Constants.ZWSP)[0];
+            refInfo = `${refId}${Constants.ZWSP}s${Constants.ZWSP}${selectedText}`;
+        }
         protyle.toolbar.setInlineMark(protyle, "block-ref", "range", {
             type: "id",
             // @ts-ignore
-            color: window.上一次设置的反链
+            color: refInfo
         });
         return true;
     }
@@ -336,7 +344,7 @@ const editKeydown = (app: App, event: KeyboardEvent) => {
         return true;
     }
     if (!isFileFocus && matchHotKey(window.siyuan.config.keymap.editor.general.spaceRepetition.custom, event) && !window.siyuan.config.readonly) {
-        fetchPost("/api/riff/getTreeRiffDueCards", {rootID: protyle.block.rootID}, (response) => {
+        fetchPost("/api/riff/getTreeRiffDueCards", { rootID: protyle.block.rootID }, (response) => {
             openCardByData(app, response.data, "doc", protyle.block.rootID, protyle.title?.editElement.textContent || window.siyuan.languages.untitled);
         });
         event.preventDefault();
@@ -390,7 +398,7 @@ const editKeydown = (app: App, event: KeyboardEvent) => {
     }
     if (matchHotKey(window.siyuan.config.keymap.editor.general.exitFocus.custom, event)) {
         event.preventDefault();
-        zoomOut({protyle, id: protyle.block.rootID, focusId: protyle.block.id});
+        zoomOut({ protyle, id: protyle.block.rootID, focusId: protyle.block.id });
         return true;
     }
     if (matchHotKey(window.siyuan.config.keymap.editor.general.switchReadonly.custom, event)) {
@@ -515,7 +523,7 @@ const editKeydown = (app: App, event: KeyboardEvent) => {
             id: protyle.block.parentID,
             size: window.siyuan.config.editor.dynamicLoadBlocks,
         }, getResponse => {
-            onGet({data: getResponse, protyle});
+            onGet({ data: getResponse, protyle });
         });
         event.preventDefault();
         return true;
@@ -632,11 +640,11 @@ const fileTreeKeydown = (app: App, event: KeyboardEvent) => {
     if (matchHotKey(window.siyuan.config.keymap.editor.general.spaceRepetition.custom, event) && !window.siyuan.config.readonly) {
         if (isFile) {
             const id = liElements[0].getAttribute("data-node-id");
-            fetchPost("/api/riff/getTreeRiffDueCards", {rootID: id}, (response) => {
+            fetchPost("/api/riff/getTreeRiffDueCards", { rootID: id }, (response) => {
                 openCardByData(app, response.data, "doc", id, getDisplayName(liElements[0].getAttribute("data-name"), false, true));
             });
         } else {
-            fetchPost("/api/riff/getNotebookRiffDueCards", {notebook: notebookId}, (response) => {
+            fetchPost("/api/riff/getNotebookRiffDueCards", { notebook: notebookId }, (response) => {
                 openCardByData(app, response.data, "notebook", notebookId, getNotebookName(notebookId));
             });
         }
@@ -690,7 +698,7 @@ const fileTreeKeydown = (app: App, event: KeyboardEvent) => {
                 y: liRect.top + 15
             });
         } else {
-            initNavigationMenu(app, liElements[0] as HTMLElement).popup({x: liRect.right - 15, y: liRect.top + 15});
+            initNavigationMenu(app, liElements[0] as HTMLElement).popup({ x: liRect.right - 15, y: liRect.top + 15 });
         }
         return true;
     }
@@ -959,7 +967,7 @@ const fileTreeKeydown = (app: App, event: KeyboardEvent) => {
         window.siyuan.menus.menu.remove();
         liElements.forEach(item => {
             if (item.getAttribute("data-type") === "navigation-file") {
-                openFileById({app, id: item.getAttribute("data-node-id"), action: [Constants.CB_GET_FOCUS]});
+                openFileById({ app, id: item.getAttribute("data-node-id"), action: [Constants.CB_GET_FOCUS] });
             } else {
                 const itemTopULElement = hasTopClosestByTag(item, "UL");
                 if (itemTopULElement) {
@@ -1307,7 +1315,7 @@ export const windowKeyDown = (app: App, event: KeyboardEvent) => {
         });
         if (matchDialog) {
             if (matchDialog.element.getAttribute("data-key") === Constants.DIALOG_VIEWCARDS) {
-                matchDialog.element.dispatchEvent(new CustomEvent("click", {detail: event.key.toLowerCase()}));
+                matchDialog.element.dispatchEvent(new CustomEvent("click", { detail: event.key.toLowerCase() }));
             } else if (matchDialog.element.getAttribute("data-key") === Constants.DIALOG_HISTORYCOMPARE) {
                 historyKeydown(event, matchDialog);
             }
@@ -1410,11 +1418,11 @@ export const windowKeyDown = (app: App, event: KeyboardEvent) => {
     const confirmDialogElement = document.querySelector('.b3-dialog--open[data-key="dialog-confirm"]');
     if (confirmDialogElement) {
         if (event.key === "Enter") {
-            confirmDialogElement.dispatchEvent(new CustomEvent("click", {detail: event.key}));
+            confirmDialogElement.dispatchEvent(new CustomEvent("click", { detail: event.key }));
             event.preventDefault();
             return;
         } else if (event.key === "Escape") {
-            confirmDialogElement.dispatchEvent(new CustomEvent("click", {detail: event.key}));
+            confirmDialogElement.dispatchEvent(new CustomEvent("click", { detail: event.key }));
             event.preventDefault();
             return;
         }
@@ -1461,7 +1469,7 @@ export const windowKeyDown = (app: App, event: KeyboardEvent) => {
         }
 
         // remove blockpopover
-        const maxEditLevels: { [key: string]: number } = {oid: 0};
+        const maxEditLevels: { [key: string]: number } = { oid: 0 };
         window.siyuan.blockPanels.forEach((item) => {
             if ((item.targetElement || typeof item.x === "number") && item.element.getAttribute("data-pin") === "true") {
                 const level = parseInt(item.element.getAttribute("data-level"));
