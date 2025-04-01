@@ -281,17 +281,26 @@ const editKeydown = (app: App, event: KeyboardEvent) => {
         event.stopPropagation();
         const selectedText = range.toString();
         // @ts-ignore
-        let refInfo = window.上一次设置的反链;
+        const refInfo = window.上一次设置的反链;
         if (selectedText) {
             // @ts-ignore
             const refId = window.上一次设置的反链.split(Constants.ZWSP)[0];
-            refInfo = `${refId}${Constants.ZWSP}s${Constants.ZWSP}${selectedText}`;
+            protyle.toolbar.setInlineMark(protyle, "block-ref", "range", {
+                type: "id",
+                // @ts-ignore
+                color: `${refId}${Constants.ZWSP}s${Constants.ZWSP}${selectedText}`
+            });
+        } else {
+            protyle.toolbar.setInlineMark(protyle, "block-ref", "range", {
+                type: "id",
+                // @ts-ignore
+                color: refInfo
+            });
         }
-        protyle.toolbar.setInlineMark(protyle, "block-ref", "range", {
-            type: "id",
-            // @ts-ignore
-            color: refInfo
-        });
+
+        // 设置回去，Ctrl Alt A 必须保证每次粘贴的都是一样的，除非Alt A修改
+        // @ts-ignore
+        window.上一次设置的反链 = refInfo;
         return true;
     }
     if (!isFileFocus && matchHotKey(window.siyuan.config.keymap.general.replace.custom, event)) {
