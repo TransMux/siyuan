@@ -482,4 +482,9 @@ func ServeAPI(ginServer *gin.Engine) {
 	// 插件数据库路由
 	ginServer.Handle("POST", "/api/db/query", model.CheckAuth, mux.HandleQuery)
 	ginServer.Handle("POST", "/api/db/exec", model.CheckAuth, mux.HandleExec)
+
+	ginServer.Handle("POST", "/api/ui/reloadUI", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, reloadUI)
+	ginServer.Handle("POST", "/api/ui/reloadAttributeView", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, reloadAttributeView)
+	ginServer.Handle("POST", "/api/ui/reloadProtyle", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, reloadProtyle)
+	ginServer.Handle("POST", "/api/ui/reloadFiletree", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, reloadFiletree)
 }

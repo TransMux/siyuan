@@ -159,7 +159,7 @@ export class Gutter {
             setTimeout(() => {
                 ghostElement.remove();
             });
-            buttonElement.style.opacity = "0.1";
+            buttonElement.style.opacity = "0.38";
             window.siyuan.dragElement = avElement as HTMLElement || protyle.wysiwyg.element;
             event.dataTransfer.setData(`${Constants.SIYUAN_DROP_GUTTER}${buttonElement.getAttribute("data-type")}${Constants.ZWSP}${buttonElement.getAttribute("data-subtype")}${Constants.ZWSP}${selectIds}${Constants.ZWSP}${window.siyuan.config.system.workspaceDir}`,
                 protyle.wysiwyg.element.innerHTML);
@@ -1445,8 +1445,8 @@ export class Gutter {
                 id: "cancelSuperBlock",
                 label: window.siyuan.languages.cancel + " " + window.siyuan.languages.superBlock,
                 accelerator: window.siyuan.config.keymap.editor.general[isCol ? "hLayout" : "vLayout"].custom,
-                click() {
-                    const sbData = cancelSB(protyle, nodeElement);
+                async click() {
+                    const sbData = await cancelSB(protyle, nodeElement);
                     transaction(protyle, sbData.doOperations, sbData.undoOperations);
                     focusBlock(protyle.wysiwyg.element.querySelector(`[data-node-id="${sbData.previousId}"]`));
                     hideElements(["gutter"], protyle);
@@ -2362,7 +2362,7 @@ export class Gutter {
         let listItem;
         let hideParent = false;
         while (nodeElement) {
-            const parentElement = hasClosestBlock(nodeElement.parentElement);
+            let parentElement = hasClosestBlock(nodeElement.parentElement);
             if (!isInEmbedBlock(nodeElement)) {
                 let type;
                 if (!hideParent) {
@@ -2400,6 +2400,7 @@ export class Gutter {
                     // 标题必须显示
                     if (!topElement.isSameNode(nodeElement) && type !== "NodeHeading") {
                         nodeElement = topElement;
+                        parentElement = hasClosestBlock(nodeElement.parentElement);
                         type = nodeElement.getAttribute("data-type");
                         dataNodeId = nodeElement.getAttribute("data-node-id");
                     }
@@ -2444,11 +2445,7 @@ data-type="fold" style="cursor:inherit;"><svg style="width: 10px${fold && fold =
                 if (type === "NodeBlockquote") {
                     space += 8;
                 }
-                if ((
-                        !nodeElement.previousElementSibling &&
-                        (nodeElement.isSameNode(wysiwyg.firstElementChild) || nodeElement.parentElement.classList.contains("sb"))
-                    ) ||
-                    (nodeElement.previousElementSibling && nodeElement.previousElementSibling.getAttribute("data-node-id"))) {
+                if (nodeElement.previousElementSibling && nodeElement.previousElementSibling.getAttribute("data-node-id")) {
                     // 前一个块存在时，只显示到当前层级
                     hideParent = true;
                     // 由于折叠块的第二个子块在界面上不显示，因此移除块标 https://github.com/siyuan-note/siyuan/issues/14304

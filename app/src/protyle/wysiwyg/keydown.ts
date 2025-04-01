@@ -88,7 +88,7 @@ export const getContentByInlineHTML = (range: Range, cb: (content: string) => vo
 };
 
 export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
-    editorElement.addEventListener("keydown", (event: KeyboardEvent & { target: HTMLElement }) => {
+    editorElement.addEventListener("keydown", async (event: KeyboardEvent & { target: HTMLElement }) => {
         if (event.target.localName === "protyle-html" || event.target.localName === "input") {
             event.stopPropagation();
             return;
@@ -1707,7 +1707,7 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                     updateTransaction(protyle, selectsElement[0].getAttribute("data-node-id"), selectsElement[0].outerHTML, oldHTML);
                 } else {
                     range.insertNode(document.createElement("wbr"));
-                    const sbData = cancelSB(protyle, selectsElement[0]);
+                    const sbData = await cancelSB(protyle, selectsElement[0]);
                     transaction(protyle, sbData.doOperations, sbData.undoOperations);
                     focusByWbr(protyle.wysiwyg.element, range);
                 }
@@ -1736,7 +1736,7 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                     updateTransaction(protyle, selectsElement[0].getAttribute("data-node-id"), selectsElement[0].outerHTML, oldHTML);
                 } else {
                     range.insertNode(document.createElement("wbr"));
-                    const sbData = cancelSB(protyle, selectsElement[0]);
+                    const sbData = await cancelSB(protyle, selectsElement[0]);
                     transaction(protyle, sbData.doOperations, sbData.undoOperations);
                     focusByWbr(protyle.wysiwyg.element, range);
                 }

@@ -25,6 +25,9 @@ import {
 import {isTouchDevice} from "../../util/functions";
 import {App} from "../../index";
 import {refreshFileTree} from "../../dialog/processSystem";
+/// #if !BROWSER
+import {ipcRenderer} from "electron";
+/// #endif
 import {hideTooltip, showTooltip} from "../../dialog/tooltip";
 
 export class Files extends Model {
@@ -432,7 +435,7 @@ export class Files extends Model {
                 const ghostElement = document.createElement("ul");
                 selectElements.forEach((item: HTMLElement, index) => {
                     ghostElement.append(item.cloneNode(true));
-                    item.style.opacity = "0.1";
+                    item.style.opacity = "0.38";
                     const itemNodeId = item.dataset.nodeId ||
                         item.dataset.path; // 拖拽笔记本时值不能为空，否则 drop 就不会继续排序
                     if (itemNodeId) {
@@ -467,9 +470,13 @@ export class Files extends Model {
                 }
             });
             window.siyuan.dragElement = undefined;
+            /// #if !BROWSER
+            ipcRenderer.send(Constants.SIYUAN_SEND_WINDOWS, {cmd: "resetTabsStyle", data: "rmDragStyle"});
+            /// #else
             document.querySelectorAll(".layout-tab-bars--drag").forEach(item => {
                 item.classList.remove("layout-tab-bars--drag");
             });
+            /// #endif
         });
         this.element.addEventListener("dragover", (event: DragEvent & { target: HTMLElement }) => {
             if (window.siyuan.config.readonly || event.dataTransfer.types.includes(Constants.SIYUAN_DROP_TAB)) {
