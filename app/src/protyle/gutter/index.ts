@@ -69,7 +69,6 @@ import { openFileById } from "../../editor/util";
 import { checkFold } from "../../util/noRelyPCFunction";
 import { copyTextByType } from "../toolbar/util";
 import { showMessage } from "../../dialog/message";
-import { debug } from "console";
 import { 发送到第一个反链 } from "../../mux/utils";
 
 export class Gutter {

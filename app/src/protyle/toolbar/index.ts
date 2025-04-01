@@ -228,6 +228,11 @@ export class Toolbar {
     }
 
     public setInlineMark(protyle: IProtyle, type: string, action: "range" | "toolbar", textObj?: ITextOption, returnNewNodesOnly: boolean = false) {
+        // 反链支持重复设置
+        if (type === "block-ref" && action === "range" && textObj.type === "id" && textObj.color) {
+            // @ts-ignore
+            window.上一次设置的反链 = textObj.color;
+        }
         const nodeElement = hasClosestBlock(this.range.startContainer);
         if (!nodeElement || nodeElement.getAttribute("data-type") === "NodeCodeBlock") {
             return;

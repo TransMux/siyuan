@@ -271,6 +271,21 @@ const editKeydown = (app: App, event: KeyboardEvent) => {
             return false;
         }
     }
+    // 反链支持重复设置
+    if (!isFileFocus && matchHotKey("⌥⌘A", event)) {
+        // @ts-ignore
+        if (!window.上一次设置的反链) {
+            return false;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        protyle.toolbar.setInlineMark(protyle, "block-ref", "range", {
+            type: "id",
+            // @ts-ignore
+            color: window.上一次设置的反链
+        });
+        return true;
+    }
     if (!isFileFocus && matchHotKey(window.siyuan.config.keymap.general.replace.custom, event)) {
         execByCommand({
             command: "replace",
