@@ -426,6 +426,111 @@ const initMainWindow = () => {
         if (bootWindow && !bootWindow.isDestroyed()) {
             bootWindow.destroy();
         }
+        
+        // 为主窗口添加贴边功能
+        if ("win32" === process.platform) {
+            writeLog("为主窗口初始化贴边功能 - Initializing edge docking for main window");
+            const mainWindowEdgeDocking = addEdgeDockingFeature(currentWindow);
+            // 由于主窗口一般不需要自动贴边，只提供功能，用户可以通过菜单或其他方式触发
+            
+            // 添加主窗口贴边菜单项
+            const trayMenuUtil = {
+                addDockingMenuItem: (tray, lang, mainWindow, edgeDocking) => {
+                    if (!tray || !edgeDocking) return;
+                    
+                    try {
+                        const contextMenu = tray.getContextMenu();
+                        if (!contextMenu || !contextMenu.items) {
+                            writeLog("无法获取托盘菜单 - Could not get tray context menu");
+                            return;
+                        }
+                        
+                        const items = contextMenu.items;
+                        // 查找合适位置插入菜单项
+                        const insertPosition = items.findIndex(item => 
+                            item && (
+                                item.label === lang.setWindowTop || 
+                                item.label === lang.cancelWindowTop ||
+                                item.label === lang.officialWebsite
+                            )
+                        );
+                        
+                        if (insertPosition !== -1) {
+                            const isDocked = edgeDocking.isDocked ? edgeDocking.isDocked() : false;
+                            
+                            // 检查菜单中是否已有贴边项
+                            const existingItemIndex = items.findIndex(item => 
+                                item && (
+                                    item.label === (lang.dockWindow || "窗口贴边") || 
+                                    item.label === (lang.cancelDock || "取消贴边")
+                                )
+                            );
+                            
+                            // 如果已存在，先移除
+                            let newItems = [...items];
+                            if (existingItemIndex !== -1) {
+                                newItems.splice(existingItemIndex, 1);
+                            }
+                            
+                            // 创建新的菜单项
+                            const menuItem = {
+                                label: isDocked ? (lang.cancelDock || "取消贴边") : (lang.dockWindow || "窗口贴边"),
+                                click: () => {
+                                    edgeDocking.toggleDocked();
+                                    
+                                    // 更新菜单
+                                    setTimeout(() => {
+                                        trayMenuUtil.addDockingMenuItem(tray, lang, mainWindow, edgeDocking);
+                                    }, 500);
+                                }
+                            };
+                            
+                            // 在合适位置插入
+                            newItems.splice(insertPosition, 0, menuItem);
+                            
+                            // 构建新菜单
+                            const template = newItems.map(item => {
+                                if (!item) return null;
+                                
+                                // 转换MenuItem对象为可用于buildFromTemplate的对象
+                                return {
+                                    label: item.label,
+                                    type: item.type,
+                                    checked: item.checked,
+                                    click: item.click,
+                                    enabled: item.enabled !== false
+                                };
+                            }).filter(item => item !== null);
+                            
+                            const newMenu = Menu.buildFromTemplate(template);
+                            tray.setContextMenu(newMenu);
+                            writeLog("添加贴边菜单项成功 - Successfully added docking menu item");
+                        } else {
+                            writeLog("未找到合适的菜单插入位置 - Could not find suitable menu insert position");
+                        }
+                    } catch (e) {
+                        writeLog("添加贴边菜单项失败 - Failed to add docking menu item: " + e);
+                    }
+                }
+            };
+            
+            // 稍后初始化菜单项
+            if (mainWindowEdgeDocking) {
+                currentWindow.webContents.once('did-finish-load', () => {
+                    workspaces.forEach(item => {
+                        if (item.browserWindow && item.browserWindow.id === currentWindow.id && item.tray) {
+                            // 等待语言加载
+                            setTimeout(() => {
+                                trayMenuUtil.addDockingMenuItem(item.tray, {
+                                    dockWindow: "窗口贴边",
+                                    cancelDock: "取消贴边"
+                                }, currentWindow, mainWindowEdgeDocking);
+                            }, 3000);
+                        }
+                    });
+                });
+            }
+        }
     });
 
     // 菜单
@@ -745,7 +850,61 @@ app.whenReady().then(() => {
         return BrowserWindow.getAllWindows().find((win) => win.webContents.id === id);
     };
 
-    // 窗口贴边自动隐藏功能
+    // 添加全局窗口管理器以跟踪贴边窗口
+    const windowDockingManager = {
+        dockedWindows: [],
+        
+        // 注册一个窗口和它的贴边管理器
+        register: function(window, dockingManager) {
+            if (!window || !dockingManager || window.isDestroyed()) return;
+            
+            // 确保不重复添加
+            const existing = this.dockedWindows.findIndex(item => 
+                item && item.window && !item.window.isDestroyed() && item.window.id === window.id
+            );
+            
+            if (existing !== -1) {
+                this.dockedWindows[existing] = { window, dockingManager };
+            } else {
+                this.dockedWindows.push({ window, dockingManager });
+            }
+            
+            writeLog(`注册窗口到贴边管理器: 窗口ID=${window.id}, 当前跟踪数量=${this.dockedWindows.length}`);
+        },
+        
+        // 取消注册一个窗口
+        unregister: function(windowId) {
+            const index = this.dockedWindows.findIndex(item => 
+                item && item.window && (item.window.id === windowId || item.window.isDestroyed())
+            );
+            
+            if (index !== -1) {
+                this.dockedWindows.splice(index, 1);
+                writeLog(`从贴边管理器移除窗口: 窗口ID=${windowId}, 剩余跟踪数量=${this.dockedWindows.length}`);
+            }
+        },
+        
+        // 根据鼠标位置检查是否需要显示贴边窗口
+        checkMousePosition: function(mousePos) {
+            this.dockedWindows.forEach(item => {
+                if (!item || !item.window || item.window.isDestroyed() || !item.dockingManager) return;
+                
+                // 调用窗口自己的检查方法
+                if (typeof item.dockingManager.checkMouseForDisplay === 'function') {
+                    item.dockingManager.checkMouseForDisplay(mousePos);
+                }
+            });
+        },
+        
+        // 清理所有无效的窗口引用
+        cleanup: function() {
+            this.dockedWindows = this.dockedWindows.filter(item => 
+                item && item.window && !item.window.isDestroyed()
+            );
+        }
+    };
+    
+    // 修改添加贴边功能的函数
     const addEdgeDockingFeature = (mainWindow) => {
         if (!mainWindow || mainWindow.isDestroyed()) {
             return;
@@ -758,7 +917,33 @@ app.whenReady().then(() => {
         let checkInterval = null;
         let isAnimating = false;
         
-        // 检查鼠标位置
+        writeLog("初始化窗口贴边功能 - Edge docking feature initialized");
+        
+        // 检查鼠标位置是否触发窗口显示
+        const checkMouseForDisplay = (mousePos) => {
+            if (!isDocked || !mainWindow || mainWindow.isDestroyed() || isAnimating) {
+                return;
+            }
+            
+            try {
+                const currentBounds = mainWindow.getBounds();
+                const display = screen.getDisplayNearestPoint(mousePos);
+                const workArea = display.workArea;
+                
+                // 如果鼠标靠近窗口边缘，显示窗口
+                if (dockedPosition === 'right' && 
+                    mousePos.x >= workArea.width - dockedWidth - 20 && 
+                    mousePos.y >= currentBounds.y && 
+                    mousePos.y <= currentBounds.y + currentBounds.height) {
+                    writeLog(`鼠标触发贴边窗口显示 - Mouse triggered docked window to show: x=${mousePos.x}, y=${mousePos.y}`);
+                    showDockedWindow();
+                }
+            } catch (e) {
+                writeLog('Edge docking mouse check error: ' + e);
+            }
+        };
+        
+        // 新的检查函数使用全局鼠标坐标
         const checkMousePosition = () => {
             if (!isDocked || !mainWindow || mainWindow.isDestroyed() || isAnimating) {
                 return;
@@ -766,58 +951,67 @@ app.whenReady().then(() => {
             
             try {
                 const mousePos = screen.getCursorScreenPoint();
-                const currentBounds = mainWindow.getBounds();
-                const display = screen.getDisplayNearestPoint(mousePos);
-                const workArea = display.workArea;
-                
-                // 如果鼠标靠近窗口边缘，显示窗口
-                if (dockedPosition === 'right' && 
-                    mousePos.x >= workArea.width - dockedWidth - 5 && 
-                    mousePos.y >= currentBounds.y && 
-                    mousePos.y <= currentBounds.y + currentBounds.height) {
-                    showDockedWindow();
-                }
+                checkMouseForDisplay(mousePos);
             } catch (e) {
-                console.error('Edge docking mouse check error:', e);
+                writeLog('Edge docking mouse check error: ' + e);
             }
         };
         
         // 隐藏窗口（贴边）
         const dockWindow = () => {
             if (isDocked || !mainWindow || mainWindow.isDestroyed() || isAnimating) {
+                writeLog("无法执行贴边 - Cannot dock: isDocked=" + isDocked + ", isAnimating=" + isAnimating);
                 return;
             }
             
             try {
                 isAnimating = true;
                 originalBounds = mainWindow.getBounds();
+                writeLog(`保存原始窗口位置 - Saved original bounds: x=${originalBounds.x}, y=${originalBounds.y}, w=${originalBounds.width}, h=${originalBounds.height}`);
+                
                 const display = screen.getDisplayNearestPoint({x: originalBounds.x, y: originalBounds.y});
                 const workArea = display.workArea;
                 
-                // 根据窗口位置决定贴边位置
-                if (originalBounds.x + originalBounds.width >= workArea.width - 100) {
-                    dockedPosition = 'right';
-                    mainWindow.setBounds({
-                        x: workArea.width - dockedWidth,
-                        y: originalBounds.y,
-                        width: originalBounds.width,
-                        height: originalBounds.height
-                    });
-                    
-                    // 启动检查鼠标位置的定时器
-                    if (checkInterval) {
-                        clearInterval(checkInterval);
-                    }
-                    checkInterval = setInterval(checkMousePosition, 100);
-                    
-                    isDocked = true;
+                // 根据窗口位置决定贴边位置，并确保位置合理
+                dockedPosition = 'right';
+                const newBounds = {
+                    x: workArea.width - dockedWidth,
+                    y: originalBounds.y,
+                    width: originalBounds.width,
+                    height: originalBounds.height
+                };
+                
+                // 确保位置不超出屏幕
+                if (newBounds.y < workArea.y) {
+                    newBounds.y = workArea.y;
                 }
+                if (newBounds.y + newBounds.height > workArea.y + workArea.height) {
+                    newBounds.height = workArea.height - (newBounds.y - workArea.y);
+                }
+                
+                writeLog(`执行贴边操作 - Docking window: x=${newBounds.x}, y=${newBounds.y}, width=${newBounds.width}, height=${newBounds.height}`);
+                mainWindow.setBounds(newBounds);
+                
+                // 启动检查鼠标位置的定时器
+                if (checkInterval) {
+                    clearInterval(checkInterval);
+                }
+                checkInterval = setInterval(checkMousePosition, 100);
+                writeLog("启动鼠标位置检测 - Started mouse position check interval");
+                
+                // 注册到窗口管理器
+                windowDockingManager.register(mainWindow, {
+                    checkMouseForDisplay
+                });
+                
+                isDocked = true;
                 
                 setTimeout(() => {
                     isAnimating = false;
+                    writeLog("贴边动画完成 - Docking animation completed");
                 }, 300);
             } catch (e) {
-                console.error('Edge docking error:', e);
+                writeLog('Edge docking error: ' + e);
                 isAnimating = false;
             }
         };
@@ -825,6 +1019,7 @@ app.whenReady().then(() => {
         // 显示窗口
         const showDockedWindow = () => {
             if (!isDocked || !mainWindow || mainWindow.isDestroyed() || isAnimating) {
+                writeLog("无法显示贴边窗口 - Cannot show docked window: isDocked=" + isDocked + ", isAnimating=" + isAnimating);
                 return;
             }
             
@@ -832,38 +1027,101 @@ app.whenReady().then(() => {
                 isAnimating = true;
                 
                 if (originalBounds) {
+                    writeLog(`恢复窗口原始位置 - Restoring to original bounds: x=${originalBounds.x}, y=${originalBounds.y}, w=${originalBounds.width}, h=${originalBounds.height}`);
                     mainWindow.setBounds(originalBounds);
+                } else {
+                    writeLog("错误：没有保存原始窗口位置 - Error: No original bounds saved");
                 }
                 
                 // 清除检查定时器
                 if (checkInterval) {
                     clearInterval(checkInterval);
                     checkInterval = null;
+                    writeLog("停止鼠标位置检测 - Stopped mouse position check interval");
                 }
+                
+                // 从窗口管理器中取消注册
+                windowDockingManager.unregister(mainWindow.id);
                 
                 isDocked = false;
                 
                 setTimeout(() => {
                     isAnimating = false;
+                    writeLog("显示窗口动画完成 - Show window animation completed");
                 }, 300);
             } catch (e) {
-                console.error('Edge undocking error:', e);
+                writeLog('Edge undocking error: ' + e);
                 isAnimating = false;
             }
         };
+        
+        // 切换贴边状态
+        const toggleDocked = () => {
+            writeLog("切换贴边状态 - Toggle docking state, current isDocked=" + isDocked);
+            if (isDocked) {
+                showDockedWindow();
+            } else {
+                dockWindow();
+            }
+        };
+        
+        // 添加手动触发检测方法
+        mainWindow.webContents.on('did-finish-load', () => {
+            writeLog("为窗口添加贴边功能 - Adding edge docking feature to window");
+            // 在窗口加载完成后添加事件监听
+            mainWindow.on('move', () => {
+                if (!isDocked && !isAnimating) {
+                    // 检查是否应该贴边
+                    const bounds = mainWindow.getBounds();
+                    const display = screen.getDisplayNearestPoint({x: bounds.x, y: bounds.y});
+                    const workArea = display.workArea;
+                    
+                    if (bounds.x + bounds.width >= workArea.width - 20) {
+                        writeLog("窗口移动接近屏幕边缘，触发贴边 - Window moved near screen edge, triggering dock");
+                        dockWindow();
+                    }
+                }
+            });
+            
+            // 添加快捷键支持
+            try {
+                const shortcut = "CommandOrControl+Alt+Right";
+                globalShortcut.register(shortcut, () => {
+                    writeLog("通过快捷键触发贴边切换 - Triggered docking toggle via shortcut");
+                    toggleDocked();
+                });
+                writeLog("注册贴边快捷键成功 - Registered edge docking shortcut: " + shortcut);
+            } catch (e) {
+                writeLog("注册贴边快捷键失败 - Failed to register edge docking shortcut: " + e);
+            }
+        });
         
         // 窗口关闭时清理
         mainWindow.on('close', () => {
             if (checkInterval) {
                 clearInterval(checkInterval);
                 checkInterval = null;
+                writeLog("窗口关闭，清理贴边功能 - Window closing, cleaning up edge docking feature");
+            }
+            
+            // 从窗口管理器中取消注册
+            windowDockingManager.unregister(mainWindow.id);
+            
+            // 取消注册快捷键
+            try {
+                globalShortcut.unregister("CommandOrControl+Alt+Right");
+                writeLog("取消注册贴边快捷键 - Unregistered edge docking shortcut");
+            } catch (e) {
+                writeLog("取消注册贴边快捷键失败 - Failed to unregister edge docking shortcut: " + e);
             }
         });
         
         return {
             dockWindow,
             showDockedWindow,
-            isDocked: () => isDocked
+            toggleDocked,
+            isDocked: () => isDocked,
+            checkMouseForDisplay
         };
     };
 
@@ -1204,17 +1462,28 @@ app.whenReady().then(() => {
             event.preventDefault();
         });
         
-        // 对子窗口自动启用窗口贴边自动隐藏功能
+        // 对子窗口启用窗口贴边自动隐藏功能
+        writeLog("尝试为新窗口添加贴边功能 - Trying to add edge docking feature to new window");
         const edgeDocking = addEdgeDockingFeature(win);
         if (edgeDocking) {
-            edgeDocking.dockWindow();
+            // 等待窗口加载完成后再尝试贴边，避免操作过早
+            win.once('ready-to-show', () => {
+                // 检查窗口位置，判断是否应该贴边
+                const bounds = win.getBounds();
+                const display = screen.getDisplayNearestPoint({x: bounds.x, y: bounds.y});
+                const workArea = display.workArea;
+                
+                writeLog(`检查窗口是否应该贴边: x=${bounds.x}, y=${bounds.y}, width=${bounds.width}, height=${bounds.height}, workAreaWidth=${workArea.width}`);
+                
+                // 如果窗口靠近右边缘，自动触发贴边
+                if (bounds.x + bounds.width >= workArea.width - 150) {
+                    writeLog("窗口位于屏幕右侧，将自动贴边 - Window on right side, will auto dock");
+                    setTimeout(() => {
+                        edgeDocking.dockWindow();
+                    }, 500); // 短暂延迟确保窗口完全加载
+                }
+            });
         }
-        
-        // 禁止"当主窗口和目标屏幕不在同一个显示器时，自动全屏"
-        // const targetScreen = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
-        // if (mainScreen.id !== targetScreen.id) {
-        //     win.setBounds(targetScreen.workArea);
-        // }
     });
     ipcMain.on("siyuan-open-workspace", (event, data) => {
         const foundWorkspace = workspaces.find((item) => {
@@ -1455,6 +1724,33 @@ app.whenReady().then(() => {
             item.webContents.send("siyuan-send-windows", {cmd: "lockscreenByMode"});
         });
     });
+
+    // 在Windows上启动全局鼠标监听
+    if ("win32" === process.platform) {
+        // 使用定时器监测鼠标位置
+        const globalMouseTracker = setInterval(() => {
+            try {
+                // 清理无效窗口引用
+                windowDockingManager.cleanup();
+                
+                // 如果没有贴边窗口，不需要继续检查
+                if (windowDockingManager.dockedWindows.length === 0) {
+                    return;
+                }
+                
+                // 获取鼠标位置并检查
+                const mousePos = screen.getCursorScreenPoint();
+                windowDockingManager.checkMousePosition(mousePos);
+            } catch (e) {
+                writeLog("全局鼠标跟踪错误 - Global mouse tracking error: " + e);
+            }
+        }, 100);
+        
+        // 在应用退出时清理
+        app.on("before-quit", () => {
+            clearInterval(globalMouseTracker);
+        });
+    }
 });
 
 app.on("open-url", async (event, url) => { // for macOS
