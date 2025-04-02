@@ -408,7 +408,7 @@ const initMainWindow = () => {
     });
 
     if (windowState.isDevToolsOpened) {
-        currentWindow.webContents.openDevTools({mode: "bottom"});
+        currentWindow.webContents.openDevTools({mode: "right"});
     }
 
     // 主界面事件监听
@@ -876,7 +876,7 @@ app.whenReady().then(() => {
         const currentWindow = getWindowByContentId(webContentsId);
         switch (cmd) {
             case "openDevTools":
-                event.sender.openDevTools({mode: "bottom"});
+                event.sender.openDevTools({mode: "right"});
                 break;
             case "unregisterGlobalShortcut":
                 if (data.accelerator) {
