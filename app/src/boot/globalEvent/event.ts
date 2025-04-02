@@ -20,6 +20,7 @@ import {hideTooltip} from "../../dialog/tooltip";
 import {openFileById} from "../../editor/util";
 import {checkFold} from "../../util/noRelyPCFunction";
 import {hideAllElements} from "../../protyle/ui/hideElements";
+import {isWindow} from "../../util/functions";
 
 export const initWindowEvent = (app: App) => {
     document.body.addEventListener("mouseleave", () => {
@@ -46,6 +47,49 @@ export const initWindowEvent = (app: App) => {
 
     window.addEventListener("mousemove", (event: MouseEvent & { target: HTMLElement }) => {
         windowMouseMove(event, mouseIsEnter);
+    });
+
+    // 添加dragover事件监听，在拖拽过程中也能显示侧边栏
+    window.addEventListener("dragover", (event: DragEvent & { target: HTMLElement }) => {
+        // 在拖拽操作时也能触发侧边栏显示
+        if (!mouseIsEnter && window.siyuan.layout.bottomDock && !isWindow()) {
+            if (event.clientX < Math.max(document.getElementById("dockLeft").clientWidth + 1, 16)) {
+                if (!window.siyuan.layout.leftDock.pin && window.siyuan.layout.leftDock.layout.element.clientWidth > 0 &&
+                    (window.siyuan.layout.leftDock.element.clientWidth > 0 || (window.siyuan.layout.leftDock.element.clientWidth === 0 && event.clientX < 8))) {
+                    if (event.clientY > document.getElementById("toolbar").clientHeight &&
+                        event.clientY < window.innerHeight - document.getElementById("status").clientHeight - document.getElementById("dockBottom").clientHeight) {
+                        if (!hasClosestByClassName(event.target, "b3-menu") &&
+                            !hasClosestByClassName(event.target, "protyle-toolbar") &&
+                            !hasClosestByClassName(event.target, "protyle-util") &&
+                            !hasClosestByClassName(event.target, "b3-dialog", true) &&
+                            !hasClosestByClassName(event.target, "layout--float")) {
+                            window.siyuan.layout.leftDock.showDock();
+                        }
+                    } else {
+                        window.siyuan.layout.leftDock.hideDock();
+                    }
+                }
+            } else if (event.clientX > window.innerWidth - Math.max(document.getElementById("dockRight").clientWidth - 2, 16)) {
+                if (!window.siyuan.layout.rightDock.pin && window.siyuan.layout.rightDock.layout.element.clientWidth > 0 &&
+                    (window.siyuan.layout.rightDock.element.clientWidth > 0 || (window.siyuan.layout.rightDock.element.clientWidth === 0 && event.clientX > window.innerWidth - 8))) {
+                    if (event.clientY > document.getElementById("toolbar").clientHeight &&
+                        event.clientY < window.innerHeight - document.getElementById("status").clientHeight - document.getElementById("dockBottom").clientHeight) {
+                        if (!hasClosestByClassName(event.target, "b3-menu") &&
+                            !hasClosestByClassName(event.target, "layout--float") &&
+                            !hasClosestByClassName(event.target, "protyle-toolbar") &&
+                            !hasClosestByClassName(event.target, "protyle-util") &&
+                            !hasClosestByClassName(event.target, "b3-dialog", true)) {
+                            window.siyuan.layout.rightDock.showDock();
+                        }
+                    } else {
+                        window.siyuan.layout.rightDock.hideDock();
+                    }
+                }
+            }
+            if (event.clientY > Math.min(window.innerHeight - 10, window.innerHeight - (window.siyuan.config.uiLayout.hideDock ? 0 : document.getElementById("dockBottom").clientHeight) - document.querySelector("#status").clientHeight)) {
+                window.siyuan.layout.bottomDock.showDock();
+            }
+        }
     });
 
     window.addEventListener("mouseup", (event) => {
