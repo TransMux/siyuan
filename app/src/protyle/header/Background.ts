@@ -397,18 +397,18 @@ export class Background {
                 } else if (type === "moveDocToRead") {
                     // 临时限制，移动到已读的话，需要检查文章是否满足条件：
                     // 1. 不能包含出链 data-type="block-ref"，因为移动到已读之后就无法检索
-                    const refElements = protyle.contentElement.querySelectorAll("[data-type='block-ref']");
-                    if (refElements.length > 0) {
-                        showMessage("文章包含出链，无法移动到已读", 5000);
-                        // 把第一个出链移动到屏幕中央
-                        const refElement = refElements[0];
-                        const rect = refElement.getBoundingClientRect();
-                        window.scrollTo({
-                            top: rect.top,
-                            behavior: "smooth"
-                        });
-                        return;
-                    }
+                    // const refElements = protyle.contentElement.querySelectorAll("[data-type='block-ref']");
+                    // if (refElements.length > 0) {
+                    //     showMessage("文章包含出链，无法移动到已读", 5000);
+                    //     // 把第一个出链移动到屏幕中央
+                    //     const refElement = refElements[0];
+                    //     const rect = refElement.getBoundingClientRect();
+                    //     window.scrollTo({
+                    //         top: rect.top,
+                    //         behavior: "smooth"
+                    //     });
+                    //     return;
+                    // }
                     // https://x.transmux.top/j/20250218184855-2prdh1u
                     // 1. 获取目标id
                     const 当前周数 = 获取当前ISO周数();
