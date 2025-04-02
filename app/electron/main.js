@@ -744,6 +744,129 @@ app.whenReady().then(() => {
     const getWindowByContentId = (id) => {
         return BrowserWindow.getAllWindows().find((win) => win.webContents.id === id);
     };
+
+    // 窗口贴边自动隐藏功能
+    const addEdgeDockingFeature = (mainWindow) => {
+        if (!mainWindow || mainWindow.isDestroyed()) {
+            return;
+        }
+        
+        let isDocked = false;
+        let originalBounds = null;
+        let dockedPosition = 'right'; // 默认贴在右边
+        let dockedWidth = 10; // 隐藏时显示的宽度
+        let checkInterval = null;
+        let isAnimating = false;
+        
+        // 检查鼠标位置
+        const checkMousePosition = () => {
+            if (!isDocked || !mainWindow || mainWindow.isDestroyed() || isAnimating) {
+                return;
+            }
+            
+            try {
+                const mousePos = screen.getCursorScreenPoint();
+                const currentBounds = mainWindow.getBounds();
+                const display = screen.getDisplayNearestPoint(mousePos);
+                const workArea = display.workArea;
+                
+                // 如果鼠标靠近窗口边缘，显示窗口
+                if (dockedPosition === 'right' && 
+                    mousePos.x >= workArea.width - dockedWidth - 5 && 
+                    mousePos.y >= currentBounds.y && 
+                    mousePos.y <= currentBounds.y + currentBounds.height) {
+                    showDockedWindow();
+                }
+            } catch (e) {
+                console.error('Edge docking mouse check error:', e);
+            }
+        };
+        
+        // 隐藏窗口（贴边）
+        const dockWindow = () => {
+            if (isDocked || !mainWindow || mainWindow.isDestroyed() || isAnimating) {
+                return;
+            }
+            
+            try {
+                isAnimating = true;
+                originalBounds = mainWindow.getBounds();
+                const display = screen.getDisplayNearestPoint({x: originalBounds.x, y: originalBounds.y});
+                const workArea = display.workArea;
+                
+                // 根据窗口位置决定贴边位置
+                if (originalBounds.x + originalBounds.width >= workArea.width - 100) {
+                    dockedPosition = 'right';
+                    mainWindow.setBounds({
+                        x: workArea.width - dockedWidth,
+                        y: originalBounds.y,
+                        width: originalBounds.width,
+                        height: originalBounds.height
+                    });
+                    
+                    // 启动检查鼠标位置的定时器
+                    if (checkInterval) {
+                        clearInterval(checkInterval);
+                    }
+                    checkInterval = setInterval(checkMousePosition, 100);
+                    
+                    isDocked = true;
+                }
+                
+                setTimeout(() => {
+                    isAnimating = false;
+                }, 300);
+            } catch (e) {
+                console.error('Edge docking error:', e);
+                isAnimating = false;
+            }
+        };
+        
+        // 显示窗口
+        const showDockedWindow = () => {
+            if (!isDocked || !mainWindow || mainWindow.isDestroyed() || isAnimating) {
+                return;
+            }
+            
+            try {
+                isAnimating = true;
+                
+                if (originalBounds) {
+                    mainWindow.setBounds(originalBounds);
+                }
+                
+                // 清除检查定时器
+                if (checkInterval) {
+                    clearInterval(checkInterval);
+                    checkInterval = null;
+                }
+                
+                isDocked = false;
+                
+                setTimeout(() => {
+                    isAnimating = false;
+                }, 300);
+            } catch (e) {
+                console.error('Edge undocking error:', e);
+                isAnimating = false;
+            }
+        };
+        
+        // 窗口关闭时清理
+        mainWindow.on('close', () => {
+            if (checkInterval) {
+                clearInterval(checkInterval);
+                checkInterval = null;
+            }
+        });
+        
+        return {
+            dockWindow,
+            showDockedWindow,
+            isDocked: () => isDocked
+        };
+    };
+
     ipcMain.on("siyuan-context-menu", (event, langs) => {
         const template = [new MenuItem({
             role: "undo", label: langs.undo
@@ -1080,7 +1203,14 @@ app.whenReady().then(() => {
             }
             event.preventDefault();
         });
-        // 禁止“当主窗口和目标屏幕不在同一个显示器时，自动全屏”
+        
+        // 对子窗口自动启用窗口贴边自动隐藏功能
+        const edgeDocking = addEdgeDockingFeature(win);
+        if (edgeDocking) {
+            edgeDocking.dockWindow();
+        }
+        
+        // 禁止"当主窗口和目标屏幕不在同一个显示器时，自动全屏"
         // const targetScreen = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
         // if (mainScreen.id !== targetScreen.id) {
         //     win.setBounds(targetScreen.workArea);
