@@ -48,7 +48,6 @@ export const windowMouseMove = (event: MouseEvent, mouseIsEnter: boolean) => {
     const target = event.target as Element;
     // Dock
     if (!mouseIsEnter &&
-        event.buttons === 0 &&  // 鼠标按键被按下时不触发
         window.siyuan.layout.bottomDock &&
         !isWindow()) {
         if (event.clientX < Math.max(document.getElementById("dockLeft").clientWidth + 1, 16)) {
