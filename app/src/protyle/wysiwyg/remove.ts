@@ -19,6 +19,10 @@ import {Constants} from "../../constants";
 import {scrollCenter} from "../../util/highlightById";
 import {isMobile} from "../../util/functions";
 import {mathRender} from "../render/mathRender";
+import {hasClosestByClassName} from "../util/hasClosest";
+import {getInstanceById} from "../../layout/util";
+import {Tab} from "../../layout/Tab";
+import {Backlink} from "../../layout/dock/Backlink";
 
 export const removeBlock = async (protyle: IProtyle, blockElement: Element, range: Range, type: "Delete" | "Backspace" | "remove") => {
     // 删除后，防止滚动条滚动后调用 get 请求，因为返回的请求已查找不到内容块了
@@ -69,7 +73,7 @@ export const removeBlock = async (protyle: IProtyle, blockElement: Element, rang
                     sideElement = getPreviousBlock(topElement);
                 }
             }
-            if (!sideElement) {
+            if (!sideElement && !protyle.options.backlinkData) {
                 sideElement = topElement.parentElement || protyle.wysiwyg.element.firstElementChild;
                 sideIsNext = false;
             }
@@ -181,7 +185,7 @@ export const removeBlock = async (protyle: IProtyle, blockElement: Element, rang
         }
         if (deletes.length > 0) {
             if (topParentElement && topParentElement.getAttribute("data-type") === "NodeSuperBlock" && topParentElement.childElementCount === 2) {
-                const sbData = await cancelSB(protyle, topParentElement);
+                const sbData = await cancelSB(protyle, topParentElement, range);
                 transaction(protyle, deletes.concat(sbData.doOperations), sbData.undoOperations.concat(inserts.reverse()));
             } else {
                 transaction(protyle, deletes, inserts.reverse());
@@ -189,6 +193,24 @@ export const removeBlock = async (protyle: IProtyle, blockElement: Element, rang
         }
 
         hideElements(["util"], protyle);
+        if (!sideElement) {
+            const backlinkElement = hasClosestByClassName(protyle.element, "sy__backlink", true)
+            if (backlinkElement) {
+                const backLinkTab = getInstanceById(backlinkElement.getAttribute("data-id"));
+                if (backLinkTab instanceof Tab && backLinkTab.model instanceof Backlink) {
+                    const editors = backLinkTab.model.editors
+                    editors.find((item, index) => {
+                        if (item.protyle.element.isSameNode(protyle.element)) {
+                            item.destroy();
+                            editors.splice(index, 1);
+                            item.protyle.element.previousElementSibling.remove();
+                            item.protyle.element.remove();
+                            return true;
+                        }
+                    });
+                }
+            }
+        }
         return;
     }
     const blockType = blockElement.getAttribute("data-type");
