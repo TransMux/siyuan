@@ -456,6 +456,7 @@ func HandleExec(c *gin.Context) {
 // 防止在同步过程中数据库文件被锁定，导致同步不完整
 func ClosePluginDatabaseForSync() {
 	// 先设置标志，让新请求进入队列
+	logging.LogInfof("close plugin database for sync")
 	dbSyncClosing.Store(true)
 
 	// 等待所有当前正在处理的请求完成
@@ -471,6 +472,7 @@ func ClosePluginDatabaseForSync() {
 // ReopenPluginDatabaseAfterSync 在同步后重新打开插件数据库连接
 func ReopenPluginDatabaseAfterSync() error {
 	var err error
+	logging.LogInfof("reopen plugin database after sync")
 	if db == nil {
 		err = InitPluginDatabase()
 	}
