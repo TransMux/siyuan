@@ -42,9 +42,11 @@ func addToRequestQueue(execFunc func()) chan struct{} {
 	}
 
 	requestQueue = append(requestQueue, task)
+	logging.LogInfof("added task to queue, queue length: %d", len(requestQueue))
 
 	// 确保请求处理器正在运行
 	if !requestProcessing.Load() {
+		logging.LogInfof("starting queue processor")
 		requestProcessing.Store(true)
 		go processRequestQueue()
 	}
@@ -54,13 +56,40 @@ func addToRequestQueue(execFunc func()) chan struct{} {
 
 // processRequestQueue 处理请求队列中的任务
 func processRequestQueue() {
+	defer func() {
+		if r := recover(); r != nil {
+			logging.LogErrorf("processRequestQueue panic: %v", r)
+			// 重置处理状态，允许下次请求重新启动处理器
+			requestProcessing.Store(false)
+		}
+	}()
+
+	retryCount := 0
+	maxRetry := 10
+
 	for {
 		// 等待数据库可用
 		if !waitForDBAvailable() {
+			retryCount++
+			if retryCount > maxRetry {
+				logging.LogWarnf("processRequestQueue: max retry reached (%d), will retry when new requests arrive", maxRetry)
+				requestQueueMu.Lock()
+				hasRequests := len(requestQueue) > 0
+				requestQueueMu.Unlock()
+
+				if !hasRequests {
+					// 如果没有请求，退出处理器
+					requestProcessing.Store(false)
+					return
+				}
+			}
 			// 数据库不可用，等待一段时间后重试
 			time.Sleep(500 * time.Millisecond)
 			continue
 		}
+
+		// 数据库可用，重置重试计数
+		retryCount = 0
 
 		requestQueueMu.Lock()
 		if len(requestQueue) == 0 {
@@ -75,11 +104,31 @@ func processRequestQueue() {
 		requestQueue = requestQueue[1:]
 		requestQueueMu.Unlock()
 
-		// 执行任务
-		task.execFunc()
+		// 执行任务前标记请求正在处理
+		requestWaitGroup.Add(1)
+
+		// 执行任务（添加错误处理）
+		func() {
+			defer requestWaitGroup.Done() // 确保在任何情况下都会减少计数
+			defer func() {
+				if r := recover(); r != nil {
+					logging.LogErrorf("task execution panic: %v", r)
+				}
+			}()
+
+			task.execFunc()
+		}()
 
 		// 通知任务完成
 		close(task.done)
+
+		// 日志记录队列状态
+		requestQueueMu.Lock()
+		remainingTasks := len(requestQueue)
+		requestQueueMu.Unlock()
+		if remainingTasks > 0 {
+			logging.LogInfof("processRequestQueue: %d tasks remaining in queue", remainingTasks)
+		}
 	}
 }
 
@@ -139,21 +188,31 @@ func waitForDBAvailable() bool {
 
 	for dbSyncClosing.Load() {
 		if time.Since(startTime) > maxWaitTime {
+			logging.LogWarnf("waitForDBAvailable timeout after %v", maxWaitTime)
 			return false // 超时
 		}
 		time.Sleep(waitInterval)
 	}
 
 	// 确保数据库连接已经就绪
-	if db == nil {
-		if time.Since(startTime) > maxWaitTime {
-			return false // 超时
+	for i := 0; i < 50; i++ { // 尝试最多5秒
+		if db != nil {
+			// 简单测试连接是否有效
+			if _, err := db.Exec("SELECT 1"); err == nil {
+				return true
+			}
 		}
-		time.Sleep(waitInterval)
-		return waitForDBAvailable()
+
+		if time.Since(startTime) > maxWaitTime {
+			logging.LogWarnf("waitForDBAvailable timeout after %v", maxWaitTime)
+			return false // 总超时
+		}
+
+		time.Sleep(100 * time.Millisecond)
 	}
 
-	return true
+	logging.LogWarnf("waitForDBAvailable failed: database connection is not ready")
+	return false
 }
 
 // HandleQuery 处理查询请求
@@ -167,8 +226,13 @@ func HandleQuery(c *gin.Context) {
 		return
 	}
 
+	// 检查数据库状态和队列状态
+	requestQueueMu.Lock()
+	hasQueue := len(requestQueue) > 0
+	requestQueueMu.Unlock()
+
 	// 如果数据库正在同步中或有请求队列，将请求添加到队列中
-	if dbSyncClosing.Load() || len(requestQueue) > 0 {
+	if dbSyncClosing.Load() || hasQueue {
 		var result SQLResponse
 
 		// 定义请求执行函数
@@ -355,8 +419,13 @@ func HandleExec(c *gin.Context) {
 		return
 	}
 
+	// 检查数据库状态和队列状态
+	requestQueueMu.Lock()
+	hasQueue := len(requestQueue) > 0
+	requestQueueMu.Unlock()
+
 	// 如果数据库正在同步中或有请求队列，将请求添加到队列中
-	if dbSyncClosing.Load() || len(requestQueue) > 0 {
+	if dbSyncClosing.Load() || hasQueue {
 		var result SQLResponse
 
 		// 定义请求执行函数
@@ -478,6 +547,16 @@ func ReopenPluginDatabaseAfterSync() error {
 	}
 	// 无论是否成功，都重置标志
 	dbSyncClosing.Store(false)
+
+	// 确保在数据库重新打开后处理队列中的请求
+	requestQueueMu.Lock()
+	hasRequests := len(requestQueue) > 0
+	requestQueueMu.Unlock()
+
+	if hasRequests && !requestProcessing.Load() {
+		requestProcessing.Store(true)
+		go processRequestQueue()
+	}
 
 	if err != nil {
 		logging.LogErrorf("reopen plugin database after sync failed: %s", err)
