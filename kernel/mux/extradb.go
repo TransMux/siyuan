@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/gin-gonic/gin"
+	"github.com/siyuan-note/logging"
 	"github.com/siyuan-note/siyuan/kernel/util"
 )
 
@@ -177,6 +178,7 @@ func HandleExec(c *gin.Context) {
 // ClosePluginDatabaseForSync 在同步前关闭插件数据库连接
 // 防止在同步过程中数据库文件被锁定，导致同步不完整
 func ClosePluginDatabaseForSync() {
+	logging.LogInfof("close plugin database for sync")
 	// 关闭数据库连接
 	if db != nil {
 		db.Close()
@@ -186,6 +188,7 @@ func ClosePluginDatabaseForSync() {
 
 // ReopenPluginDatabaseAfterSync 在同步后重新打开插件数据库连接
 func ReopenPluginDatabaseAfterSync() error {
+	logging.LogInfof("reopen plugin database after sync")
 	var err error
 	if db == nil {
 		err = InitPluginDatabase()
