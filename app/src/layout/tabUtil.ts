@@ -310,13 +310,13 @@ export const copyTab = (app: App, tab: Tab) => {
                     afterInitProtyle(editor) {
                         // https://github.com/siyuan-note/siyuan/issues/13851
                         if (tab.model instanceof Editor) {
-                            const copyResizeTopElement = tab.model.editor.protyle.wysiwyg.element.querySelector("[data-resize-top]")
+                            const copyResizeTopElement = tab.model.editor.protyle.wysiwyg.element.querySelector("[data-resize-top]");
                             if (copyResizeTopElement) {
-                                const newElement = editor.protyle.wysiwyg.element.querySelector(`[data-node-id="${copyResizeTopElement.getAttribute("data-node-id")}"]`)
+                                const newElement = editor.protyle.wysiwyg.element.querySelector(`[data-node-id="${copyResizeTopElement.getAttribute("data-node-id")}"]`);
                                 if (newElement) {
                                     editor.protyle.observerLoad?.disconnect();
                                     newElement.scrollIntoView();
-                                    editor.protyle.contentElement.scrollTop += newElement.getBoundingClientRect().top - parseInt(copyResizeTopElement.getAttribute("data-resize-top"));
+                                    editor.protyle.contentElement.scrollTop += parseInt(copyResizeTopElement.getAttribute("data-resize-top"));
                                 }
                             }
                         }
