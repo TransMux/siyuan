@@ -4,6 +4,12 @@ import { SETTING_ITEMS, get, update } from "../mux/settings";
 // Define section configuration
 const SECTIONS = [
     {
+        id: "mux-function-settings",
+        title: "功能设置",
+        description: "自定义功能开关",
+        section: "function"
+    },
+    {
         id: "mux-doc-settings",
         title: "文档 ID 设置",
         description: "文档和数据库 ID 相关设置，用于特殊功能的实现",
@@ -58,7 +64,6 @@ export class MuxConfig {
 .setting-item {
     display: flex;
     align-items: center;
-    margin-bottom: 16px;
     padding: 8px;
     border-radius: 4px;
     transition: background-color 0.2s;

@@ -3,6 +3,13 @@ import { Setting, SettingsDB } from "./settingsDB";
 
 // Default values for settings
 export const SETTING_ITEMS: { [key: string]: Setting } = {
+    show_move_to_diary: {
+        label: "文档界面显示'移动到日记下'按钮",
+        type: "boolean",
+        value: false,
+        section: "function",
+        display: "toggle"
+    },
     知识单元avID: {
         label: "知识单元avID",
         type: "string",

@@ -143,7 +143,7 @@ export class Background {
             <svg><use xlink:href="#iconImage"></use></svg>
             ${window.siyuan.languages.titleBg}
         </button>
-        <button class="b3-button b3-button--cancel" data-type="moveDocToDailyNote">
+        <button class="b3-button b3-button--cancel ${get('show_move_to_diary') ? '' : 'fn__none'}" data-type="moveDocToDailyNote">
             <svg><use xlink:href="#iconFile"></use></svg>
             移动到日记下
         </button>
