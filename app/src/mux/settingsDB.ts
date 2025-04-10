@@ -91,9 +91,14 @@ export class SettingsDB {
     public static async createSetting(setting: Setting & { key: string }) {
         await this.init();
 
+        let value = setting.value;
+        if (typeof setting.value === 'object') {
+            value = JSON.stringify(setting.value);
+        }
+
         await this.executeSQL({
             stmt: `INSERT OR REPLACE INTO ${this.TABLE_NAME} (key, label, description, type, value, section, display) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            args: [setting.key, setting.label, setting.description ? setting.description : "", setting.type, JSON.stringify(setting.value), setting.section, setting.display]
+            args: [setting.key, setting.label, setting.description ? setting.description : "", setting.type, value, setting.section, setting.display]
         });
     }
 
