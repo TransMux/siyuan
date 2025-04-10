@@ -17,67 +17,67 @@ export const DEFAULT_SETTINGS: { [key: string]: Setting } = {
         key: "知识单元avID",
         label: "知识单元avID",
         type: "string",
-        value: "20250101005818-yb4stwq"
+        value: ""
     },
     知识单元目录: {
         key: "知识单元目录",
         label: "知识单元目录",
         type: "string",
-        value: "20250101010126-gjm1cwx"
+        value: ""
     },
     关系笔记avID: {
         key: "关系笔记avID",
         label: "关系笔记avID",
         type: "string",
-        value: "20250101233539-mitgexi"
+        value: ""
     },
     关系笔记目录: {
         key: "关系笔记目录",
         label: "关系笔记目录",
         type: "string",
-        value: "20250101010038-81wd8r8"
+        value: ""
     },
     标签之树avID: {
         key: "标签之树avID",
         label: "标签之树avID",
         type: "string",
-        value: "20250101001630-x03k4te"
+        value: ""
     },
     标签之树目录: {
         key: "标签之树目录",
         label: "标签之树目录",
         type: "string",
-        value: "20250101005307-7384qo5"
+        value: ""
     },
     外部输入avID: {
         key: "外部输入avID",
         label: "外部输入avID",
         type: "string",
-        value: "20250102171020-4cqqonx"
+        value: ""
     },
     外部输入目录: {
         key: "外部输入目录",
         label: "外部输入目录",
         type: "string",
-        value: "20250102171013-zzcyz96"
+        value: ""
     },
     未读笔记本: {
         key: "未读笔记本",
         label: "未读笔记本",
         type: "string",
-        value: "20250207201935-ho4pthi"
+        value: ""
     },
     已读目录: {
         key: "已读目录",
         label: "已读目录",
         type: "string",
-        value: "20241231233427-ge48qdq"
+        value: ""
     },
     主页ID: {
         key: "主页ID",
         label: "主页ID",
         type: "string",
-        value: "20250206142847-cbvnc9o"
+        value: ""
     },
     altx上色顺序Keys: {
         key: "altx上色顺序Keys",
