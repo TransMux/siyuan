@@ -58,23 +58,67 @@ export class SettingsDB {
             console.error("Failed to initialize settings database:", error);
         }
     }
-
     /**
      * Save a setting to the database
-     * @param key The setting key
-     * @param value The setting value (will be JSON stringified)
+     * @param setting The setting object (partial or complete)
+     * @returns Whether the operation was successful
      */
-    public static async saveSetting(setting: Setting): Promise<boolean> {
+    public static async saveSetting(setting: Partial<Setting> & { key: string }): Promise<boolean> {
         await this.init();
 
         try {
-            const jsonValue = JSON.stringify(setting.value);
-
-            // Use REPLACE to handle both insert and update
-            await this.executeSQL({
-                stmt: `REPLACE INTO ${this.TABLE_NAME} (key, label, description, type, value) VALUES (?, ?, ?, ?, ?)`,
-                args: [setting.key, setting.label, setting.description, setting.type, jsonValue]
+            // First check if the setting exists
+            const existingResult = await this.executeSQL({
+                stmt: `SELECT * FROM ${this.TABLE_NAME} WHERE key = ?`,
+                args: [setting.key]
             });
+
+            const exists = existingResult.length > 0;
+
+            if (exists) {
+                // Update only the provided fields
+                const updates: string[] = [];
+                const args: any[] = [];
+
+                if (setting.label !== undefined) {
+                    updates.push('label = ?');
+                    args.push(setting.label);
+                }
+
+                if (setting.description !== undefined) {
+                    updates.push('description = ?');
+                    args.push(setting.description);
+                }
+
+                if (setting.type !== undefined) {
+                    updates.push('type = ?');
+                    args.push(setting.type);
+                }
+
+                if (setting.value !== undefined) {
+                    updates.push('value = ?');
+                    args.push(JSON.stringify(setting.value));
+                }
+
+                if (updates.length > 0) {
+                    args.push(setting.key);
+                    await this.executeSQL({
+                        stmt: `UPDATE ${this.TABLE_NAME} SET ${updates.join(', ')} WHERE key = ?`,
+                        args
+                    });
+                }
+            } else {
+                // Insert new setting (requires all fields)
+                if (!setting.label || !setting.description || !setting.type || setting.value === undefined) {
+                    throw new Error(`Missing required fields for new setting '${setting.key}'`);
+                }
+
+                const jsonValue = JSON.stringify(setting.value);
+                await this.executeSQL({
+                    stmt: `INSERT INTO ${this.TABLE_NAME} (key, label, description, type, value) VALUES (?, ?, ?, ?, ?)`,
+                    args: [setting.key, setting.label, setting.description, setting.type, jsonValue]
+                });
+            }
 
             return true;
         } catch (error) {
