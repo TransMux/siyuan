@@ -125,9 +125,11 @@ export const commandPanel = (app: App) => {
 
     // https://x.transmux.top/j/20241103170133-bvx9q0c
     const homeId = get<string>("主页ID");
-    commandHtml += `<li class="b3-list-item" data-command="openDoc" data-node-id="${homeId}">
+    if (homeId) {
+        commandHtml += `<li class="b3-list-item" data-command="openDoc" data-node-id="${homeId}">
     <span class="b3-list-item__text">打开主页 (open homepage)</span>
 </li>`;
+    }
 
     // 重载当前窗口，特别是在分屏需要更新主窗口修改的时候
     commandHtml += `<li class="b3-list-item" data-command="reload">

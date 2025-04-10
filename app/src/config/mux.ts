@@ -54,9 +54,7 @@ export class MuxConfig {
             ${index < SECTIONS.length - 1 ? '<div class="fn__hr"></div>' : ''}`;
         });
 
-        return `<div class="config__tab-container" data-name="mux">
-    ${sectionsHTML}
-</div>
+        return `${sectionsHTML}
 <style>
 .settings-section {
     padding: 8px 16px;

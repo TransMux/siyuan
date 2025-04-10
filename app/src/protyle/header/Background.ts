@@ -147,7 +147,7 @@ export class Background {
             <svg><use xlink:href="#iconFile"></use></svg>
             移动到日记下
         </button>
-        <button class="b3-button b3-button--cancel" data-type="moveDocToRead">
+        <button class="b3-button b3-button--cancel ${get('已读目录') ? '' : 'fn__none'}" data-type="moveDocToRead">
             <svg><use xlink:href="#iconFile"></use></svg>
             移动已读
         </button>

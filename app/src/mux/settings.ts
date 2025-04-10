@@ -75,6 +75,7 @@ export const SETTING_ITEMS: { [key: string]: Setting } = {
     },
     已读目录: {
         label: "已读目录",
+        description: "如果填写此项，会在文档标题上添加移动到已读按钮，移动到目标文档的 Week {week} 目录下",
         type: "string",
         value: "",
         section: "document",
@@ -82,6 +83,7 @@ export const SETTING_ITEMS: { [key: string]: Setting } = {
     },
     主页ID: {
         label: "主页ID",
+        description: "如果填写此项，会在命令面板中添加打开主页按钮，点击后会打开目标文档",
         type: "string",
         value: "",
         section: "document",
