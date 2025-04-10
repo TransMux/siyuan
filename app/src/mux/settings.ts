@@ -155,6 +155,9 @@ function parseSettingValue(value: any, type: string): any {
             case "number":
                 return Number(value);
             case "boolean":
+                if (typeof value === 'string') {
+                    return value === '1' || value === 'true';
+                }
                 return Boolean(value);
             case "object":
             case "array":
