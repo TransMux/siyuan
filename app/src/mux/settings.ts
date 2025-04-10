@@ -176,7 +176,6 @@ export function get<T>(key: string): T {
 // Function to update a setting both in the cache and database
 export async function update(key: string, value: any): Promise<boolean> {
     // Update the cache immediately
-    debugger
     SETTINGS_CACHE[key] = value;
 
     // Get the setting definition

@@ -249,4 +249,4 @@ export class MuxConfig {
     }
 }
 
-export const mux = new MuxConfig(); 
+export const mux = new MuxConfig();

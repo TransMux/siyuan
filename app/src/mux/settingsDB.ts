@@ -109,14 +109,14 @@ export class SettingsDB {
                 }
             } else {
                 // Insert new setting (requires all fields)
-                if (!setting.label || !setting.description || !setting.type || setting.value === undefined) {
+                if (!setting.label || !setting.type || setting.value === undefined) {
                     throw new Error(`Missing required fields for new setting '${setting.key}'`);
                 }
 
                 const jsonValue = JSON.stringify(setting.value);
                 await this.executeSQL({
                     stmt: `INSERT INTO ${this.TABLE_NAME} (key, label, description, type, value) VALUES (?, ?, ?, ?, ?)`,
-                    args: [setting.key, setting.label, setting.description, setting.type, jsonValue]
+                    args: [setting.key, setting.label, setting.description ? setting.description : "", setting.type, jsonValue]
                 });
             }
 
