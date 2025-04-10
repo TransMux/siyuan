@@ -1,6 +1,27 @@
 import { showMessage } from "../dialog/message";
-import { SETTING_ITEMS, get, resetToDefault, update } from "../mux/settings";
-import { confirmDialog } from "../dialog/confirmDialog";
+import { SETTING_ITEMS, get, update } from "../mux/settings";
+
+// Define section configuration
+const SECTIONS = [
+    {
+        id: "mux-doc-settings",
+        title: "文档 ID 设置",
+        description: "文档和数据库 ID 相关设置，用于特殊功能的实现",
+        section: "document"
+    },
+    {
+        id: "mux-style-settings",
+        title: "样式设置",
+        description: "UI 和样式相关的设置项",
+        section: "style"
+    },
+    {
+        id: "mux-misc-settings",
+        title: "其他设置",
+        description: "其他额外的设置项",
+        section: "misc"
+    }
+];
 
 export class MuxConfig {
     public element: Element;
@@ -11,36 +32,24 @@ export class MuxConfig {
     }
 
     public genHTML(): string {
+        let sectionsHTML = '';
+
+        SECTIONS.forEach((section, index) => {
+            sectionsHTML += `
+            <div class="b3-label config-label">
+                <div class="fn__flex">
+                    <div class="fn__flex-1">
+                        <h3 class="config-heading">${section.title}</h3>
+                        <div class="b3-label__text">${section.description}</div>
+                    </div>
+                </div>
+            </div>
+            <div id="${section.id}" class="settings-section"></div>
+            ${index < SECTIONS.length - 1 ? '<div class="fn__hr"></div>' : ''}`;
+        });
+
         return `<div class="config__tab-container" data-name="mux">
-    <div class="b3-label config-label">
-        <div class="fn__flex">
-            <div class="fn__flex-1">
-                <h3 class="config-heading">文档 ID 设置</h3>
-                <div class="b3-label__text">文档和数据库 ID 相关设置，用于特殊功能的实现</div>
-            </div>
-        </div>
-    </div>
-    <div id="mux-doc-settings" class="settings-section"></div>
-    <div class="fn__hr"></div>
-    <div class="b3-label config-label">
-        <div class="fn__flex">
-            <div class="fn__flex-1">
-                <h3 class="config-heading">样式设置</h3>
-                <div class="b3-label__text">UI 和样式相关的设置项</div>
-            </div>
-        </div>
-    </div>
-    <div id="mux-style-settings" class="settings-section"></div>
-    <div class="fn__hr"></div>
-    <div class="b3-label config-label">
-        <div class="fn__flex">
-            <div class="fn__flex-1">
-                <h3 class="config-heading">其他设置</h3>
-                <div class="b3-label__text">其他额外的设置项</div>
-            </div>
-        </div>
-    </div>
-    <div id="mux-misc-settings" class="settings-section"></div>
+    ${sectionsHTML}
 </div>
 <style>
 .settings-section {
@@ -103,37 +112,24 @@ export class MuxConfig {
     }
 
     public bindEvent(): void {
-        this.settingsContainer = this.element.querySelector("#mux-doc-settings") as HTMLElement;
-
-        // Render the settings
-        this.renderDocumentSettings();
-        this.renderStyleSettings();
-        this.renderMiscSettings();
-    }
-
-    private renderDocumentSettings(): void {
-        const container = this.element.querySelector("#mux-doc-settings") as HTMLElement;
-        container.innerHTML = "";
-
-        Object.keys(SETTING_ITEMS).forEach(key => {
-            this.createSettingItem(container, key);
+        // Render all sections
+        SECTIONS.forEach(section => {
+            this.renderSection(section.id, section.section);
         });
     }
 
-    private renderStyleSettings(): void {
-        const container = this.element.querySelector("#mux-style-settings") as HTMLElement;
+    private renderSection(containerId: string, sectionType: string): void {
+        const container = this.element.querySelector(`#${containerId}`) as HTMLElement;
         container.innerHTML = "";
 
-        // Style Settings
-        this.createColorSettingItem(container, "altx上色顺序Keys", "altx上色顺序Values");
+        // Render all settings for this section
+        Object.keys(SETTING_ITEMS).forEach(key => {
+            if (SETTING_ITEMS[key].section === sectionType) {
+                this.createSettingItem(container, key);
+            }
+        });
     }
 
-    private renderMiscSettings(): void {
-        const container = this.element.querySelector("#mux-misc-settings") as HTMLElement;
-        container.innerHTML = "";
-
-        // Add future miscellaneous settings here
-    }
     private createSettingItem(container: HTMLElement, key: string): void {
         const setting = SETTING_ITEMS[key];
         if (!setting) return;
@@ -142,101 +138,57 @@ export class MuxConfig {
 
         const item = document.createElement("div");
         item.className = "setting-item";
+
+        let inputHTML = '';
+
+        // Create different input types based on display property
+        switch (setting.display) {
+            case 'toggle':
+                const isChecked = String(value).toLowerCase() === 'true' || value === '1';
+                inputHTML = `<input class="b3-switch fn__flex-center" id="${key}" type="checkbox" ${isChecked ? 'checked' : ''} data-key="${key}">`;
+                break;
+            case 'textarea':
+                inputHTML = `<textarea class="b3-text-field fn__block" style="min-width: 200px; width: 100%;" rows="3" id="${key}" data-key="${key}">${JSON.stringify(value)}</textarea>`;
+                break;
+            case 'input':
+            default:
+                inputHTML = `<input type="text" class="b3-text-field fn__flex-center" value="${value}" id="${key}" data-key="${key}">`;
+                break;
+        }
+
         item.innerHTML = `
             <div class="setting-item-left">
                 <div class="setting-item-title">${setting.label}</div>
                 <div class="setting-item-description">${setting.description ? setting.description : ""}</div>
             </div>
             <div class="setting-item-right">
-                <input type="text" class="b3-text-field fn__flex-center" value="${value}" data-key="${key}">
+                ${inputHTML}
             </div>
         `;
 
         // Bind events
-        const input = item.querySelector('input') as HTMLInputElement;
-        input.addEventListener('change', async () => {
-            const newValue = input.value;
-            await update(key, newValue);
-            showMessage(`已更新设置 ${setting.label}`, 2000);
-        });
-
-        container.appendChild(item);
-    }
-
-    private createColorSettingItem(container: HTMLElement, keysKey: string, valuesKey: string): void {
-        const keysSetting = SETTING_ITEMS[keysKey];
-        const valuesSetting = SETTING_ITEMS[valuesKey];
-
-        if (!keysSetting || !valuesSetting) return;
-
-        const keys = get<string[]>(keysKey);
-        const values = get<any[]>(valuesKey);
-
-        const item = document.createElement("div");
-        item.className = "setting-item";
-
-        // Create the main display section
-        let html = `
-            <div class="setting-item-left">
-                <div class="setting-item-title">Alt+X 颜色循环设置</div>
-                <div class="setting-item-description">Alt+X 快捷键可以循环设置文本颜色，此处设置颜色循环顺序</div>
-                <div class="fn__flex" style="margin-top: 16px; gap: 16px;">
-                    <div class="fn__flex-1">
-                        <div class="setting-item-title">键值列表</div>
-                        <textarea class="b3-text-field fn__block" data-key="${keysKey}" rows="4">${JSON.stringify(keys, null, 2)}</textarea>
-                    </div>
-                    <div class="fn__flex-1">
-                        <div class="setting-item-title">颜色值列表</div>
-                        <textarea class="b3-text-field fn__block" data-key="${valuesKey}" rows="4">${JSON.stringify(values, null, 2)}</textarea>
-                    </div>
-                </div>
-            </div>
-            <div class="setting-item-right">
-                <button class="b3-button b3-button--outline fn__size200 reset-btn" data-key="${keysKey}">
-                    <svg><use xlink:href="#iconUndo"></use></svg>
-                    重置
-                </button>
-            </div>
-        `;
-
-        item.innerHTML = html;
-
-        // Bind reset event
-        const resetBtn = item.querySelector('.reset-btn') as HTMLButtonElement;
-        resetBtn.addEventListener('click', async () => {
-            await resetToDefault(keysKey);
-            await resetToDefault(valuesKey);
-            showMessage(`已重置颜色设置`, 2000);
-
-            // Refresh this item
-            this.renderStyleSettings();
-        });
-
-        // Bind textarea events
-        const keysTextarea = item.querySelector(`textarea[data-key="${keysKey}"]`) as HTMLTextAreaElement;
-        const valuesTextarea = item.querySelector(`textarea[data-key="${valuesKey}"]`) as HTMLTextAreaElement;
-
-        keysTextarea.addEventListener('change', async () => {
-            try {
-                const newKeys = JSON.parse(keysTextarea.value);
-                await update(keysKey, newKeys);
-                showMessage(`已更新键值列表`, 2000);
-                this.renderStyleSettings();
-            } catch (error) {
-                showMessage(`JSON 格式错误: ${error.message}`, 3000, "error");
-            }
-        });
-
-        valuesTextarea.addEventListener('change', async () => {
-            try {
-                const newValues = JSON.parse(valuesTextarea.value);
-                await update(valuesKey, newValues);
-                showMessage(`已更新颜色值列表`, 2000);
-                this.renderStyleSettings();
-            } catch (error) {
-                showMessage(`JSON 格式错误: ${error.message}`, 3000, "error");
-            }
-        });
+        if (setting.display === 'toggle') {
+            const checkbox = item.querySelector('input[type="checkbox"]') as HTMLInputElement;
+            checkbox.addEventListener('change', async () => {
+                const newValue = checkbox.checked;
+                await update(key, newValue);
+                showMessage(`已更新设置 ${setting.label}`, 2000);
+            });
+        } else if (setting.display === 'textarea') {
+            const textarea = item.querySelector('textarea') as HTMLTextAreaElement;
+            textarea.addEventListener('change', async () => {
+                const newValue = textarea.value;
+                await update(key, newValue);
+                showMessage(`已更新设置 ${setting.label}`, 2000);
+            });
+        } else {
+            const input = item.querySelector('input[type="text"]') as HTMLInputElement;
+            input.addEventListener('change', async () => {
+                const newValue = input.value;
+                await update(key, newValue);
+                showMessage(`已更新设置 ${setting.label}`, 2000);
+            });
+        }
 
         container.appendChild(item);
     }

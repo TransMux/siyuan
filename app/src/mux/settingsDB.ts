@@ -17,12 +17,13 @@ interface SQLResponse {
     data: any[];
 }
 
-interface Setting {
-    key: string;
+export interface Setting {
     label: string;
-    description: string;
+    description?: string;
     type: string;
     value: unknown;
+    section: string;
+    display: 'toggle' | 'input' | 'textarea';
 }
 
 /**
@@ -48,7 +49,9 @@ export class SettingsDB {
                     label TEXT NOT NULL,
                     description TEXT NOT NULL,
                     type TEXT NOT NULL,
-                    value TEXT NOT NULL
+                    value TEXT NOT NULL,
+                    section TEXT NOT NULL,
+                    display TEXT NOT NULL
                 )`
             });
 
@@ -63,68 +66,35 @@ export class SettingsDB {
      * @param setting The setting object (partial or complete)
      * @returns Whether the operation was successful
      */
-    public static async saveSetting(setting: Partial<Setting> & { key: string }): Promise<boolean> {
+    public static async saveSetting(key: string, value: any): Promise<boolean> {
+        await this.init();
+        // First check if the setting exists
+        const existingResult = await this.executeSQL({
+            stmt: `SELECT * FROM ${this.TABLE_NAME} WHERE key = ?`,
+            args: [key]
+        });
+
+        const exists = existingResult.length > 0;
+
+        if (exists) {
+            if (typeof value === 'object') {
+                value = JSON.stringify(value);
+            }
+            await this.executeSQL({
+                stmt: `UPDATE ${this.TABLE_NAME} SET value = ? WHERE key = ?`,
+                args: [value, key]
+            });
+            return true;
+        }
+    }
+
+    public static async createSetting(setting: Setting & { key: string }) {
         await this.init();
 
-        try {
-            // First check if the setting exists
-            const existingResult = await this.executeSQL({
-                stmt: `SELECT * FROM ${this.TABLE_NAME} WHERE key = ?`,
-                args: [setting.key]
-            });
-
-            const exists = existingResult.length > 0;
-
-            if (exists) {
-                // Update only the provided fields
-                const updates: string[] = [];
-                const args: any[] = [];
-
-                if (setting.label !== undefined) {
-                    updates.push('label = ?');
-                    args.push(setting.label);
-                }
-
-                if (setting.description !== undefined) {
-                    updates.push('description = ?');
-                    args.push(setting.description);
-                }
-
-                if (setting.type !== undefined) {
-                    updates.push('type = ?');
-                    args.push(setting.type);
-                }
-
-                if (setting.value !== undefined) {
-                    updates.push('value = ?');
-                    args.push(JSON.stringify(setting.value));
-                }
-
-                if (updates.length > 0) {
-                    args.push(setting.key);
-                    await this.executeSQL({
-                        stmt: `UPDATE ${this.TABLE_NAME} SET ${updates.join(', ')} WHERE key = ?`,
-                        args
-                    });
-                }
-            } else {
-                // Insert new setting (requires all fields)
-                if (!setting.label || !setting.type || setting.value === undefined) {
-                    throw new Error(`Missing required fields for new setting '${setting.key}'`);
-                }
-
-                const jsonValue = JSON.stringify(setting.value);
-                await this.executeSQL({
-                    stmt: `INSERT INTO ${this.TABLE_NAME} (key, label, description, type, value) VALUES (?, ?, ?, ?, ?)`,
-                    args: [setting.key, setting.label, setting.description ? setting.description : "", setting.type, jsonValue]
-                });
-            }
-
-            return true;
-        } catch (error) {
-            console.error(`Failed to save setting '${setting.key}':`, error);
-            return false;
-        }
+        await this.executeSQL({
+            stmt: `INSERT OR REPLACE INTO ${this.TABLE_NAME} (key, label, description, type, value, section, display) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            args: [setting.key, setting.label, setting.description ? setting.description : "", setting.type, JSON.stringify(setting.value), setting.section, setting.display]
+        });
     }
 
     /**
@@ -179,26 +149,17 @@ export class SettingsDB {
     public static async listAllSettings(): Promise<Record<string, unknown>> {
         await this.init();
 
-        try {
-            const result = await this.executeSQL({
-                stmt: `SELECT key, value FROM ${this.TABLE_NAME}`
-            });
+        const result = await this.executeSQL({
+            stmt: `SELECT * FROM ${this.TABLE_NAME}`
+        });
 
-            const settings: Record<string, unknown> = {};
+        const settings: Record<string, unknown> = {};
 
-            for (const row of result) {
-                try {
-                    settings[row.key] = JSON.parse(row.value);
-                } catch (e) {
-                    settings[row.key] = row.value;
-                }
-            }
-
-            return settings;
-        } catch (error) {
-            console.error("Failed to list settings:", error);
-            return {};
+        for (const row of result) {
+            settings[row.key] = row.value;
         }
+
+        return settings;
     }
 
     /**
