@@ -191,7 +191,6 @@ export function isExist(key: string): boolean {
 // Function to update a setting both in the cache and database
 export async function update(key: string, value: any): Promise<boolean> {
     // Update the cache immediately
-    debugger;
     if (!SETTINGS_CACHE[key]) {
         if (SETTING_ITEMS[key]) {
             await SettingsDB.createSetting({
