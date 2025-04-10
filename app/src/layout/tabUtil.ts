@@ -26,6 +26,7 @@ import { Constants } from "../constants";
 import { fetchPost, fetchSyncPost } from "../util/fetch";
 import { openFileById } from "../editor/util";
 import { openUnreadWeekArticle } from "../util/mux";
+import { isExist } from "../mux/settings";
 
 export const getActiveTab = (wndActive = true) => {
     const activeTabElement = document.querySelector(".layout__wnd--active .item--focus");
@@ -199,7 +200,7 @@ export const newCenterEmptyTab = (app: App) => {
         <svg class="b3-list-item__graphic"><use xlink:href="#iconHelp"></use></svg>
         <span>${window.siyuan.languages.userGuide}</span>
     </div>
-    <div class="b3-list-item${(isIPad() || window.siyuan.config.readonly) ? " fn__none" : ""}" id="openUnreadWeekArticle">
+    <div class="b3-list-item${(isIPad() || window.siyuan.config.readonly || !isExist("本周未读目录")) ? " fn__none" : ""}" id="openUnreadWeekArticle">
         <svg class="b3-list-item__graphic"><use xlink:href="#iconOpen"></use></svg>
         <span>打开未读文章</span>
     </div>

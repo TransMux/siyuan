@@ -1,5 +1,5 @@
 import { showMessage } from "../dialog/message";
-import { DEFAULT_SETTINGS, get, resetToDefault, update } from "../mux/settings";
+import { SETTING_ITEMS, get, resetToDefault, update } from "../mux/settings";
 import { confirmDialog } from "../dialog/confirmDialog";
 
 export class MuxConfig {
@@ -115,14 +115,7 @@ export class MuxConfig {
         const container = this.element.querySelector("#mux-doc-settings") as HTMLElement;
         container.innerHTML = "";
 
-        // Document ID Settings
-        const docSettings = [
-            "知识单元avID", "知识单元目录", "关系笔记avID", "关系笔记目录",
-            "标签之树avID", "标签之树目录", "外部输入avID", "外部输入目录",
-            "未读笔记本", "已读目录", "主页ID"
-        ];
-
-        docSettings.forEach(key => {
+        Object.keys(SETTING_ITEMS).forEach(key => {
             this.createSettingItem(container, key);
         });
     }
@@ -142,7 +135,7 @@ export class MuxConfig {
         // Add future miscellaneous settings here
     }
     private createSettingItem(container: HTMLElement, key: string): void {
-        const setting = DEFAULT_SETTINGS[key];
+        const setting = SETTING_ITEMS[key];
         if (!setting) return;
 
         const value = get<string>(key);
@@ -171,8 +164,8 @@ export class MuxConfig {
     }
 
     private createColorSettingItem(container: HTMLElement, keysKey: string, valuesKey: string): void {
-        const keysSetting = DEFAULT_SETTINGS[keysKey];
-        const valuesSetting = DEFAULT_SETTINGS[valuesKey];
+        const keysSetting = SETTING_ITEMS[keysKey];
+        const valuesSetting = SETTING_ITEMS[valuesKey];
 
         if (!keysSetting || !valuesSetting) return;
 
@@ -181,7 +174,7 @@ export class MuxConfig {
 
         const item = document.createElement("div");
         item.className = "setting-item";
-        
+
         // Create the main display section
         let html = `
             <div class="setting-item-left">
@@ -205,7 +198,7 @@ export class MuxConfig {
                 </button>
             </div>
         `;
-        
+
         item.innerHTML = html;
 
         // Bind reset event
@@ -218,11 +211,11 @@ export class MuxConfig {
             // Refresh this item
             this.renderStyleSettings();
         });
-        
+
         // Bind textarea events
         const keysTextarea = item.querySelector(`textarea[data-key="${keysKey}"]`) as HTMLTextAreaElement;
         const valuesTextarea = item.querySelector(`textarea[data-key="${valuesKey}"]`) as HTMLTextAreaElement;
-        
+
         keysTextarea.addEventListener('change', async () => {
             try {
                 const newKeys = JSON.parse(keysTextarea.value);
@@ -233,7 +226,7 @@ export class MuxConfig {
                 showMessage(`JSON 格式错误: ${error.message}`, 3000, "error");
             }
         });
-        
+
         valuesTextarea.addEventListener('change', async () => {
             try {
                 const newValues = JSON.parse(valuesTextarea.value);

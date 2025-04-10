@@ -12,7 +12,7 @@ export interface Setting {
 }
 
 // Default values for settings
-export const DEFAULT_SETTINGS: { [key: string]: Setting } = {
+export const SETTING_ITEMS: { [key: string]: Setting } = {
     知识单元avID: {
         key: "知识单元avID",
         label: "知识单元avID",
@@ -76,6 +76,13 @@ export const DEFAULT_SETTINGS: { [key: string]: Setting } = {
     主页ID: {
         key: "主页ID",
         label: "主页ID",
+        type: "string",
+        value: ""
+    },
+    本周未读目录: {
+        key: "本周未读目录",
+        label: "本周未读目录",
+        description: "用于定位未读笔记本下的本周文件夹，支持在起始页打开未读文章（如果这个文件夹没有加入索引的话无法获取）",
         type: "string",
         value: ""
     },
@@ -157,13 +164,13 @@ function parseSettingValue(value: any, type: string): any {
 // Synchronous function to get a setting by key
 export function get<T>(key: string): T {
     if (!SETTINGS_CACHE[key]) {
-        if (DEFAULT_SETTINGS[key]) {
-            return DEFAULT_SETTINGS[key].value as T;
+        if (SETTING_ITEMS[key]) {
+            return SETTING_ITEMS[key].value as T;
         }
         throw new Error(`Setting '${key}' not found`);
     }
 
-    const setting = DEFAULT_SETTINGS[key];
+    const setting = SETTING_ITEMS[key];
     if (!setting) {
         return SETTINGS_CACHE[key] as T;
     }
@@ -172,6 +179,9 @@ export function get<T>(key: string): T {
 
     return parseSettingValue(value, setting.type) as T;
 }
+export function isExist(key: string): boolean {
+    return SETTINGS_CACHE[key] !== undefined;
+}
 
 // Function to update a setting both in the cache and database
 export async function update(key: string, value: any): Promise<boolean> {
@@ -179,7 +189,7 @@ export async function update(key: string, value: any): Promise<boolean> {
     SETTINGS_CACHE[key] = value;
 
     // Get the setting definition
-    const setting = DEFAULT_SETTINGS[key];
+    const setting = SETTING_ITEMS[key];
     if (!setting) {
         console.warn(`Trying to update unknown setting: ${key}`);
         return false;
@@ -194,7 +204,7 @@ export async function update(key: string, value: any): Promise<boolean> {
 
 // Function to reset a setting to its default value
 export async function resetToDefault(key: string): Promise<boolean> {
-    const setting = DEFAULT_SETTINGS[key];
+    const setting = SETTING_ITEMS[key];
     if (!setting) {
         console.warn(`Cannot reset unknown setting: ${key}`);
         return false;
@@ -206,8 +216,8 @@ export async function resetToDefault(key: string): Promise<boolean> {
 // Function to update all settings in the UI
 export function updateAllSettings(): void {
     // Update all setting inputs with current values from cache
-    Object.keys(DEFAULT_SETTINGS).forEach(key => {
-        const setting = DEFAULT_SETTINGS[key];
+    Object.keys(SETTING_ITEMS).forEach(key => {
+        const setting = SETTING_ITEMS[key];
         const inputElement = document.getElementById(setting.key) as HTMLInputElement;
         if (inputElement) {
             const value = get(setting.key);
