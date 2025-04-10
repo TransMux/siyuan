@@ -32,6 +32,7 @@ import {loadPlugins, reloadPlugin} from "./plugin/loader";
 import "./assets/scss/base.scss";
 import {reloadEmoji} from "./emoji";
 import {processIOSPurchaseResponse} from "./util/iOSPurchase";
+import {initSettings} from "./mux/settings";
 /// #if BROWSER
 import {setLocalShorthandCount} from "./util/noRelyPCFunction";
 /// #endif
@@ -177,6 +178,7 @@ export class App {
             window.siyuan.config = response.data.conf;
             window.siyuan.isPublish = response.data.isPublish;
             await loadPlugins(this);
+            await initSettings();
             getLocalStorage(() => {
                 fetchGet(`/appearance/langs/${window.siyuan.config.appearance.lang}.json?v=${Constants.SIYUAN_VERSION}`, (lauguages: IObject) => {
                     window.siyuan.languages = lauguages;

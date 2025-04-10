@@ -70,7 +70,7 @@ import { AIActions } from "../../ai/actions";
 import { openLink } from "../../editor/openLink";
 import { onlyProtyleCommand } from "../../boot/globalEvent/command/protyle";
 import { AIChat } from "../../ai/chat";
-import { altx上色顺序Keys, altx上色顺序Values } from "../../mux/settings";
+import { get } from "../../mux/settings";
 import { translateText } from "../util/mux/translate";
 
 export const getContentByInlineHTML = (range: Range, cb: (content: string) => void) => {
@@ -1430,7 +1430,11 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                     }
                 }
 
+
+                const altx上色顺序Keys = get<string[]>("altx上色顺序Keys");
+                const altx上色顺序Values = get<any[]>("altx上色顺序Values");
                 // 2. 匹配 altx上色顺序，应用匹配到的下一个颜色
+                // First load the colors asynchronously
                 const matchColorIndex = altx上色顺序Keys.findIndex(key => computedColor.includes(key));
                 if (matchColorIndex !== -1) {
                     const nextColor = altx上色顺序Values[matchColorIndex + 1];

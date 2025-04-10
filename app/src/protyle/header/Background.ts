@@ -19,11 +19,11 @@ import { Menu } from "../../plugin/Menu";
 import { escapeHtml } from "../../util/escape";
 import { deleteFile } from "../../editor/deleteFile";
 import { showMessage } from "../../dialog/message";
-import { 已读目录 } from "../../mux/settings";
+import { get } from "../../mux/settings";
 import { 获取当前ISO周数, 获取文件ID } from "../../mux/utils";
 
 const bgs = [
-    "background:radial-gradient(black 3px, transparent 4px),radial-gradient(black 3px, transparent 4px),linear-gradient(#fff 4px, transparent 0),linear-gradient(45deg, transparent 74px, transparent 75px, #a4a4a4 75px, #a4a4a4 76px, transparent 77px, transparent 109px),linear-gradient(-45deg, transparent 75px, transparent 76px, #a4a4a4 76px, #a4a4a4 77px, transparent 78px, transparent 109px),#fff;background-size: 109px 109px, 109px 109px,100% 6px, 109px 109px, 109px 109px;background-position: 54px 55px, 0px 0px, 0px 0px, 0px 0px, 0px 0px;",
+    "background:radial-gradient(black 3px, transparent 4px),radial-gradient(black 3px, transparent 4px),linear-gradient(#fff 4px, transparent 0),linear-gradient(45deg, transparent 74px, transparent 75px, #a4a4a4 75px, #a4a4a4 76px, transparent 77px, transparent 109px),linear-gradient(-45deg, transparent 75px, transparent 76px, #a4a4a4 76px, #a4a4a4 77px, transparent 78px, transparent 109px),#fff;background-size: 109px 109px, 109px 109px,100% 6px, 109px 109px, 109px 109px;",
     "background: linear-gradient(45deg, #dca 12%, transparent 0, transparent 88%, #dca 0),linear-gradient(135deg, transparent 37%, #a85 0, #a85 63%, transparent 0),linear-gradient(45deg, transparent 37%, #dca 0, #dca 63%, transparent 0) #753;background-size: 25px 25px;",
     "background: linear-gradient(315deg, transparent 75%, #d45d55 0)-10px 0, linear-gradient(45deg, transparent 75%, #d45d55 0)-10px 0, linear-gradient(135deg, #a7332b 50%, transparent 0) 0 0, linear-gradient(45deg, #6a201b 50%, #561a16 0) 0 0 #561a16;background-size: 20px 20px;",
     "background: linear-gradient(#ffffff 50%, rgba(255,255,255,0) 0) 0 0, radial-gradient(circle closest-side, #FFFFFF 53%, rgba(255,255,255,0) 0) 0 0, radial-gradient(circle closest-side, #FFFFFF 50%, rgba(255,255,255,0) 0) 55px 0 #48B;background-size: 110px 200px;background-repeat: repeat-x;",
@@ -395,23 +395,10 @@ export class Background {
                     event.stopPropagation();
                     break;
                 } else if (type === "moveDocToRead") {
-                    // 临时限制，移动到已读的话，需要检查文章是否满足条件：
-                    // 1. 不能包含出链 data-type="block-ref"，因为移动到已读之后就无法检索
-                    // const refElements = protyle.contentElement.querySelectorAll("[data-type='block-ref']");
-                    // if (refElements.length > 0) {
-                    //     showMessage("文章包含出链，无法移动到已读", 5000);
-                    //     // 把第一个出链移动到屏幕中央
-                    //     const refElement = refElements[0];
-                    //     const rect = refElement.getBoundingClientRect();
-                    //     window.scrollTo({
-                    //         top: rect.top,
-                    //         behavior: "smooth"
-                    //     });
-                    //     return;
-                    // }
                     // https://x.transmux.top/j/20250218184855-2prdh1u
                     // 1. 获取目标id
                     const 当前周数 = 获取当前ISO周数();
+                    const 已读目录 = get<string>("已读目录");
                     获取文件ID(已读目录, `/Week ${当前周数}`).then((目标ID) => {
                         // 2. 执行移动
                         fetchPost("/api/filetree/moveDocsByID", {

@@ -10,7 +10,6 @@ import { focusBlock } from "../../util/selection";
 import { setPosition } from "../../../util/setPosition";
 import * as dayjs from "dayjs";
 import { 自定义获取av主键的所有值 } from "../../../mux/utils";
-import { 标签之树avID } from "../../../mux/settings";
 
 const genSearchList = (element: Element, keyword: string, avId?: string, excludes = true, cb?: () => void) => {
     fetchPost("/api/av/searchAttributeView", {

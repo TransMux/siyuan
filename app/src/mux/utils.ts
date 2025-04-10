@@ -2,7 +2,7 @@ import { showMessage } from "../dialog/message";
 import { hintMoveBlock } from "../protyle/hint/extend";
 import { transaction } from "../protyle/wysiwyg/transaction";
 import { fetchPost, fetchSyncPost } from "../util/fetch";
-import { 标签之树avID } from "./settings";
+import { get } from "./settings";
 
 export async function getBlockInfoByIDSQL(block_id: string) {
     const response = await fetchSyncPost("/api/query/sql", {
@@ -13,12 +13,13 @@ export async function getBlockInfoByIDSQL(block_id: string) {
 
 export async function 自定义获取av主键的所有值(data: any, callback: any) {
     // https://x.transmux.top/j/20250218023611-lr6dt1n
-    if (data.id === 标签之树avID) {
+    const 标签之树ID = get<string>("标签之树avID");
+    if (data.id === 标签之树ID) {
         data["pageSize"] = 10000;
     }
 
     const cb = (response: any) => {
-        if (data.id === 标签之树avID) {
+        if (data.id === 标签之树ID) {
             let filteredValues: any[] = [];
             // https://x.transmux.top/j/20250312114757-uvd6k0j
             if (!response.data.rows.values) {

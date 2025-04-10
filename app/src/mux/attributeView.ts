@@ -1,9 +1,30 @@
 import { fetchPost, fetchSyncPost } from "../util/fetch";
-import { 关系笔记avID, 关系笔记目录, 外部输入avID, 外部输入目录, 标签之树avID, 标签之树目录, 知识单元avID, 知识单元目录 } from "./settings";
+import { get } from "./settings";
 import { getBlockInfoByIDSQL } from "./utils";
 
 export async function afterAddedFileToDatabase(file_ids: Array<string>, avID: string) {
     console.log("添加文档到数据库callback: ", file_ids, avID);
+
+    // Get all the IDs and directories at once to avoid multiple async calls
+    const [
+        知识单元avID,
+        知识单元目录,
+        关系笔记avID,
+        关系笔记目录,
+        标签之树avID,
+        标签之树目录,
+        外部输入avID,
+        外部输入目录
+    ] = await Promise.all([
+        get<string>("知识单元avID"),
+        get<string>("知识单元目录"),
+        get<string>("关系笔记avID"),
+        get<string>("关系笔记目录"),
+        get<string>("标签之树avID"),
+        get<string>("标签之树目录"),
+        get<string>("外部输入avID"),
+        get<string>("外部输入目录")
+    ]);
 
     // 先检测是否已经在这个目录下了
     const filteredFileIDs = [];

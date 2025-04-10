@@ -1,7 +1,7 @@
 import { App } from "..";
 import { showMessage } from "../dialog/message";
 import { openFileById } from "../editor/util";
-import { 未读笔记本 } from "../mux/settings";
+import { get } from "../mux/settings";
 import { 获取当前ISO周数 } from "../mux/utils";
 import { fetchPost, fetchSyncPost } from "./fetch";
 
@@ -81,7 +81,7 @@ export function openUnreadWeekArticle(app: App) {
     const 当前周数 = 获取当前ISO周数();
     // const stmt = `SELECT * FROM blocks WHERE box = '${未读笔记本}' AND hpath like '/Week ${当前周数}%' limit 5`;
     fetchSyncPost("/api/filetree/listDocsByPath", {
-        notebook: 未读笔记本,
+        notebook: get<string>("未读笔记本"),
         // TODO: 获取当前周数对应的文件id，难点：不在索引中，所以无法从数据库中sql获取
         path: `/20250331203117-2qmbks6.sy`,
     }).then((response) => {
