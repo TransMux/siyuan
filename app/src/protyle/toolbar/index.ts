@@ -247,12 +247,21 @@ export class Toolbar {
         }
         const rangeTypes = this.getCurrentType(this.range);
 
-        // https://github.com/siyuan-note/siyuan/issues/6501
-        // https://github.com/siyuan-note/siyuan/issues/12877
-        if (rangeTypes.length === 1 &&
-            ["block-ref", "virtual-block-ref", "file-annotation-ref", "a", "inline-memo", "inline-math", "tag"].includes(rangeTypes[0]) && type === "clear") {
-            return;
+        if (rangeTypes.length === 1) {
+            // https://github.com/siyuan-note/siyuan/issues/6501
+            // https://github.com/siyuan-note/siyuan/issues/12877
+            if (["block-ref", "virtual-block-ref", "file-annotation-ref", "a", "inline-memo", "inline-math", "tag"].includes(rangeTypes[0]) && type === "clear") {
+                return;
+            }
+            // https://github.com/siyuan-note/siyuan/issues/14534
+            if (rangeTypes[0] === "text" && type === "text" && textObj && this.range.startContainer.nodeType === 3 && this.range.startContainer.isSameNode(this.range.endContainer)) {
+                const selectParentElement = this.range.startContainer.parentElement;
+                if (selectParentElement && hasSameTextStyle(null, selectParentElement, textObj)) {
+                    return;
+                }
+            }
         }
+
         const selectText = this.range.toString();
         fixTableRange(this.range);
         let previousElement: HTMLElement;
@@ -487,10 +496,33 @@ export class Toolbar {
                             inlineElement.setAttribute("data-type", type);
                             inlineElement.textContent = item.textContent;
                             setFontStyle(inlineElement, textObj);
-                            if (type === "text" && !inlineElement.getAttribute("style")) {
-                                newNodes.push(item);
+                            // 合并相同元素 https://github.com/siyuan-note/siyuan/issues/14290
+                            const previousIsSame = index === 0 && previousElement && previousElement.nodeType !== 3 &&
+                               type === previousElement.getAttribute("data-type") &&
+                                hasSameTextStyle(inlineElement, previousElement, textObj)
+                            const nextIsSame = index === contents.childNodes.length - 1 && nextElement && nextElement.nodeType !== 3 &&
+                               type === nextElement.getAttribute("data-type") &&
+                                hasSameTextStyle(inlineElement, nextElement, textObj)
+                            if (previousIsSame) {
+                                if (previousIsSame) {
+                                    previousIndex = previousElement.textContent.length;
+                                    previousElement.innerHTML = previousElement.innerHTML + inlineElement.innerHTML;
+                                    if (nextIsSame) {
+                                        nextIndex = previousElement.textContent.length;
+                                        previousElement.innerHTML = previousElement.innerHTML + nextElement.innerHTML;
+                                        nextElement.remove();
+                                        nextElement = previousElement;
+                                    }
+                                }
+                            } else if (nextIsSame) {
+                                nextIndex = inlineElement.textContent.length;
+                                nextElement.innerHTML = inlineElement.innerHTML + nextElement.innerHTML;
                             } else {
-                                newNodes.push(inlineElement);
+                                if (type === "text" && !inlineElement.getAttribute("style")) {
+                                    newNodes.push(item);
+                                } else {
+                                    newNodes.push(inlineElement);
+                                }
                             }
                         } else {
                             newNodes.push(item);
@@ -586,14 +618,24 @@ export class Toolbar {
                                 item.setAttribute("data-subtype", "s");
                             }
                         }
-                        if (index === 0 && previousElement && previousElement.nodeType !== 3 &&
+                        const previousIsSame = index === 0 && previousElement && previousElement.nodeType !== 3 &&
                             isArrayEqual(types, (previousElement.getAttribute("data-type") || "").split(" ")) &&
-                            hasSameTextStyle(item, previousElement, textObj)) {
-                            previousIndex = previousElement.textContent.length;
-                            previousElement.innerHTML = previousElement.innerHTML + item.innerHTML;
-                        } else if (index === contents.childNodes.length - 1 && nextElement && nextElement.nodeType !== 3 &&
+                            hasSameTextStyle(item, previousElement, textObj)
+                        const nextIsSame = index === contents.childNodes.length - 1 && nextElement && nextElement.nodeType !== 3 &&
                             isArrayEqual(types, (nextElement.getAttribute("data-type") || "").split(" ")) &&
-                            hasSameTextStyle(item, nextElement, textObj)) {
+                            hasSameTextStyle(item, nextElement, textObj)
+                        if (previousIsSame) {
+                            if (previousIsSame) {
+                                previousIndex = previousElement.textContent.length;
+                                previousElement.innerHTML = previousElement.innerHTML + item.innerHTML;
+                                if (nextIsSame) {
+                                    nextIndex = previousElement.textContent.length;
+                                    previousElement.innerHTML = previousElement.innerHTML + nextElement.innerHTML;
+                                    nextElement.remove();
+                                    nextElement = previousElement;
+                                }
+                            }
+                        } else if (nextIsSame) {
                             nextIndex = item.textContent.length;
                             nextElement.innerHTML = item.innerHTML + nextElement.innerHTML;
                         } else if (item.tagName !== "BR" && item.tagName !== "IMG") {
@@ -773,7 +815,7 @@ export class Toolbar {
         if (returnNewNodesOnly){
             return newNodes;
         }
-        if (previousIndex) {
+        if (typeof previousIndex === "number") {
             this.range.setStart(previousElement.firstChild, previousIndex);
         } else if (newNodes.length > 0) {
             if (newNodes[0].nodeType !== 3 && (newNodes[0] as HTMLElement).getAttribute("data-type") === "inline-math") {
@@ -797,7 +839,7 @@ export class Toolbar {
             // aaa**bbb** 选中 aaa 加粗
             this.range.setStart(nextElement.firstChild, 0);
         }
-        if (nextIndex) {
+        if (typeof nextIndex === "number") {
             this.range.setEnd(nextElement.lastChild, nextIndex);
         } else if (newNodes.length > 0) {
             const lastNewNode = newNodes[newNodes.length - 1];
