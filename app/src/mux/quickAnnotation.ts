@@ -9,6 +9,8 @@ import { openByMobile } from "../protyle/util/compatibility";
 import { hasClosestByClassName } from "../protyle/util/hasClosest";
 import { fetchPost } from "../util/fetch";
 import { Protyle } from "../protyle";
+import { isMobile } from "../util/functions";
+import { setPosition } from "../util/setPosition";
 
 /* 
 mux-annotation
@@ -41,6 +43,7 @@ export const parseInlineMemo = (text: string): AnnotationOptions | null => {
 
 export async function renderCustomAnnotationPanel(protyle: IProtyle, renderElement: HTMLElement, toolbar: Toolbar, annotationOptions: AnnotationOptions) {
     const { id } = annotationOptions;
+    const nodeRect = renderElement.getBoundingClientRect();
     // 如果 id 为空
     // 1. 在日记文档下创建一个
     if (id === "") {
@@ -149,8 +152,8 @@ export async function renderCustomAnnotationPanel(protyle: IProtyle, renderEleme
     });
 
     // 挂载protyle
-    const protyleElement = toolbar.subElement.querySelector("#protyle");
-    new Protyle(protyle.app, protyleElement as HTMLElement, {
+    const protyleElement = toolbar.subElement.querySelector("#protyle") as HTMLElement;
+    new Protyle(protyle.app, protyleElement, {
         action: [],
         after: () => {
             console.log("after");
@@ -158,6 +161,25 @@ export async function renderCustomAnnotationPanel(protyle: IProtyle, renderEleme
         blockId: id,
         render: {
             breadcrumb: false
-        }
+        },
     });
+    const autoHeight = () => {
+        protyleElement.style.height = protyleElement.scrollHeight + "px";
+        if (toolbar.subElement.firstElementChild.getAttribute("data-drag") === "true") {
+            if (protyleElement.getBoundingClientRect().bottom > window.innerHeight) {
+                toolbar.subElement.style.top = window.innerHeight - toolbar.subElement.clientHeight + "px";
+            }
+            return;
+        }
+        const bottom = nodeRect.bottom === nodeRect.top ? nodeRect.bottom + 26 : nodeRect.bottom;
+        if (toolbar.subElement.clientHeight <= window.innerHeight - bottom || toolbar.subElement.clientHeight <= nodeRect.top) {
+            setPosition(toolbar.subElement, nodeRect.left, bottom, nodeRect.height || 26);
+        } else {
+            setPosition(toolbar.subElement, nodeRect.right, bottom);
+        }
+    };
+    toolbar.subElement.style.zIndex = (++window.siyuan.zIndex).toString();
+    toolbar.subElement.classList.remove("fn__none");
+    toolbar.element.classList.add("fn__none");
+    autoHeight();
 }
