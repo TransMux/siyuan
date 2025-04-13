@@ -1,6 +1,6 @@
-import {Divider} from "./Divider";
-import {Font, hasSameTextStyle, setFontStyle} from "./Font";
-import {ToolbarItem} from "./ToolbarItem";
+import { Divider } from "./Divider";
+import { Font, hasSameTextStyle, setFontStyle } from "./Font";
+import { ToolbarItem } from "./ToolbarItem";
 import {
     fixTableRange,
     focusBlock,
@@ -12,40 +12,41 @@ import {
     setFirstNodeRange,
     setLastNodeRange
 } from "../util/selection";
-import {hasClosestBlock, hasClosestByAttribute, hasClosestByClassName} from "../util/hasClosest";
-import {Link} from "./Link";
-import {setPosition} from "../../util/setPosition";
-import {updateTransaction} from "../wysiwyg/transaction";
-import {Constants} from "../../constants";
-import {copyPlainText, openByMobile, readClipboard, setStorageVal} from "../util/compatibility";
-import {upDownHint} from "../../util/upDownHint";
-import {highlightRender} from "../render/highlightRender";
-import {getContenteditableElement, hasNextSibling, hasPreviousSibling} from "../wysiwyg/getBlock";
-import {processRender} from "../util/processCode";
-import {BlockRef} from "./BlockRef";
-import {hintRenderTemplate, hintRenderWidget} from "../hint/extend";
-import {blockRender} from "../render/blockRender";
+import { hasClosestBlock, hasClosestByAttribute, hasClosestByClassName } from "../util/hasClosest";
+import { Link } from "./Link";
+import { setPosition } from "../../util/setPosition";
+import { updateTransaction } from "../wysiwyg/transaction";
+import { Constants } from "../../constants";
+import { copyPlainText, openByMobile, readClipboard, setStorageVal } from "../util/compatibility";
+import { upDownHint } from "../../util/upDownHint";
+import { highlightRender } from "../render/highlightRender";
+import { getContenteditableElement, hasNextSibling, hasPreviousSibling } from "../wysiwyg/getBlock";
+import { processRender } from "../util/processCode";
+import { BlockRef } from "./BlockRef";
+import { hintRenderTemplate, hintRenderWidget } from "../hint/extend";
+import { blockRender } from "../render/blockRender";
 /// #if !BROWSER
-import {openBy} from "../../editor/util";
+import { openBy } from "../../editor/util";
 /// #endif
-import {fetchPost} from "../../util/fetch";
-import {isArrayEqual, isMobile} from "../../util/functions";
+import { fetchPost } from "../../util/fetch";
+import { isArrayEqual, isMobile } from "../../util/functions";
 import * as dayjs from "dayjs";
-import {insertEmptyBlock} from "../../block/util";
-import {matchHotKey} from "../util/hotKey";
-import {hideElements} from "../ui/hideElements";
-import {electronUndo} from "../undo";
-import {previewTemplate, toolbarKeyToMenu} from "./util";
-import {hideMessage, showMessage} from "../../dialog/message";
-import {InlineMath} from "./InlineMath";
-import {InlineMemo} from "./InlineMemo";
-import {mathRender} from "../render/mathRender";
-import {linkMenu} from "../../menus/protyle";
-import {addScript} from "../util/addScript";
-import {confirmDialog} from "../../dialog/confirmDialog";
-import {paste, pasteAsPlainText, pasteEscaped} from "../util/paste";
-import {escapeHtml} from "../../util/escape";
-import {resizeSide} from "../../history/resizeSide";
+import { insertEmptyBlock } from "../../block/util";
+import { matchHotKey } from "../util/hotKey";
+import { hideElements } from "../ui/hideElements";
+import { electronUndo } from "../undo";
+import { previewTemplate, toolbarKeyToMenu } from "./util";
+import { hideMessage, showMessage } from "../../dialog/message";
+import { InlineMath } from "./InlineMath";
+import { InlineMemo } from "./InlineMemo";
+import { mathRender } from "../render/mathRender";
+import { linkMenu } from "../../menus/protyle";
+import { addScript } from "../util/addScript";
+import { confirmDialog } from "../../dialog/confirmDialog";
+import { paste, pasteAsPlainText, pasteEscaped } from "../util/paste";
+import { escapeHtml } from "../../util/escape";
+import { resizeSide } from "../../history/resizeSide";
+import { checkInlineMemo } from "../../mux/quickAnnotation";
 
 export class Toolbar {
     public element: HTMLElement;
@@ -498,10 +499,10 @@ export class Toolbar {
                             setFontStyle(inlineElement, textObj);
                             // 合并相同元素 https://github.com/siyuan-note/siyuan/issues/14290
                             const previousIsSame = index === 0 && previousElement && previousElement.nodeType !== 3 &&
-                               type === previousElement.getAttribute("data-type") &&
+                                type === previousElement.getAttribute("data-type") &&
                                 hasSameTextStyle(inlineElement, previousElement, textObj)
                             const nextIsSame = index === contents.childNodes.length - 1 && nextElement && nextElement.nodeType !== 3 &&
-                               type === nextElement.getAttribute("data-type") &&
+                                type === nextElement.getAttribute("data-type") &&
                                 hasSameTextStyle(inlineElement, nextElement, textObj)
                             if (previousIsSame) {
                                 if (previousIsSame) {
@@ -734,8 +735,8 @@ export class Toolbar {
                     const currentNextSibling = hasNextSibling(currentNewNode);
                     if (!currentNextSibling ||
                         (currentNextSibling && (
-                                currentNextSibling.nodeType !== 3 ||
-                                (currentNextSibling.nodeType === 3 && !currentNextSibling.textContent.startsWith(Constants.ZWSP)))
+                            currentNextSibling.nodeType !== 3 ||
+                            (currentNextSibling.nodeType === 3 && !currentNextSibling.textContent.startsWith(Constants.ZWSP)))
                         )
                     ) {
                         currentNewNode.after(document.createTextNode(Constants.ZWSP));
@@ -812,7 +813,7 @@ export class Toolbar {
         if (nextElement) {
             this.mergeNode(nextElement.childNodes);
         }
-        if (returnNewNodesOnly){
+        if (returnNewNodesOnly) {
             return newNodes;
         }
         if (typeof previousIndex === "number") {
@@ -926,6 +927,14 @@ export class Toolbar {
         let title = "HTML";
         let placeholder = "";
         const isInlineMemo = types.includes("inline-memo");
+        // https://x.transmux.top/j/20250413052042-xt5g6eg
+        if (isInlineMemo) {
+            // 检查内容是否符合批注格式
+            if (checkInlineMemo(renderElement.getAttribute("data-inline-memo-content") || "")) {
+                console.log("内容符合批注格式", renderElement.getAttribute("data-inline-memo-content") || "");
+                return;
+            }
+        }
         switch (renderElement.getAttribute("data-subtype")) {
             case "abc":
                 title = window.siyuan.languages.staff;
@@ -1500,7 +1509,7 @@ export class Toolbar {
             /// #endif
             if (iconElement && iconElement.getAttribute("data-type") === "remove") {
                 confirmDialog(window.siyuan.languages.remove, window.siyuan.languages.confirmDelete + "?", () => {
-                    fetchPost("/api/search/removeTemplate", {path: iconElement.parentElement.getAttribute("data-value")}, () => {
+                    fetchPost("/api/search/removeTemplate", { path: iconElement.parentElement.getAttribute("data-value") }, () => {
                         if (iconElement.parentElement.parentElement.childElementCount === 1) {
                             iconElement.parentElement.parentElement.innerHTML = `<li class="b3-list--empty">${window.siyuan.languages.emptyContent}</li>`;
                             previewTemplate("", previewElement, protyle.block.parentID);
@@ -1524,13 +1533,13 @@ export class Toolbar {
             }
             const previousElement = hasClosestByAttribute(target, "data-type", "previous");
             if (previousElement) {
-                inputElement.dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowUp"}));
+                inputElement.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowUp" }));
                 event.stopPropagation();
                 return;
             }
             const nextElement = hasClosestByAttribute(target, "data-type", "next");
             if (nextElement) {
-                inputElement.dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowDown"}));
+                inputElement.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown" }));
                 event.stopPropagation();
                 return;
             }
@@ -1701,7 +1710,7 @@ ${item.name}
                 } else {
                     try {
                         const text = await readClipboard();
-                        paste(protyle, Object.assign(text, {target: nodeElement as HTMLElement}));
+                        paste(protyle, Object.assign(text, { target: nodeElement as HTMLElement }));
                     } catch (e) {
                         console.log(e);
                     }
