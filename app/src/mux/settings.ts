@@ -10,6 +10,14 @@ export const SETTING_ITEMS: { [key: string]: Setting } = {
         section: "function",
         display: "toggle"
     },
+    quickAnnotation: {
+        label: "快速批注",
+        description: "将备注功能替换为批注，在日记下创建批注内容",
+        type: "boolean",
+        value: false,
+        section: "function",
+        display: "toggle"
+    },
     知识单元avID: {
         label: "知识单元avID",
         type: "string",

@@ -46,7 +46,8 @@ import { confirmDialog } from "../../dialog/confirmDialog";
 import { paste, pasteAsPlainText, pasteEscaped } from "../util/paste";
 import { escapeHtml } from "../../util/escape";
 import { resizeSide } from "../../history/resizeSide";
-import { checkInlineMemo } from "../../mux/quickAnnotation";
+import { parseInlineMemo, renderCustomAnnotationPanel } from "../../mux/quickAnnotation";
+import { get } from "../../mux/settings";
 
 export class Toolbar {
     public element: HTMLElement;
@@ -928,10 +929,12 @@ export class Toolbar {
         let placeholder = "";
         const isInlineMemo = types.includes("inline-memo");
         // https://x.transmux.top/j/20250413052042-xt5g6eg
-        if (isInlineMemo) {
+        if (isInlineMemo && get("quickAnnotation")) {
             // 检查内容是否符合批注格式
-            if (checkInlineMemo(renderElement.getAttribute("data-inline-memo-content") || "")) {
-                console.log("内容符合批注格式", renderElement.getAttribute("data-inline-memo-content") || "");
+            const annotationOptions = parseInlineMemo(renderElement.getAttribute("data-inline-memo-content") || "");
+            if (annotationOptions) {
+                console.log("内容符合批注格式", renderElement.getAttribute("data-inline-memo-content") || "", annotationOptions);
+                renderCustomAnnotationPanel(protyle, renderElement as HTMLElement, this, annotationOptions);
                 return;
             }
         }
