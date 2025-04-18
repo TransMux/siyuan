@@ -1729,7 +1729,7 @@ func processSyncMergeResult(exit, byHand bool, mergeResult *dejavu.MergeResult, 
 	upsertRootIDs, removeRootIDs := incReindex(upserts, removes)
 	needReloadFiletree = !needReloadUI && (needReloadFiletree || 0 < len(upsertRootIDs) || 0 < len(removeRootIDs))
 	if needReloadFiletree {
-		util.PushReloadFiletree()
+		ReloadFiletree()
 	}
 
 	go func() {
