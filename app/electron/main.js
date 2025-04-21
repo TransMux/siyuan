@@ -876,7 +876,7 @@ app.whenReady().then(() => {
         const currentWindow = getWindowByContentId(webContentsId);
         switch (cmd) {
             case "openDevTools":
-                event.sender.openDevTools({mode: "right"});
+                event.sender.openDevTools({mode: "detach"});
                 break;
             case "unregisterGlobalShortcut":
                 if (data.accelerator) {
@@ -1025,6 +1025,7 @@ app.whenReady().then(() => {
         printWin.webContents.userAgent = "SiYuan/" + appVer + " https://b3log.org/siyuan Electron " + printWin.webContents.userAgent;
         printWin.loadURL(data);
         windowNavigate(printWin);
+        printWin.webContents.openDevTools({mode: "detach"});
     });
     ipcMain.on("siyuan-quit", (event, port) => {
         exitApp(port);
