@@ -876,7 +876,7 @@ app.whenReady().then(() => {
         const currentWindow = getWindowByContentId(webContentsId);
         switch (cmd) {
             case "openDevTools":
-                event.sender.openDevTools({mode: "detach"});
+                event.sender.openDevTools({mode: "right"});
                 break;
             case "unregisterGlobalShortcut":
                 if (data.accelerator) {
