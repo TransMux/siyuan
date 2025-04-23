@@ -53,7 +53,7 @@ export function modifyPasteContent(textContent: string, textHTML: string, siyuan
     textContent = textContent.replace(/\\\((.*?)\\\)/g, function (match, p1) {
         return `$${p1.trim()}$`;
     });
-    debugger
+
     // 处理 \[ ... \] 样式的公式
     // 由于 'gs' 标志在 'es2018' 或更高版本中才可用，因此我们将其拆分为两个步骤
     textContent = textContent.replace(/\\\[(\s*.*?\s*)\\\]/g, function (match, p1) {
