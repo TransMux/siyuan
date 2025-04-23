@@ -1230,6 +1230,16 @@ export const dropEvent = (protyle: IProtyle, editorElement: HTMLElement) => {
             // https://x.transmux.top/j/20250423230809-t2r3ij6
             // 识别bookmark+的拖拽
             // {"group":"20250423230720-ktkoaj4","id":"20250423001754-c7grfu2"}
+            if (event.y > protyle.wysiwyg.element.lastElementChild.getBoundingClientRect().bottom) {
+                insertEmptyBlock(protyle, "afterend", protyle.wysiwyg.element.lastElementChild.getAttribute("data-node-id"));
+            } else {
+                const range = getRangeByPoint(event.clientX, event.clientY);
+                if (hasClosestByAttribute(range.startContainer, "data-type", "NodeBlockQueryEmbed")) {
+                    return;
+                } else {
+                    focusByRange(range);
+                }
+            }
             const id = JSON.parse(event.dataTransfer.getData("bookmark/item")).id;
             let html = "";
             const response = await fetchSyncPost("/api/block/getRefText", {id});
