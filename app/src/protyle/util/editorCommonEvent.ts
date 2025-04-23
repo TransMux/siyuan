@@ -33,6 +33,7 @@ import {webUtils} from "electron";
 /// #endif
 import {addDragFill} from "../render/av/cell";
 import {processClonePHElement} from "../render/util";
+import { get } from "../../mux/settings";
 
 const moveToNew = (protyle: IProtyle, sourceElements: Element[], targetElement: Element, newSourceElement: Element,
                    isSameDoc: boolean, isBottom: boolean, isCopy: boolean) => {
@@ -1225,6 +1226,15 @@ export const dropEvent = (protyle: IProtyle, editorElement: HTMLElement) => {
                 }
                 targetElement.classList.remove("dragover__bottom", "dragover__top", "dragover__left", "dragover__right");
             }
+        } else if(get<Boolean>("protyle-support-bookmark-plus") && event.dataTransfer.getData("bookmark/item").length > 1) {
+            // https://x.transmux.top/j/20250423230809-t2r3ij6
+            // 识别bookmark+的拖拽
+            // {"group":"20250423230720-ktkoaj4","id":"20250423001754-c7grfu2"}
+            const id = JSON.parse(event.dataTransfer.getData("bookmark/item")).id;
+            let html = "";
+            const response = await fetchSyncPost("/api/block/getRefText", {id});
+            html += `((${id} '${response.data}'))`;
+            insertHTML(protyle.lute.Md2BlockDOM(html), protyle);
         } else if (!window.siyuan.dragElement && (event.dataTransfer.types[0] === "Files" || event.dataTransfer.types.includes("text/html"))) {
             // 外部文件拖入编辑器中或者编辑器内选中文字拖拽
             // https://github.com/siyuan-note/siyuan/issues/9544
