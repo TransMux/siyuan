@@ -32,6 +32,9 @@ import { ipcRenderer } from "electron";
 import { get } from "../../../mux/settings";
 import { toggle } from "../../../mux/hide-checked";
 /// #endif
+import { transaction } from "../../../protyle/wysiwyg/transaction";
+import { hideElements } from "../../../protyle/ui/hideElements";
+import * as dayjs from "dayjs";
 
 // https://x.transmux.top/j/20241103163805-hj20chp
 const commandKeyToLabel: { [key: string]: string } = {
@@ -69,6 +72,7 @@ const commandKeyToLabel: { [key: string]: string } = {
 
 export const commandPanel = (app: App) => {
     const range = getSelection().rangeCount > 0 ? getSelection().getRangeAt(0) : undefined;
+    const focusedBlocks = document.querySelectorAll(".protyle-wysiwyg--select");
     const dialog = new Dialog({
         width: isMobile() ? "92vw" : "80vw",
         height: isMobile() ? "80vh" : "70vh",
@@ -147,6 +151,13 @@ export const commandPanel = (app: App) => {
     commandHtml += `<li class="b3-list-item" data-command="hideChecked">
     <span class="b3-list-item__text">隐藏已完成的任务 (hide checked)</span>
 </li>`;
+
+    // https://x.transmux.top/j/20250424021027-5iwd0ww
+    if (range) {
+        commandHtml += `<li class="b3-list-item" data-command="numberLinkToSuperscript">
+        <span class="b3-list-item__text">选中范围：数字链接转上标 (selected range: number link to superscript)</span>
+    </li>`;
+    }
 
     // https://x.transmux.top/j/20241101223108-o9zjabn
     let recentDocsHtml = "";
@@ -233,7 +244,7 @@ ${unicode2Emoji(item.icon || window.siyuan.storage[Constants.LOCAL_IMAGES].file,
                     // https://x.transmux.top/j/20250207000640-w6qpyf9
                     toggle()
                 } else {
-                    execByCommand({ command, app, previousRange: range });
+                    execByCommand({ command, app, previousRange: range, focusedBlocks: Array.from(focusedBlocks) });
                 }
                 dialog.destroy();
                 event.preventDefault();
@@ -270,12 +281,12 @@ ${unicode2Emoji(item.icon || window.siyuan.storage[Constants.LOCAL_IMAGES].file,
                         // https://x.transmux.top/j/20250207000640-w6qpyf9
                         toggle()
                     } else {
-                        execByCommand({ command, app, previousRange: range });
+                        execByCommand({ command, app, previousRange: range, focusedBlocks: Array.from(focusedBlocks) });
                     }
                 } else {
                     // siyuan://blocks/20241025231614-ui1r5ui
                     currentElement.dispatchEvent(new CustomEvent("click", {
-                        detail: { command, app, previousRange: range }
+                        detail: { command, app, previousRange: range, focusedBlocks: Array.from(focusedBlocks) }
                     }));
                 }
             }
@@ -336,7 +347,8 @@ export const execByCommand = async (options: {
     app?: App,
     previousRange?: Range,
     protyle?: IProtyle,
-    fileLiElements?: Element[]
+    fileLiElements?: Element[],
+    focusedBlocks?: Element[]
 }) => {
     if (globalCommand(options.command, options.app)) {
         return;
@@ -582,6 +594,60 @@ export const execByCommand = async (options: {
                 addEditorToDatabase(protyle, range);
             } else {
                 addFilesToDatabase(fileLiElements);
+            }
+            break;
+        case "numberLinkToSuperscript":
+            if (!isFileFocus && protyle) {
+                // 1. 获取所有选中的块
+                const selectedBlocks = options.focusedBlocks;
+                if (selectedBlocks.length === 0) {
+                    return;
+                }
+                
+                const operations: IOperation[] = [];
+                
+                // 2. 对每个选中的块进行处理
+                selectedBlocks.forEach(element => {
+                    const blockId = element.getAttribute("data-node-id");
+                    if (!blockId) return;
+                    
+                    // 保存原始HTML用于撤销
+                    // const oldHTML = element.outerHTML;
+                    let hasChanged = false;
+                    
+                    // 3. 寻找所有链接
+                    const links = element.querySelectorAll('span[data-type="a"]');
+                    links.forEach(link => {
+                        const dataType = link.getAttribute("data-type") || "";
+                        
+                        // 4. 检查条件：data-type不包含sup，是a类型，且只有数字
+                        if (!dataType.includes("sup") && 
+                            dataType === "a" && 
+                            /^\d+$/.test(link.textContent.trim())) {
+                            
+                            // 更新data-type，添加sup
+                            link.setAttribute("data-type", "a sup");
+                            hasChanged = true;
+                        }
+                    });
+                    
+                    // 5. 如果有更改，添加到操作列表
+                    if (hasChanged) {
+                        element.setAttribute("updated", dayjs().format("YYYYMMDDHHmmss"));
+                        operations.push({
+                            action: "update",
+                            id: blockId,
+                            data: element.outerHTML,
+                            parentID: element.parentElement?.getAttribute("data-node-id") || protyle.block.parentID
+                        });
+                    }
+                });
+                
+                // 如果有操作，执行事务
+                if (operations.length > 0) {
+                    transaction(protyle, operations, []);
+                    hideElements(["select"], protyle);
+                }
             }
             break;
         case "move":
