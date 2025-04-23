@@ -990,6 +990,29 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
             return;
         }
 
+        // 代码块语言选择 https://github.com/siyuan-note/siyuan/issues/14126
+        if (matchHotKey("⌥↩", event) && selectText === "") {
+            const selectElements = Array.from(protyle.wysiwyg.element.querySelectorAll(".protyle-wysiwyg--select"));
+            if (selectElements.length === 0 && nodeElement.classList.contains("code-block")) {
+                selectElements.push(nodeElement);
+            }
+            if (selectElements.length > 0) {
+                const otherElement = selectElements.find(item => {
+                    return !item.classList.contains("code-block");
+                });
+                if (!otherElement) {
+                    const languageElements: HTMLElement[] = [];
+                    selectElements.forEach(item => {
+                        languageElements.push(item.querySelector(".protyle-action__language"));
+                    });
+                    protyle.toolbar.showCodeLanguage(protyle, languageElements);
+                    event.stopPropagation();
+                    event.preventDefault();
+                    return;
+                }
+            }
+        }
+
         // 回车
         if (isNotCtrl(event) && event.key === "Enter") {
             if (event.altKey) {
@@ -1359,20 +1382,22 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
             return true;
         }
         if (matchHotKey(window.siyuan.config.keymap.editor.insert.code.custom, event) &&
-            !["NodeCodeBlock", "NodeHeading"].includes(nodeElement.getAttribute("data-type"))) {
-            const id = nodeElement.getAttribute("data-node-id");
-            const html = nodeElement.outerHTML;
+            !["NodeCodeBlock", "NodeHeading", "NodeTable"].includes(nodeElement.getAttribute("data-type"))) {
             const editElement = getContenteditableElement(nodeElement);
-            // 需要 EscapeHTMLStr https://github.com/siyuan-note/siyuan/issues/11451
-            editElement.innerHTML = "```" + window.siyuan.storage[Constants.LOCAL_CODELANG] + "\n" + Lute.EscapeHTMLStr(editElement.textContent) + "<wbr>\n```";
-            const newHTML = protyle.lute.SpinBlockDOM(nodeElement.outerHTML);
-            nodeElement.outerHTML = newHTML;
-            const newNodeElement = protyle.wysiwyg.element.querySelector(`[data-node-id="${id}"]`);
-            updateTransaction(protyle, id, newHTML, html);
-            highlightRender(newNodeElement);
-            event.preventDefault();
-            event.stopPropagation();
-            return true;
+            if (editElement) {
+                const id = nodeElement.getAttribute("data-node-id");
+                const html = nodeElement.outerHTML;
+                // 需要 EscapeHTMLStr https://github.com/siyuan-note/siyuan/issues/11451
+                editElement.innerHTML = "```" + window.siyuan.storage[Constants.LOCAL_CODELANG] + "\n" + Lute.EscapeHTMLStr(editElement.textContent) + "<wbr>\n```";
+                const newHTML = protyle.lute.SpinBlockDOM(nodeElement.outerHTML);
+                nodeElement.outerHTML = newHTML;
+                const newNodeElement = protyle.wysiwyg.element.querySelector(`[data-node-id="${id}"]`);
+                updateTransaction(protyle, id, newHTML, html);
+                highlightRender(newNodeElement);
+                event.preventDefault();
+                event.stopPropagation();
+                return true;
+            }
         }
 
         // toolbar action

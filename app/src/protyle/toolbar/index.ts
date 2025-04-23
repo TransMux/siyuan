@@ -15,7 +15,7 @@ import {
 import {hasClosestBlock, hasClosestByAttribute, hasClosestByClassName, hasClosestByTag} from "../util/hasClosest";
 import {Link} from "./Link";
 import {setPosition} from "../../util/setPosition";
-import {updateTransaction} from "../wysiwyg/transaction";
+import {transaction, updateTransaction} from "../wysiwyg/transaction";
 import {Constants} from "../../constants";
 import {copyPlainText, openByMobile, readClipboard, setStorageVal} from "../util/compatibility";
 import {upDownHint} from "../../util/upDownHint";
@@ -954,7 +954,7 @@ export class Toolbar {
         }
     }
 
-    public showRender(protyle: IProtyle, renderElement: HTMLElement, updateElements?: Element[], oldHTML?: string) {
+    public showRender(protyle: IProtyle, renderElement: Element, updateElements?: Element[], oldHTML?: string) {
         const nodeElement = hasClosestBlock(renderElement);
         if (!nodeElement) {
             return;
@@ -1124,9 +1124,9 @@ export class Toolbar {
             }
             setTimeout(() => {
                 addScript("/stage/protyle/js/html-to-image.min.js?v=1.11.13", "protyleHtml2image").then(() => {
-                    renderElement.style.display = "inline-block";
+                    (renderElement as HTMLHtmlElement).style.display = "inline-block";
                     window.htmlToImage.toBlob(renderElement).then(blob => {
-                        renderElement.style.display = "";
+                        (renderElement as HTMLHtmlElement).style.display = "";
                         const formData = new FormData();
                         formData.append("file", blob);
                         formData.append("type", "image/png");
@@ -1329,17 +1329,14 @@ export class Toolbar {
         });
     }
 
-    public showCodeLanguage(protyle: IProtyle, languageElement: HTMLElement) {
-        const nodeElement = hasClosestBlock(languageElement);
+    public showCodeLanguage(protyle: IProtyle, languageElements: HTMLElement[]) {
+        const nodeElement = hasClosestBlock(languageElements[0]);
         if (!nodeElement) {
             return;
         }
         hideElements(["hint"], protyle);
         window.siyuan.menus.menu.remove();
         this.range = getEditorRange(nodeElement);
-        const id = nodeElement.getAttribute("data-node-id");
-        let oldHtml = nodeElement.outerHTML;
-
         let html = `<div class="b3-list-item">${window.siyuan.languages.clear}</div>`;
         const hljsLanguages = Constants.ALIAS_CODE_LANGUAGES.concat(window.hljs?.listLanguages() ?? []).sort();
         hljsLanguages.forEach((item, index) => {
@@ -1362,7 +1359,7 @@ export class Toolbar {
             }
             upDownHint(listElement, event);
             if (event.key === "Enter") {
-                oldHtml = this.updateLanguage(languageElement, protyle, id, nodeElement, oldHtml, this.subElement.querySelector(".b3-list-item--focus").textContent);
+                this.updateLanguage(languageElements, protyle, this.subElement.querySelector(".b3-list-item--focus").textContent);
                 event.preventDefault();
                 event.stopPropagation();
                 return;
@@ -1418,13 +1415,13 @@ export class Toolbar {
             if (!listElement) {
                 return;
             }
-            oldHtml = this.updateLanguage(languageElement, protyle, id, nodeElement, oldHtml, listElement.textContent);
+            this.updateLanguage(languageElements, protyle, listElement.textContent);
         });
         this.subElement.style.zIndex = (++window.siyuan.zIndex).toString();
         this.subElement.classList.remove("fn__none");
         this.subElementCloseCB = undefined;
         /// #if !MOBILE
-        const nodeRect = languageElement.getBoundingClientRect();
+        const nodeRect = languageElements[0].getBoundingClientRect();
         setPosition(this.subElement, nodeRect.left, nodeRect.bottom, nodeRect.height);
         /// #else
         setPosition(this.subElement, 0, 0);
@@ -1849,28 +1846,46 @@ ${item.name}
         }
     }
 
-    private updateLanguage(languageElement: HTMLElement, protyle: IProtyle, id: string, nodeElement: HTMLElement, oldHtml: string, selectedLang: string) {
-        languageElement.textContent = selectedLang === window.siyuan.languages.clear ? "" : selectedLang;
-        if (!Constants.SIYUAN_RENDER_CODE_LANGUAGES.includes(languageElement.textContent)) {
-            window.siyuan.storage[Constants.LOCAL_CODELANG] = languageElement.textContent;
+    private updateLanguage(languageElement: HTMLElement[], protyle: IProtyle, selectedLang: string) {
+        const currentLang = selectedLang === window.siyuan.languages.clear ? "" : selectedLang;
+        if (!Constants.SIYUAN_RENDER_CODE_LANGUAGES.includes(currentLang)) {
+            window.siyuan.storage[Constants.LOCAL_CODELANG] = currentLang;
             setStorageVal(Constants.LOCAL_CODELANG, window.siyuan.storage[Constants.LOCAL_CODELANG]);
         }
-        const editElement = getContenteditableElement(nodeElement);
-        if (Constants.SIYUAN_RENDER_CODE_LANGUAGES.includes(languageElement.textContent)) {
-            nodeElement.dataset.content = editElement.textContent.trim();
-            nodeElement.dataset.subtype = languageElement.textContent;
-            nodeElement.className = "render-node";
-            nodeElement.innerHTML = `<div spin="1"></div><div class="protyle-attr" contenteditable="false">${Constants.ZWSP}</div>`;
-            processRender(nodeElement);
-        } else {
-            (editElement as HTMLElement).textContent = editElement.textContent;
-            editElement.parentElement.removeAttribute("data-render");
-            highlightRender(nodeElement);
-        }
-        nodeElement.setAttribute("updated", dayjs().format("YYYYMMDDHHmmss"));
-        updateTransaction(protyle, id, nodeElement.outerHTML, oldHtml);
+        const doOperations: IOperation[] = [];
+        const undoOperations: IOperation[] = [];
+        languageElement.forEach(item => {
+            const nodeElement = hasClosestBlock(item);
+            if (nodeElement) {
+                const id = nodeElement.getAttribute("data-node-id");
+                undoOperations.push({
+                    id,
+                    data: nodeElement.outerHTML,
+                    action: "update"
+                });
+                item.textContent = selectedLang === window.siyuan.languages.clear ? "" : selectedLang;
+                const editElement = getContenteditableElement(nodeElement);
+                if (Constants.SIYUAN_RENDER_CODE_LANGUAGES.includes(currentLang)) {
+                    nodeElement.dataset.content = editElement.textContent.trim();
+                    nodeElement.dataset.subtype = currentLang;
+                    nodeElement.className = "render-node";
+                    nodeElement.innerHTML = `<div spin="1"></div><div class="protyle-attr" contenteditable="false">${Constants.ZWSP}</div>`;
+                    processRender(nodeElement);
+                } else {
+                    (editElement as HTMLElement).textContent = editElement.textContent;
+                    editElement.parentElement.removeAttribute("data-render");
+                    highlightRender(nodeElement);
+                }
+                nodeElement.setAttribute("updated", dayjs().format("YYYYMMDDHHmmss"));
+                doOperations.push({
+                    id,
+                    data: nodeElement.outerHTML,
+                    action: "update"
+                });
+            }
+        });
+        transaction(protyle, doOperations, undoOperations);
         this.subElement.classList.add("fn__none");
         focusByRange(this.range);
-        return nodeElement.outerHTML;
     }
 }

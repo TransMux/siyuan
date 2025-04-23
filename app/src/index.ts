@@ -38,6 +38,7 @@ import {setLocalShorthandCount} from "./util/noRelyPCFunction";
 /// #endif
 import {getDockByType} from "./layout/tabUtil";
 import {Tag} from "./layout/dock/Tag";
+import {updateControlAlt} from "./protyle/util/hotKey";
 
 export class App {
     public plugins: import("./plugin").Plugin[] = [];
@@ -102,6 +103,7 @@ export class App {
                                 break;
                             case "setConf":
                                 window.siyuan.config = data.data;
+                                updateControlAlt();
                                 break;
                             case "progress":
                                 progressLoading(data);
@@ -183,6 +185,7 @@ export class App {
             addScriptSync(`${Constants.PROTYLE_CDN}/js/lute/lute.min.js?v=${Constants.SIYUAN_VERSION}`, "protyleLuteScript");
             addScript(`${Constants.PROTYLE_CDN}/js/protyle-html.js?v=${Constants.SIYUAN_VERSION}`, "protyleWcHtmlScript");
             window.siyuan.config = response.data.conf;
+            updateControlAlt();
             window.siyuan.isPublish = response.data.isPublish;
             await loadPlugins(this);
             await initSettings();
