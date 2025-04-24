@@ -93,6 +93,11 @@ export const commandPanel = (app: App) => {
             if (range && !options) {
                 focusByRange(range);
             }
+            if (focusedBlocks.length > 0) {
+                focusedBlocks.forEach(item => {
+                    item.classList.add("protyle-wysiwyg--select");
+                });
+            }
         },
     });
     dialog.element.setAttribute("data-key", Constants.DIALOG_COMMANDPANEL);
@@ -234,6 +239,7 @@ ${unicode2Emoji(item.icon || window.siyuan.storage[Constants.LOCAL_IMAGES].file,
         if (liElement) {
             const command = liElement.getAttribute("data-command");
             if (command) {
+                dialog.destroy();
                 // https://x.transmux.top/j/20241101230411-mn6vqw8
                 if (command === "openDoc") {
                     openFileById({
@@ -250,7 +256,6 @@ ${unicode2Emoji(item.icon || window.siyuan.storage[Constants.LOCAL_IMAGES].file,
                 } else {
                     execByCommand({ command, app, previousRange: range, focusedBlocks: Array.from(focusedBlocks) });
                 }
-                dialog.destroy();
                 event.preventDefault();
                 event.stopPropagation();
             }
@@ -271,6 +276,7 @@ ${unicode2Emoji(item.icon || window.siyuan.storage[Constants.LOCAL_IMAGES].file,
             if (currentElement) {
                 const command = currentElement.getAttribute("data-command");
                 if (command) {
+                    dialog.destroy();
                     // https://x.transmux.top/j/20241101230411-mn6vqw8
                     if (command === "openDoc") {
                         openFileById({
@@ -294,7 +300,6 @@ ${unicode2Emoji(item.icon || window.siyuan.storage[Constants.LOCAL_IMAGES].file,
                     }));
                 }
             }
-            dialog.destroy();
         } else if (event.key === "Escape") {
             dialog.destroy();
         }
