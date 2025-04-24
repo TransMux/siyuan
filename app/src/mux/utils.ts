@@ -158,6 +158,6 @@ export function av在客户端渲染template(content: string) {
     try {
         return `${eval(content)}`;
     } catch (error) {
-        return `渲染错误: ${error.message}`;
+        return `渲染错误: ${error.message}, html=${content}`;
     }
 }
