@@ -188,7 +188,6 @@ export class App {
             updateControlAlt();
             window.siyuan.isPublish = response.data.isPublish;
             await loadPlugins(this);
-            await initSettings();
             getLocalStorage(() => {
                 fetchGet(`/appearance/langs/${window.siyuan.config.appearance.lang}.json?v=${Constants.SIYUAN_VERSION}`, (lauguages: IObject) => {
                     window.siyuan.languages = lauguages;

@@ -149,8 +149,13 @@ export const SETTING_ITEMS: { [key: string]: Setting } = {
 // Global settings cache
 const SETTINGS_CACHE: { [key: string]: any } = {};
 
+let isInit = false;
 // Initialize settings in the database and load them into the cache
 export async function initSettings() {
+    if (isInit) {
+        return;
+    }
+    isInit = true;
     // Load all settings into the cache
     const allSettings = await SettingsDB.listAllSettings();
     Object.keys(allSettings).forEach(key => {
@@ -193,6 +198,7 @@ function parseSettingValue(value: any, type: string): any {
 
 // Synchronous function to get a setting by key
 export function get<T>(key: string): T {
+    initSettings();
     if (!SETTINGS_CACHE[key]) {
         if (SETTING_ITEMS[key]) {
             return SETTING_ITEMS[key].value as T;
