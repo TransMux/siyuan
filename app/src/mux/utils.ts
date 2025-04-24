@@ -155,5 +155,9 @@ export function av在客户端渲染template(content: string) {
     }
     content = content.slice(5);
     // 在客户端渲染
-    return `${eval(content)}`;
+    try {
+        return `${eval(content)}`;
+    } catch (error) {
+        return `渲染错误: ${error.message}`;
+    }
 }
