@@ -17,6 +17,7 @@ import {webUtils} from "electron";
 import {isBrowser} from "../../../util/functions";
 import {Constants} from "../../../constants";
 import { av在客户端渲染template } from "../../../mux/utils";
+import { genUUID } from "../../../util/genID";
 
 const genAVRollupHTML = (value: IAVCellValue) => {
     let html = "";
@@ -118,7 +119,8 @@ export const genAVValueHTML = (value: IAVCellValue) => {
             break;
         case "template":
             // 文档属性面板 https://x.transmux.top/j/20250424172333-6win6x7
-            html = `<div class="fn__flex-1" placeholder="${window.siyuan.languages.empty}">${av在客户端渲染template(value.template.content)}</div>`;
+            const dataId = "temp-" + genUUID()
+            html = `<div class="fn__flex-1" placeholder="${window.siyuan.languages.empty}" id="${dataId}">${av在客户端渲染template(value.template.content, dataId)}</div>`;
             break;
         case "email":
             html = `<input value="${value.email.content}" class="b3-text-field b3-text-field--text fn__flex-1" placeholder="${window.siyuan.languages.empty}">

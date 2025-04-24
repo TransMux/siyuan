@@ -17,6 +17,7 @@ import {mergeAddOption} from "./select";
 import {escapeAttr, escapeHtml} from "../../../util/escape";
 import {electronUndo} from "../../undo";
 import { av在客户端渲染template } from "../../../mux/utils";
+import { genUUID } from "../../../util/genID";
 
 const renderCellURL = (urlContent: string) => {
     let host = urlContent;
@@ -799,7 +800,8 @@ export const renderCell = (cellValue: IAVCellValue, rowIndex = 0) => {
     if ("template" === cellValue.type) {
         // https://x.transmux.top/j/20250424172333-6win6x7
         const content = cellValue ? (cellValue.template.content || "") : "";
-        text = `<span class="av__celltext">${av在客户端渲染template(content)}</span>`;
+        const dataId = "temp-" + genUUID()
+        text = `<span class="av__celltext" id="${dataId}">${av在客户端渲染template(content, dataId)}</span>`;
     } else if ("text" === cellValue.type) {
         text = `<span class="av__celltext">${cellValue ? Lute.EscapeHTMLStr(cellValue.text.content || "") : ""}</span>`;
     } else if (["email", "phone"].includes(cellValue.type)) {

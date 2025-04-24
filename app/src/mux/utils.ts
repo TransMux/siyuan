@@ -142,7 +142,7 @@ async function 移除反链(element: Element, targetBlockID: string, protyle: IP
     );
 }
 
-export function av在客户端渲染template(content: string) {
+export function av在客户端渲染template(content: string, dataId: string) {
     // https://x.transmux.top/j/20250424172333-6win6x7
     if (!get<boolean>("av-template-render-on-client")) {
         return content;
@@ -154,6 +154,9 @@ export function av在客户端渲染template(content: string) {
         return content;
     }
     content = content.slice(5);
+    // https://x.transmux.top/j/20250425005906-kxgvvpj
+    // 设置dataId以支持异步操作，亦或是动态更新
+    content = content.replace("$dataId", dataId);
     // 在客户端渲染
     try {
         return `${eval(content)}`;
