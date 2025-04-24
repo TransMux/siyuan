@@ -41,7 +41,7 @@ const commandKeyToLabel: { [key: string]: string } = {
     addToDatabase: "add selected to database",
     fileTree: "open file tree",
     outline: "open outline",
-    bookmark: "open bookmark",
+    // bookmark: "open bookmark",
     tag: "open tag",
     dailyNote: "open daily note",
     inbox: "open inbox",
@@ -185,26 +185,27 @@ ${unicode2Emoji(item.icon || window.siyuan.storage[Constants.LOCAL_IMAGES].file,
 
     // 默认是在命令界面
     listElement.insertAdjacentHTML("beforeend", commandHtml);
-    //     app.plugins.forEach(plugin => {
-    //         plugin.commands.forEach(command => {
-    //             liElement.innerHTML = `<li class="b3-list-item">
-    // <span class="b3-list-item__text">${plugin.displayName}: ${command.langText || plugin.i18n[command.langKey]}</span>
-    // <span class="b3-list-item__meta${isMobile() ? " fn__none" : ""}">${updateHotkeyTip(command.customHotkey)}</span>
-    // </li>`;
-    //             liElement.addEventListener("click", (event) => {
-    //                 if (command.callback) {
-    //                     // 传递 event 给回调函数，不然拿不到里面的数据，TODO：有没有一个更好的方法？其他情况下不传也挺奇怪的
-    //                     command.callback(event);
-    //                 } else if (command.globalCallback) {
-    //                     command.globalCallback();
-    //                 }
-    //                 dialog.destroy();
-    //                 event.preventDefault();
-    //                 event.stopPropagation();
-    //             });
-    //             listElement.insertAdjacentElement("beforeend", liElement);
-    //         });
-    //     });
+    app.plugins.forEach(plugin => {
+        plugin.commands.forEach(command => {
+            const liElement = document.createElement("li");
+            liElement.innerHTML = `<li class="b3-list-item">
+<span class="b3-list-item__text">${plugin.displayName}: ${command.langText || plugin.i18n[command.langKey]}</span>
+<span class="b3-list-item__meta${isMobile() ? " fn__none" : ""}">${updateHotkeyTip(command.customHotkey)}</span>
+</li>`;
+            liElement.addEventListener("click", (event) => {
+                if (command.callback) {
+                    // 传递 event 给回调函数，不然拿不到里面的数据，TODO：有没有一个更好的方法？其他情况下不传也挺奇怪的
+                    command.callback(event);
+                } else if (command.globalCallback) {
+                    command.globalCallback();
+                }
+                dialog.destroy();
+                event.preventDefault();
+                event.stopPropagation();
+            });
+            listElement.insertAdjacentElement("beforeend", liElement);
+        });
+    });
 
     if (listElement.childElementCount === 0) {
         const liElement = document.createElement("li");
