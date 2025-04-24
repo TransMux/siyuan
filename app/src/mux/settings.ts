@@ -10,6 +10,13 @@ export const SETTING_ITEMS: { [key: string]: Setting } = {
         section: "function",
         display: "toggle"
     },
+    "av-template-render-on-client": {
+        label: "av模板 html= 在客户端渲染 eval",
+        type: "boolean",
+        value: false,
+        section: "function",
+        display: "toggle"
+    },
     show_move_to_diary: {
         label: "文档界面显示'移动到日记下'按钮",
         type: "boolean",

@@ -16,6 +16,7 @@ import {webUtils} from "electron";
 /// #endif
 import {isBrowser} from "../../../util/functions";
 import {Constants} from "../../../constants";
+import { av在客户端渲染template } from "../../../mux/utils";
 
 const genAVRollupHTML = (value: IAVCellValue) => {
     let html = "";
@@ -116,7 +117,8 @@ export const genAVValueHTML = (value: IAVCellValue) => {
             html = `<svg class="av__checkbox"><use xlink:href="#icon${value.checkbox.checked ? "Check" : "Uncheck"}"></use></svg>`;
             break;
         case "template":
-            html = `<div class="fn__flex-1" placeholder="${window.siyuan.languages.empty}">${value.template.content}</div>`;
+            // 文档属性面板 https://x.transmux.top/j/20250424172333-6win6x7
+            html = `<div class="fn__flex-1" placeholder="${window.siyuan.languages.empty}">${av在客户端渲染template(value.template.content)}</div>`;
             break;
         case "email":
             html = `<input value="${value.email.content}" class="b3-text-field b3-text-field--text fn__flex-1" placeholder="${window.siyuan.languages.empty}">

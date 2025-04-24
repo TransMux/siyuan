@@ -141,3 +141,19 @@ async function 移除反链(element: Element, targetBlockID: string, protyle: IP
         }]
     );
 }
+
+export function av在客户端渲染template(content: string) {
+    // https://x.transmux.top/j/20250424172333-6win6x7
+    if (!get<boolean>("av-template-render-on-client")) {
+        return content;
+    }
+    if (!content) {
+        return "";
+    }
+    if (!content.startsWith("html=")) {
+        return content;
+    }
+    content = content.slice(5);
+    // 在客户端渲染
+    return `${eval(content)}`;
+}
