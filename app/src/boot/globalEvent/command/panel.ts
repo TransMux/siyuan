@@ -72,7 +72,6 @@ const commandKeyToLabel: { [key: string]: string } = {
 
 export const commandPanel = (app: App) => {
     const range = getSelection().rangeCount > 0 ? getSelection().getRangeAt(0) : undefined;
-    const focusedBlocks = document.querySelectorAll(".protyle-wysiwyg--select");
     const dialog = new Dialog({
         width: isMobile() ? "92vw" : "80vw",
         height: isMobile() ? "80vh" : "70vh",
@@ -92,11 +91,6 @@ export const commandPanel = (app: App) => {
         destroyCallback(options: IObject) {
             if (range && !options) {
                 focusByRange(range);
-            }
-            if (focusedBlocks.length > 0) {
-                focusedBlocks.forEach(item => {
-                    item.classList.add("protyle-wysiwyg--select");
-                });
             }
         },
     });
@@ -254,7 +248,7 @@ ${unicode2Emoji(item.icon || window.siyuan.storage[Constants.LOCAL_IMAGES].file,
                     // https://x.transmux.top/j/20250207000640-w6qpyf9
                     toggle()
                 } else {
-                    execByCommand({ command, app, previousRange: range, focusedBlocks: Array.from(focusedBlocks) });
+                    execByCommand({ command, app, previousRange: range });
                 }
                 event.preventDefault();
                 event.stopPropagation();
@@ -291,12 +285,12 @@ ${unicode2Emoji(item.icon || window.siyuan.storage[Constants.LOCAL_IMAGES].file,
                         // https://x.transmux.top/j/20250207000640-w6qpyf9
                         toggle()
                     } else {
-                        execByCommand({ command, app, previousRange: range, focusedBlocks: Array.from(focusedBlocks) });
+                        execByCommand({ command, app, previousRange: range });
                     }
                 } else {
                     // siyuan://blocks/20241025231614-ui1r5ui
                     currentElement.dispatchEvent(new CustomEvent("click", {
-                        detail: { command, app, previousRange: range, focusedBlocks: Array.from(focusedBlocks) }
+                        detail: { command, app, previousRange: range }
                     }));
                 }
             }
@@ -357,7 +351,6 @@ export const execByCommand = async (options: {
     previousRange?: Range,
     protyle?: IProtyle,
     fileLiElements?: Element[],
-    focusedBlocks?: Element[]
 }) => {
     if (globalCommand(options.command, options.app)) {
         return;
@@ -608,7 +601,7 @@ export const execByCommand = async (options: {
         case "numberLinkToSuperscript":
             if (!isFileFocus && protyle) {
                 // 1. 获取所有选中的块
-                const selectedBlocks = options.focusedBlocks;
+                const selectedBlocks = protyle.wysiwyg.element.querySelectorAll(".protyle-wysiwyg--select");
                 if (selectedBlocks.length === 0) {
                     return;
                 }

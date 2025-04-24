@@ -2019,7 +2019,8 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
 
         // 置于最后，太多快捷键会使用到选中元素
         if (isNotCtrl(event) && event.key !== "Backspace" && event.key !== "Escape" && event.key !== "Delete" && !event.shiftKey && !event.altKey && event.key !== "Enter") {
-            hideElements(["select"], protyle);
+            console.error("这里注释掉了重复的hideElement逻辑，因为在之前已经判断了一次, 如果看到这条消息，说明有边界情况被忽略了！！！")
+            // hideElements(["select"], protyle);
         }
 
         if (matchHotKey("⌘B", event) || matchHotKey("⌘I", event) || matchHotKey("⌘U", event)) {
