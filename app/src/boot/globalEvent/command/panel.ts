@@ -193,13 +193,16 @@ ${unicode2Emoji(item.icon || window.siyuan.storage[Constants.LOCAL_IMAGES].file,
 <span class="b3-list-item__meta${isMobile() ? " fn__none" : ""}">${updateHotkeyTip(command.customHotkey)}</span>
 </li>`;
             liElement.addEventListener("click", (event) => {
-                if (command.callback) {
-                    // 传递 event 给回调函数，不然拿不到里面的数据，TODO：有没有一个更好的方法？其他情况下不传也挺奇怪的
-                    command.callback(event);
-                } else if (command.globalCallback) {
-                    command.globalCallback();
-                }
                 dialog.destroy();
+                setTimeout(() => {
+                    if (command.callback) {
+                        // 传递 event 给回调函数，不然拿不到里面的数据，TODO：有没有一个更好的方法？其他情况下不传也挺奇怪的
+                        command.callback(event);
+                    } else if (command.globalCallback) {
+                        command.globalCallback();
+                    }
+                    // 等待range恢复
+                }, 500);
                 event.preventDefault();
                 event.stopPropagation();
             });
