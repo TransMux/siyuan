@@ -35,6 +35,8 @@ import { toggle } from "../../../mux/hide-checked";
 import { transaction } from "../../../protyle/wysiwyg/transaction";
 import { hideElements } from "../../../protyle/ui/hideElements";
 import * as dayjs from "dayjs";
+import { fullscreen } from "../../../protyle/breadcrumb/action";
+import { resize } from "../../../protyle/util/resize";
 
 // https://x.transmux.top/j/20241103163805-hj20chp
 const commandKeyToLabel: { [key: string]: string } = {
@@ -157,6 +159,12 @@ export const commandPanel = (app: App) => {
         <span class="b3-list-item__text">选中范围：数字链接转上标 (selected range: number link to superscript)</span>
     </li>`;
     }
+
+    // https://x.transmux.top/j/20250426020622-1jy3dxy
+    commandHtml += `<li class="b3-list-item" data-command="toggleProtyleFullscreen">
+        <span class="b3-list-item__text">切换全屏 (toggle protyle fullscreen)</span>
+    </li>`;
+    
 
     // https://x.transmux.top/j/20241101223108-o9zjabn
     let recentDocsHtml = "";
@@ -541,6 +549,12 @@ export const execByCommand = async (options: {
                     });
                 }
                 /// #endif
+            }
+            break;
+        case "toggleProtyleFullscreen":
+            if (protyle) {
+                fullscreen(protyle.element);
+                resize(protyle);
             }
             break;
         case "search":
