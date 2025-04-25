@@ -274,6 +274,7 @@ export const paste = async (protyle: IProtyle, event: (ClipboardEvent | DragEven
     let textHTML: string;
     let textPlain: string;
     let siyuanHTML: string;
+    let isCut: string = "";
     let files: FileList | DataTransferItemList | File[];
 
     // 从剪贴板或拖放事件中获取数据
@@ -281,11 +282,13 @@ export const paste = async (protyle: IProtyle, event: (ClipboardEvent | DragEven
         textHTML = event.clipboardData.getData("text/html");
         textPlain = event.clipboardData.getData("text/plain");
         siyuanHTML = event.clipboardData.getData("text/siyuan");
+        isCut = event.clipboardData.getData("text/siyuan-cut");
         files = event.clipboardData.files;
     } else if ("dataTransfer" in event) {
         textHTML = event.dataTransfer.getData("text/html");
         textPlain = event.dataTransfer.getData("text/plain");
         siyuanHTML = event.dataTransfer.getData("text/siyuan");
+        isCut = event.dataTransfer.getData("text/siyuan-cut");
         if (event.dataTransfer.types[0] === "Files") {
             files = event.dataTransfer.items;
         }
@@ -423,7 +426,10 @@ export const paste = async (protyle: IProtyle, event: (ClipboardEvent | DragEven
         let isBlock = false;
         tempElement.querySelectorAll("[data-node-id]").forEach((e) => {
             const newId = Lute.NewNodeID();
-            // e.setAttribute("data-node-id", newId);
+            // 禁用粘贴改id，通过text/siyuan-cut识别剪切动作
+            if (isCut !== "1") {
+                e.setAttribute("data-node-id", newId);
+            }
             e.removeAttribute(Constants.CUSTOM_RIFF_DECKS);
             e.classList.remove("protyle-wysiwyg--select", "protyle-wysiwyg--hl");
             e.setAttribute("updated", newId.split("-")[0]);

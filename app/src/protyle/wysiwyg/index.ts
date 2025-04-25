@@ -1704,6 +1704,7 @@ export class WYSIWYG {
             event.clipboardData.setData("text/plain", textPlain);
             event.clipboardData.setData("text/html", selectTableElement ? html : protyle.lute.BlockDOM2HTML(selectAVElement ? textPlain : html));
             event.clipboardData.setData("text/siyuan", selectTableElement ? protyle.lute.HTML2BlockDOM(html) : html);
+            event.clipboardData.setData("text/siyuan-cut", "1");
         });
 
         let beforeContextmenuRange: Range;
