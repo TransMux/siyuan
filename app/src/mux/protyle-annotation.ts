@@ -59,7 +59,7 @@ export function showAnnotationEditPanel(
     panel.classList.add("mux-protyle-annotation");
 }
 
-export async function addAnnotationInline(refId: string, selectedText?: string, selectedBlocks?: Element[]) {
+export async function addAnnotation(refId: string, selectedText?: string, selectedBlocks?: Element[]) {
     // 开始构造插入dom
     let dom = annotationTemplate;
 
@@ -93,14 +93,6 @@ export async function addAnnotationInline(refId: string, selectedText?: string, 
     });
 
     return annotationId;
-}
-
-/**
- * TODO: Implement multi-block annotation creation.
- */
-export function addAnnotationMultiBlock(protyle: IProtyle): Promise<string> {
-    console.warn("addAnnotationMultiBlock not implemented");
-    return Promise.resolve("");
 }
 
 const annotationTemplate = `<div data-subtype="u" data-node-id="{插入批注id}" data-node-index="1" data-type="NodeList" class="list">

@@ -46,7 +46,7 @@ import {confirmDialog} from "../../dialog/confirmDialog";
 import {paste, pasteAsPlainText, pasteEscaped} from "../util/paste";
 import {escapeHtml} from "../../util/escape";
 import {resizeSide} from "../../history/resizeSide";
-import { showAnnotationEditPanel, addAnnotationInline } from "../../mux/protyle-annotation";
+import { showAnnotationEditPanel, addAnnotation } from "../../mux/protyle-annotation";
 
 export class Toolbar {
     public element: HTMLElement;
@@ -937,7 +937,7 @@ export class Toolbar {
                 showAnnotationEditPanel(protyle, inlineEl, annotationBlockId);
             } else {
                 // create a new annotation block under daily note then open edit panel
-                addAnnotationInline(protyle).then((newBlockId) => {
+                addAnnotation(nodeElement.getAttribute("data-node-id"), selectText).then((newBlockId) => {
                     if (!newBlockId) {
                         return;
                     }
