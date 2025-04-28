@@ -23,7 +23,7 @@ export function showAnnotationEditPanel(
         <span class="fn__space"></span>
         <button data-type="close" class="block__icon block__icon--show" aria-label="${window.siyuan.languages.close}"><svg><use xlink:href="#iconClose"></use></svg></button>
       </div>
-      <div id="annotation-editor" style="min-width:268px;min-height:200px;overflow:auto"></div>
+      <div id="annotation-editor" style="width: 800px;max-width:70vw;min-height:200px;overflow:auto"></div>
     `;
     // Position the panel like showRender for inline-memo
     const rect = anchorEl.getBoundingClientRect();
