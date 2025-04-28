@@ -934,7 +934,7 @@ export class Toolbar {
             const inlineEl = newNodes[0] as HTMLElement;
             const annotationBlockId = inlineEl.getAttribute("data-inline-memo-content");
             if (annotationBlockId) {
-                showAnnotationEditPanel(protyle, annotationBlockId);
+                showAnnotationEditPanel(protyle, inlineEl, annotationBlockId);
             } else {
                 // create a new annotation block under daily note then open edit panel
                 addAnnotationInline(protyle).then((newBlockId) => {
@@ -944,7 +944,7 @@ export class Toolbar {
                     // set the new annotation block id on inline element
                     inlineEl.setAttribute("data-inline-memo-content", newBlockId);
                     // open the annotation edit panel
-                    showAnnotationEditPanel(protyle, newBlockId);
+                    showAnnotationEditPanel(protyle, inlineEl, newBlockId);
                     // update inline element in document via transaction
                     const nodeId = inlineEl.closest("[data-node-id]")?.getAttribute("data-node-id");
                     if (nodeId) {
@@ -985,9 +985,15 @@ export class Toolbar {
         const id = nodeElement.getAttribute("data-node-id");
         const types = (renderElement.getAttribute("data-type") || "").split(" ");
         const html = oldHTML || nodeElement.outerHTML;
+        // Delegate inline-memo editing to annotation panel
+        const isInlineMemo = types.includes("inline-memo");
+        if (isInlineMemo) {
+            const annId = renderElement.getAttribute("data-inline-memo-content");
+            showAnnotationEditPanel(protyle, renderElement, annId);
+            return;
+        }
         let title = "HTML";
         let placeholder = "";
-        const isInlineMemo = types.includes("inline-memo");
         switch (renderElement.getAttribute("data-subtype")) {
             case "abc":
                 title = window.siyuan.languages.staff;
@@ -1023,8 +1029,6 @@ export class Toolbar {
         }
         if (types.includes("NodeBlockQueryEmbed")) {
             title = window.siyuan.languages.blockEmbed;
-        } else if (isInlineMemo) {
-            title = window.siyuan.languages.memo;
         }
         const isPin = this.subElement.querySelector('[data-type="pin"]')?.getAttribute("aria-label") === window.siyuan.languages.unpin;
         const pinData: IObject = {};
@@ -1162,8 +1166,6 @@ export class Toolbar {
         const textElement = this.subElement.querySelector(".b3-text-field") as HTMLTextAreaElement;
         if (types.includes("NodeHTMLBlock")) {
             textElement.value = Lute.UnEscapeHTMLStr(renderElement.querySelector("protyle-html").getAttribute("data-content") || "");
-        } else if (isInlineMemo) {
-            textElement.value = Lute.UnEscapeHTMLStr(renderElement.getAttribute("data-inline-memo-content") || "");
         } else {
             textElement.value = Lute.UnEscapeHTMLStr(renderElement.getAttribute("data-content") || "");
         }
@@ -1180,21 +1182,11 @@ export class Toolbar {
             }
             if (types.includes("NodeHTMLBlock")) {
                 renderElement.querySelector("protyle-html").setAttribute("data-content", Lute.EscapeHTMLStr(textElement.value));
-            } else if (isInlineMemo) {
-                let inlineMemoElements;
-                if (updateElements) {
-                    inlineMemoElements = updateElements;
-                } else {
-                    inlineMemoElements = [renderElement];
-                }
-                inlineMemoElements.forEach((item) => {
-                    item.setAttribute("data-inline-memo-content", Lute.EscapeHTMLStr(textElement.value));
-                });
             } else {
                 renderElement.setAttribute("data-content", Lute.EscapeHTMLStr(textElement.value));
                 renderElement.removeAttribute("data-render");
             }
-            if (!types.includes("NodeBlockQueryEmbed") || !types.includes("NodeHTMLBlock") || !isInlineMemo) {
+            if (!types.includes("NodeBlockQueryEmbed") || !types.includes("NodeHTMLBlock")) {
                 processRender(renderElement);
             }
             event.stopPropagation();
