@@ -74,7 +74,7 @@ export async function addAnnotationInline(protyle: IProtyle): Promise<string> {
     return new Promise((resolve) => {
         fetchPost(
             "/api/block/insertBlock",
-            { previousID: parentID, dataType: "markdown", data: "" },
+            { previousID: parentID, dataType: "dom", data: "" },
             (insertResp: any) => {
                 const newBlockId = insertResp.data[0]?.doOperations[0]?.id;
                 if (newBlockId) {
@@ -96,4 +96,19 @@ export function addAnnotationMultiBlock(protyle: IProtyle): Promise<string> {
     return Promise.resolve("");
 }
 
+const annotationTemplate = `<div data-subtype="u" data-node-id="20250419185932-ebydoxn" data-node-index="1" data-type="NodeList" class="list">
+    <div data-marker="*" data-subtype="u" data-node-id="20250419185932-d5cq7qh" data-type="NodeListItem" class="li" custom-mux-protyle-annotation-id="{批注id}">
 
+        <div class="protyle-action" draggable="true"><svg><use xlink:href="#iconDot"></use></svg></div>
+
+        <div data-node-id="20250419185932-7on1qns" data-type="NodeParagraph" class="p">
+            <div contenteditable="true" spellcheck="false"><span data-type="block-ref" data-subtype="s" data-id="{选中块的id}">*</span></div>
+            <div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div>
+        </div>
+
+        {选中内容的复制}
+
+        <div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div>
+    </div>
+    <div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div>
+</div>`;
