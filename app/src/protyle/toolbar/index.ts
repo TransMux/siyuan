@@ -46,6 +46,7 @@ import {confirmDialog} from "../../dialog/confirmDialog";
 import {paste, pasteAsPlainText, pasteEscaped} from "../util/paste";
 import {escapeHtml} from "../../util/escape";
 import {resizeSide} from "../../history/resizeSide";
+import { showAnnotationEditPanel, addAnnotationInline } from "../../mux/protyle-annotation";
 
 export class Toolbar {
     public element: HTMLElement;
@@ -930,7 +931,27 @@ export class Toolbar {
                 return;
             }
         } else if (type === "inline-memo") {
-            protyle.toolbar.showRender(protyle, newNodes[0] as HTMLElement, newNodes as Element[], html);
+            const inlineEl = newNodes[0] as HTMLElement;
+            const annotationBlockId = inlineEl.getAttribute("data-inline-memo-content");
+            if (annotationBlockId) {
+                showAnnotationEditPanel(protyle, annotationBlockId);
+            } else {
+                // create a new annotation block under daily note then open edit panel
+                addAnnotationInline(protyle).then((newBlockId) => {
+                    if (!newBlockId) {
+                        return;
+                    }
+                    // set the new annotation block id on inline element
+                    inlineEl.setAttribute("data-inline-memo-content", newBlockId);
+                    // open the annotation edit panel
+                    showAnnotationEditPanel(protyle, newBlockId);
+                    // update inline element in document via transaction
+                    const nodeId = inlineEl.closest("[data-node-id]")?.getAttribute("data-node-id");
+                    if (nodeId) {
+                        updateTransaction(protyle, nodeId, inlineEl.outerHTML, html);
+                    }
+                });
+            }
             return;
         } else if (type === "block-ref") {
             this.range.collapse(false);
