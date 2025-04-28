@@ -59,33 +59,40 @@ export function showAnnotationEditPanel(
     panel.classList.add("mux-protyle-annotation");
 }
 
-/**
- * Create a new annotation block under today's daily note and return its block ID.
- */
-export async function addAnnotationInline(protyle: IProtyle): Promise<string> {
-    // Ensure today's daily note exists and get its block ID
-    const localDailyNoteId = window.siyuan.storage[Constants.LOCAL_DAILYNOTEID];
-    const ensureResp = await fetchSyncPost("/api/filetree/createDailyNote", {
-        notebook: localDailyNoteId,
-        app: Constants.SIYUAN_APPID,
+export async function addAnnotationInline(refId: string, selectedText?: string, selectedBlocks?: Element[]) {
+    // 开始构造插入dom
+    let dom = annotationTemplate;
+
+    const annotationId = Lute.NewNodeID();
+    dom.replace("{插入批注id}", annotationId);
+    dom.replace("{反链id}", refId);
+
+    if (selectedText) {
+        dom = dom.replace("{选中内容的复制}", selectedText);
+    } else if (selectedBlocks) {
+        dom = dom.replace("{选中内容的复制}", selectedBlocks.map(block => block.outerHTML).join("\n"));
+    }
+
+    // 转换为节点
+    const tempElement = document.createElement("div");
+    tempElement.innerHTML = dom;
+
+    // 删除多余的属性
+    tempElement.querySelectorAll("[data-node-id]").forEach((e) => {
+        const newId = Lute.NewNodeID();
+        e.removeAttribute(Constants.CUSTOM_RIFF_DECKS);
+        e.classList.remove("protyle-wysiwyg--select", "protyle-wysiwyg--hl");
+        e.setAttribute("updated", newId.split("-")[0]);
+        e.removeAttribute("refcount");
     });
-    const parentID = ensureResp.data.id;
-    // Insert an empty paragraph block after the daily note root
-    return new Promise((resolve) => {
-        fetchPost(
-            "/api/block/insertBlock",
-            { previousID: parentID, dataType: "dom", data: "" },
-            (insertResp: any) => {
-                const newBlockId = insertResp.data[0]?.doOperations[0]?.id;
-                if (newBlockId) {
-                    resolve(newBlockId);
-                } else {
-                    showMessage("创建批注失败", 1000, "error");
-                    resolve("");
-                }
-            }
-        );
+
+    await fetchSyncPost("/api/block/appendDailyNoteBlock", {
+        notebook: Constants.LOCAL_DAILYNOTEID,
+        dataType: "dom",
+        data: tempElement.innerHTML,
     });
+
+    return annotationId;
 }
 
 /**
@@ -96,13 +103,13 @@ export function addAnnotationMultiBlock(protyle: IProtyle): Promise<string> {
     return Promise.resolve("");
 }
 
-const annotationTemplate = `<div data-subtype="u" data-node-id="20250419185932-ebydoxn" data-node-index="1" data-type="NodeList" class="list">
-    <div data-marker="*" data-subtype="u" data-node-id="20250419185932-d5cq7qh" data-type="NodeListItem" class="li" custom-mux-protyle-annotation-id="{批注id}">
+const annotationTemplate = `<div data-subtype="u" data-node-id="{插入批注id}" data-node-index="1" data-type="NodeList" class="list">
+    <div data-marker="*" data-subtype="u" data-node-id="20250419185932-d5cq7qh" data-type="NodeListItem" class="li">
 
         <div class="protyle-action" draggable="true"><svg><use xlink:href="#iconDot"></use></svg></div>
 
         <div data-node-id="20250419185932-7on1qns" data-type="NodeParagraph" class="p">
-            <div contenteditable="true" spellcheck="false"><span data-type="block-ref" data-subtype="s" data-id="{选中块的id}">*</span></div>
+            <div contenteditable="true" spellcheck="false"><span data-type="block-ref" data-subtype="s" data-id="{反链id}">*</span></div>
             <div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div>
         </div>
 
