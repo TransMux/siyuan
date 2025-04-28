@@ -943,6 +943,8 @@ export class Toolbar {
                     }
                     // set the new annotation block id on inline element
                     inlineEl.setAttribute("data-inline-memo-content", newBlockId);
+                    // data-type: add mux-protyle-annotation
+                    inlineEl.dataset.type += " mux-protyle-annotation";
                     // open the annotation edit panel
                     showAnnotationEditPanel(protyle, inlineEl, newBlockId);
                     // update inline element in document via transaction

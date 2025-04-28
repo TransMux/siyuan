@@ -1,19 +1,21 @@
 import { Constants } from "../constants";
 import { fetchPost, fetchSyncPost } from "../util/fetch";
 import { showMessage } from "../dialog/message";
-import { Protyle } from "../protyle";
 import { hideElements } from "../protyle/ui/hideElements";
 import { setPosition } from "../util/setPosition";
-import { getSelectionPosition } from "../protyle/util/selection";
+import { Protyle } from "../protyle";
 
 /**
  * Open annotation edit panel for a given annotation block ID.
  */
-export function showAnnotationEditPanel(protyle: IProtyle, nodeElement: Element, annotationBlockId: string) {
-    // Hide existing hints and context menus
+export function showAnnotationEditPanel(
+    protyle: IProtyle,
+    anchorEl: Element,
+    annotationBlockId: string
+) {
+    // Hide existing hints and context menus and prepare panel
     hideElements(["hint"], protyle);
     window.siyuan.menus.menu.remove();
-    // Prepare the sub-element panel
     const panel = protyle.toolbar.subElement;
     panel.innerHTML = `
       <div class="block__icons block__icons--menu fn__flex" style="border-radius: var(--b3-border-radius-b) var(--b3-border-radius-b) 0 0;">
@@ -23,23 +25,38 @@ export function showAnnotationEditPanel(protyle: IProtyle, nodeElement: Element,
       </div>
       <div id="annotation-editor" style="min-width:268px;min-height:200px;overflow:auto"></div>
     `;
-    // Position the panel near current selection
-    const selRect = getSelectionPosition(nodeElement);
+    // Position the panel like showRender for inline-memo
+    const rect = anchorEl.getBoundingClientRect();
+    const bottom = rect.bottom === rect.top ? rect.bottom + 26 : rect.bottom;
     panel.style.zIndex = (++window.siyuan.zIndex).toString();
     panel.classList.remove("fn__none");
-    setPosition(panel, selRect.left, selRect.top, 26);
+    // Position panel like showRender's autoHeight for inline-memo
+    const nodeRect = rect;
+    const autoHeight = () => {
+        // place below if there's room, else to the right
+        if (panel.clientHeight <= window.innerHeight - bottom || panel.clientHeight <= nodeRect.top) {
+            setPosition(panel, nodeRect.left, bottom, nodeRect.height || 26);
+        } else {
+            setPosition(panel, nodeRect.right, bottom);
+        }
+    };
+    autoHeight();
     // Close button behavior
     panel.querySelector('[data-type="close"]')?.addEventListener("click", () => {
         panel.classList.add("fn__none");
     });
     // Mount a Protyle editor for the annotation block
     const container = panel.querySelector("#annotation-editor") as HTMLElement;
-    new Protyle(protyle.app, container, {
+    // Instantiate Protyle editor for annotation block and focus
+    const annotationEditor = new Protyle(protyle.app, container, {
         rootId: annotationBlockId,
         blockId: annotationBlockId,
         render: { background: false, title: false, gutter: false, scroll: true, breadcrumb: false },
         action: [Constants.CB_GET_HTML, Constants.CB_GET_SETID],
     });
+    annotationEditor.focus();
+    // marker class for styling annotation panel
+    panel.classList.add("mux-protyle-annotation");
 }
 
 /**
