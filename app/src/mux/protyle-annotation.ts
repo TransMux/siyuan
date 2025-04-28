@@ -61,16 +61,17 @@ export function showAnnotationEditPanel(
 
 export async function addAnnotation(refId: string, selectedText?: string, selectedBlocks?: Element[]) {
     // 开始构造插入dom
+    debugger;
     let dom = annotationTemplate;
 
     const annotationId = Lute.NewNodeID();
-    dom.replace("{插入批注id}", annotationId);
-    dom.replace("{反链id}", refId);
+    dom = dom.replace("{annotationId}", annotationId);
+    dom = dom.replace("{refId}", refId);
 
     if (selectedText) {
-        dom = dom.replace("{选中内容的复制}", selectedText);
+        dom = dom.replace("{selectedText}", textNodeTemplate.replace("{text}", selectedText));
     } else if (selectedBlocks) {
-        dom = dom.replace("{选中内容的复制}", selectedBlocks.map(block => block.outerHTML).join("\n"));
+        dom = dom.replace("{selectedText}", selectedBlocks.map(block => block.outerHTML).join("\n"));
     }
 
     // 转换为节点
@@ -87,7 +88,7 @@ export async function addAnnotation(refId: string, selectedText?: string, select
     });
 
     await fetchSyncPost("/api/block/appendDailyNoteBlock", {
-        notebook: Constants.LOCAL_DAILYNOTEID,
+        notebook: window.siyuan.storage[Constants.LOCAL_DAILYNOTEID],
         dataType: "dom",
         data: tempElement.innerHTML,
     });
@@ -95,19 +96,21 @@ export async function addAnnotation(refId: string, selectedText?: string, select
     return annotationId;
 }
 
-const annotationTemplate = `<div data-subtype="u" data-node-id="{插入批注id}" data-node-index="1" data-type="NodeList" class="list">
+const annotationTemplate = `<div data-subtype="u" data-node-id="{annotationId}" data-node-index="1" data-type="NodeList" class="list">
     <div data-marker="*" data-subtype="u" data-node-id="20250419185932-d5cq7qh" data-type="NodeListItem" class="li">
 
         <div class="protyle-action" draggable="true"><svg><use xlink:href="#iconDot"></use></svg></div>
 
         <div data-node-id="20250419185932-7on1qns" data-type="NodeParagraph" class="p">
-            <div contenteditable="true" spellcheck="false"><span data-type="block-ref" data-subtype="s" data-id="{反链id}">*</span></div>
+            <div contenteditable="true" spellcheck="false"><span data-type="block-ref" data-subtype="s" data-id="{refId}">*</span></div>
             <div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div>
         </div>
 
-        {选中内容的复制}
+        {selectedText}
 
         <div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div>
     </div>
     <div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div>
 </div>`;
+
+const textNodeTemplate = `<div data-node-id="20250429025930-cfcmtsf" data-type="NodeParagraph" class="p"><div contenteditable="true" spellcheck="false">{text}</div><div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div></div>`
