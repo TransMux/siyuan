@@ -61,7 +61,6 @@ export function showAnnotationEditPanel(
 
 export async function addAnnotation(refId: string, selectedText?: string, selectedBlocks?: Element[]) {
     // 开始构造插入dom
-    debugger;
     let dom = annotationTemplate;
 
     const annotationId = Lute.NewNodeID();
