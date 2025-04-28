@@ -1,18 +1,54 @@
 import { Constants } from "../constants";
-import { fetchPost, fetchSyncPost } from "../util/fetch";
-import { showMessage } from "../dialog/message";
+import { fetchSyncPost } from "../util/fetch";
 import { hideElements } from "../protyle/ui/hideElements";
 import { setPosition } from "../util/setPosition";
 import { Protyle } from "../protyle";
+import { updateTransaction } from "../protyle/wysiwyg/transaction";
 
-/**
- * Open annotation edit panel for a given annotation block ID.
- */
-export function showAnnotationEditPanel(
+export async function showAnnotationEditPanel(
     protyle: IProtyle,
-    anchorEl: Element,
+    anchorEl: HTMLElement,
     annotationBlockId: string
 ) {
+    // Validate annotation block exists
+    try {
+        const info = await fetchSyncPost("/api/block/getBlockInfo", { id: annotationBlockId });
+        if (info.code !== 0 || !info.data) {
+            // Annotation block missing, remove inline mark gracefully
+            const inlineEl = anchorEl;
+            const parentBlock = inlineEl.closest("[data-node-id]") as HTMLElement;
+            if (parentBlock) {
+                const blockId = parentBlock.getAttribute("data-node-id");
+                const oldHTML = parentBlock.outerHTML;
+                // Remove inline-memo and marker
+                const types = (inlineEl.getAttribute("data-type") || "").split(" ")
+                    .filter(t => t !== "inline-memo" && t !== "mux-protyle-annotation");
+                inlineEl.setAttribute("data-type", types.join(" "));
+                inlineEl.removeAttribute("data-inline-memo-content");
+                // Commit transaction
+                if (blockId) {
+                    updateTransaction(protyle, blockId, parentBlock.outerHTML, oldHTML);
+                }
+            }
+            return;
+        }
+    } catch (e) {
+        // On error, treat as missing
+        const inlineEl = anchorEl;
+        const parentBlock = inlineEl.closest("[data-node-id]") as HTMLElement;
+        if (parentBlock) {
+            const blockId = parentBlock.getAttribute("data-node-id");
+            const oldHTML = parentBlock.outerHTML;
+            const types = (inlineEl.getAttribute("data-type") || "").split(" ")
+                .filter(t => t !== "inline-memo" && t !== "mux-protyle-annotation");
+            inlineEl.setAttribute("data-type", types.join(" "));
+            inlineEl.removeAttribute("data-inline-memo-content");
+            if (blockId) {
+                updateTransaction(protyle, blockId, parentBlock.outerHTML, oldHTML);
+            }
+        }
+        return;
+    }
     // Hide existing hints and context menus and prepare panel
     hideElements(["hint"], protyle);
     window.siyuan.menus.menu.remove();

@@ -991,7 +991,7 @@ export class Toolbar {
         const isInlineMemo = types.includes("inline-memo");
         if (isInlineMemo) {
             const annId = renderElement.getAttribute("data-inline-memo-content");
-            showAnnotationEditPanel(protyle, renderElement, annId);
+            showAnnotationEditPanel(protyle, renderElement as HTMLElement, annId);
             return;
         }
         let title = "HTML";
