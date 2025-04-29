@@ -70,6 +70,7 @@ import { checkFold } from "../../util/noRelyPCFunction";
 import { copyTextByType } from "../toolbar/util";
 import { showMessage } from "../../dialog/message";
 import { 发送到第一个反链 } from "../../mux/utils";
+import { addAnnotation } from "../../mux/protyle-annotation";
 
 export class Gutter {
     public element: HTMLElement;
@@ -958,6 +959,22 @@ export class Gutter {
                 separatorPosition: "top",
             });
         }
+
+        // add multi-block annotation menu item
+        const annotationMenu = new MenuItem({
+            id: "block-annotation",
+            icon: "iconDot",
+            label: window.siyuan.languages.memo,
+            click: async () => {
+                const refId = selectsElement[0].getAttribute("data-node-id")!;
+                const annotationId = await addAnnotation(refId, undefined, selectsElement);
+                // apply annotation attribute to selected blocks and commit changes
+                updateBatchTransaction(selectsElement, protyle, (el: HTMLElement) => {
+                    el.setAttribute("custom-mux-protyle-annotation", annotationId);
+                });
+            }
+        }).element;
+        window.siyuan.menus.menu.append(annotationMenu);
 
         return window.siyuan.menus.menu;
     }

@@ -100,6 +100,8 @@ import { editAssetItem } from "../render/av/asset";
 import {img3115} from "../../boot/compatibleVersion";
 import {globalClickHideMenu} from "../../boot/globalEvent/click";
 import {hideTooltip} from "../../dialog/tooltip";
+// import the annotation panel display function
+import { showAnnotationEditPanel } from "../../mux/protyle-annotation";
 
 export class WYSIWYG {
     public lastHTMLs: { [key: string]: string } = {};
@@ -1876,6 +1878,12 @@ export class WYSIWYG {
                     }
                 }
             } else if (protyle.toolbar.range.toString() === "") {
+                // if this block was part of a multi-block annotation, open its annotation panel
+                const annotationId = nodeElement.getAttribute("custom-mux-protyle-annotation");
+                if (annotationId) {
+                    showAnnotationEditPanel(protyle, nodeElement as HTMLElement, annotationId);
+                    return;
+                }
                 hideElements(["util"], protyle);
                 if (protyle.gutter) {
                     protyle.gutter.renderMenu(protyle, nodeElement);
@@ -2072,9 +2080,9 @@ export class WYSIWYG {
             }
             this.escapeInline(protyle, range, event);
 
-            if ((/^\d{1}$/.test(event.data) || event.data === "‘" || event.data === "“" ||
+            if ((/^\d{1}$/.test(event.data) || event.data === "‘" || event.data === "" ||
                 // 百度输入法中文反双引号 https://github.com/siyuan-note/siyuan/issues/9686
-                event.data === "”" ||
+                event.data === "" ||
                 event.data === "「")) {
                 clearTimeout(timeout);  // https://github.com/siyuan-note/siyuan/issues/9179
                 timeout = window.setTimeout(() => {
