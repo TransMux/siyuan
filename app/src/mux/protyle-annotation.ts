@@ -119,6 +119,7 @@ export async function addAnnotation(refId: string, selectedText?: string, select
         const newId = Lute.NewNodeID();
         e.removeAttribute(Constants.CUSTOM_RIFF_DECKS);
         e.classList.remove("protyle-wysiwyg--select", "protyle-wysiwyg--hl");
+        e.setAttribute("data-node-id", newId);
         e.setAttribute("updated", newId.split("-")[0]);
         e.removeAttribute("refcount");
         e.removeAttribute("custom-mux-protyle-annotation");
