@@ -1870,6 +1870,13 @@ export class WYSIWYG {
                 (isMobile() || event.detail.target || (beforeContextmenuRange && nodeElement.contains(beforeContextmenuRange.startContainer)))
             ) {
                 if ((!isMobile() || protyle.toolbar?.element.classList.contains("fn__none")) && !nodeElement.classList.contains("av")) {
+                    // if this block was part of a multi-block annotation, open its annotation panel
+                    // 向上寻找最近的带有 custom-mux-protyle-annotation 属性的父元素
+                    const annotationElement = hasClosestByAttribute(nodeElement, "data-type", "custom-mux-protyle-annotation");
+                    if (annotationElement) {
+                        showAnnotationEditPanel(protyle, annotationElement as HTMLElement, annotationElement.getAttribute("data-inline-memo-content") || "");
+                        return;
+                    }
                     contentMenu(protyle, nodeElement);
                     window.siyuan.menus.menu.popup({ x, y: y + 13, h: 26 });
                     protyle.toolbar?.element.classList.add("fn__none");
@@ -1878,12 +1885,6 @@ export class WYSIWYG {
                     }
                 }
             } else if (protyle.toolbar.range.toString() === "") {
-                // if this block was part of a multi-block annotation, open its annotation panel
-                const annotationId = nodeElement.getAttribute("custom-mux-protyle-annotation");
-                if (annotationId) {
-                    showAnnotationEditPanel(protyle, nodeElement as HTMLElement, annotationId);
-                    return;
-                }
                 hideElements(["util"], protyle);
                 if (protyle.gutter) {
                     protyle.gutter.renderMenu(protyle, nodeElement);
