@@ -121,6 +121,7 @@ export async function addAnnotation(refId: string, selectedText?: string, select
         e.classList.remove("protyle-wysiwyg--select", "protyle-wysiwyg--hl");
         e.setAttribute("updated", newId.split("-")[0]);
         e.removeAttribute("refcount");
+        e.removeAttribute("custom-mux-protyle-annotation");
     });
 
     await fetchSyncPost("/api/block/appendDailyNoteBlock", {
