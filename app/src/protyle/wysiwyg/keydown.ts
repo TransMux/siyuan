@@ -121,7 +121,9 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
             event.preventDefault();
             return;
         }
-
+        if (document.querySelector(".av__panel")) {
+            return;
+        }
         if (avKeydown(event, nodeElement, protyle)) {
             return;
         }
@@ -995,10 +997,10 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
         // 代码块语言选择 https://github.com/siyuan-note/siyuan/issues/14126
         if (matchHotKey("⌥↩", event) && selectText === "") {
             const selectElements = Array.from(protyle.wysiwyg.element.querySelectorAll(".protyle-wysiwyg--select"));
-            if (selectElements.length === 0 && nodeElement.classList.contains("code-block")) {
+            if (selectElements.length === 0) {
                 selectElements.push(nodeElement);
             }
-            if (selectElements.length > 0) {
+            if (selectElements.length > 0 && !isIncludesHotKey("⌥↩")) {
                 const otherElement = selectElements.find(item => {
                     return !item.classList.contains("code-block");
                 });
@@ -1008,23 +1010,21 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                         languageElements.push(item.querySelector(".protyle-action__language"));
                     });
                     protyle.toolbar.showCodeLanguage(protyle, languageElements);
-                    event.stopPropagation();
-                    event.preventDefault();
-                    return;
+                } else {
+                    addSubList(protyle, nodeElement, range);
                 }
-            }
-        }
-
-        // 回车
-        if (isNotCtrl(event) && event.key === "Enter") {
-            if (event.altKey) {
-                addSubList(protyle, nodeElement, range);
-            } else if (!event.shiftKey) {
-                enter(nodeElement, range, protyle);
                 event.stopPropagation();
                 event.preventDefault();
                 return;
             }
+        }
+
+        // 回车
+        if (matchHotKey("↩", event)) {
+            enter(nodeElement, range, protyle);
+            event.stopPropagation();
+            event.preventDefault();
+            return;
         }
 
         if (matchHotKey("⌘A", event)) {
@@ -1882,6 +1882,25 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                 return;
             }
             if (!event.shiftKey) {
+                const inlineElement = range.startContainer.parentElement;
+                const currentTypes = protyle.toolbar.getCurrentType(range);
+                // https://github.com/siyuan-note/siyuan/issues/14703
+                if (currentTypes.length > 0 && range.toString() === "" && range.startOffset === 0 &&
+                    inlineElement.tagName === "SPAN" && !hasPreviousSibling(range.startContainer) && !hasPreviousSibling(inlineElement)) {
+                    range.setStartBefore(inlineElement);
+                    range.collapse(true);
+                } else if (inlineElement.tagName === "SPAN" &&
+                    !currentTypes.includes("search-mark") &&    // https://github.com/siyuan-note/siyuan/issues/7586
+                    !currentTypes.includes("code") &&   // https://github.com/siyuan-note/siyuan/issues/13871
+                    !currentTypes.includes("kbd") &&
+                    !currentTypes.includes("tag") &&
+                    range.toString() === "" && range.startContainer.nodeType === 3 &&
+                    (currentTypes.includes("inline-memo") || currentTypes.includes("block-ref") || currentTypes.includes("file-annotation-ref") || currentTypes.includes("a")) &&
+                    !hasNextSibling(range.startContainer) && range.startContainer.textContent.length === range.startOffset
+                ) {
+                    range.setEndAfter(inlineElement);
+                    range.collapse(false);
+                }
                 const wbrElement = document.createElement("wbr");
                 range.insertNode(wbrElement);
                 const oldHTML = nodeElement.outerHTML;

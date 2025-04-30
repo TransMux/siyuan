@@ -140,7 +140,6 @@ export const openMenuPanel = (options: {
                     cellElements: options.cellElements,
                     blockElement: options.blockElement
                 });
-                (avPanelElement.querySelector(".b3-menu__item") as HTMLButtonElement).focus();
                 setTimeout(() => {
                     setPosition(menuElement, cellRect.left, cellRect.bottom, cellRect.height);
                 }, Constants.TIMEOUT_LOAD);  // 等待加载
@@ -153,7 +152,6 @@ export const openMenuPanel = (options: {
                 });
             } else if (options.type === "rollup") {
                 bindRollupData({protyle: options.protyle, data, menuElement});
-                (avPanelElement.querySelector(".b3-menu__item") as HTMLButtonElement).focus();
             }
             if (["select", "date", "relation", "rollup"].includes(options.type)) {
                 const inputElement = menuElement.querySelector("input");
