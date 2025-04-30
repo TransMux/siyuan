@@ -102,6 +102,7 @@ import {globalClickHideMenu} from "../../boot/globalEvent/click";
 import {hideTooltip} from "../../dialog/tooltip";
 // import the annotation panel display function
 import { showAnnotationEditPanel } from "../../mux/protyle-annotation";
+import { get } from "../../mux/settings";
 
 export class WYSIWYG {
     public lastHTMLs: { [key: string]: string } = {};
@@ -1872,10 +1873,12 @@ export class WYSIWYG {
                 if ((!isMobile() || protyle.toolbar?.element.classList.contains("fn__none")) && !nodeElement.classList.contains("av")) {
                     // if this block was part of a multi-block annotation, open its annotation panel
                     // 向上寻找最近的带有 custom-mux-protyle-annotation 属性的父元素
-                    const annotationElement = hasClosestByAttribute(nodeElement, "custom-mux-protyle-annotation", null);
-                    if (annotationElement) {
-                        showAnnotationEditPanel(protyle, annotationElement as HTMLElement, annotationElement.getAttribute("custom-mux-protyle-annotation"));
-                        return;
+                    if (get<boolean>("use-memo-as-annotation")) {
+                        const annotationElement = hasClosestByAttribute(nodeElement, "custom-mux-protyle-annotation", null);
+                        if (annotationElement) {
+                            showAnnotationEditPanel(protyle, annotationElement as HTMLElement, annotationElement.getAttribute("custom-mux-protyle-annotation"));
+                            return;
+                        }
                     }
                     contentMenu(protyle, nodeElement);
                     window.siyuan.menus.menu.popup({ x, y: y + 13, h: 26 });
