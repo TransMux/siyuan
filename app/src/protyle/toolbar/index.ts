@@ -994,12 +994,15 @@ export class Toolbar {
         const html = oldHTML || nodeElement.outerHTML;
         // Delegate inline-memo editing to annotation panel
         const isInlineMemo = types.includes("inline-memo");
-        if (get<boolean>("use-memo-as-annotation") && isInlineMemo) {
-            const annId = renderElement.getAttribute("data-inline-memo-content");
-            showAnnotationEditPanel(protyle, renderElement as HTMLElement, annId);
-            return;
-        }
         let title = "HTML";
+        if (isInlineMemo) {
+            if (get<boolean>("use-memo-as-annotation")) {
+                const annId = renderElement.getAttribute("data-inline-memo-content");
+                showAnnotationEditPanel(protyle, renderElement as HTMLElement, annId);
+                return;
+            }
+            title = window.siyuan.languages.memo;
+        }
         let placeholder = "";
         switch (renderElement.getAttribute("data-subtype")) {
             case "abc":
