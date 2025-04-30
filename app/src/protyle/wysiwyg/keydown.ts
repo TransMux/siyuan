@@ -72,6 +72,8 @@ import { onlyProtyleCommand } from "../../boot/globalEvent/command/protyle";
 import { AIChat } from "../../ai/chat";
 import { get } from "../../mux/settings";
 import { translateText } from "../util/mux/translate";
+import { addAnnotation } from "../../mux/protyle-annotation";
+import { showAnnotationEditPanel } from "../../mux/protyle-annotation";
 
 export const getContentByInlineHTML = (range: Range, cb: (content: string) => void) => {
     let html = "";
@@ -1398,6 +1400,41 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                 event.stopPropagation();
                 return true;
             }
+        }
+        // 添加对批注的判断
+        if (get<boolean>("use-memo-as-annotation") && matchHotKey(window.siyuan.config.keymap.editor.insert.memo.custom, event)) {
+            const selectsElement = Array.from(protyle.wysiwyg.element.querySelectorAll(".protyle-wysiwyg--select"));
+            if (selectsElement.length === 0) {
+                const selectedText = range.toString();
+                if (!selectedText) return;
+
+                const inlineEl = hasClosestByAttribute(range.startContainer, "data-type", "inline-memo") as HTMLElement;
+                // Clicking existing annotation: open editor
+                if (inlineEl && inlineEl.textContent === selectedText) {
+                    const annId = inlineEl.getAttribute("data-inline-memo-content") || "";
+                    showAnnotationEditPanel(protyle, inlineEl, annId);
+                    return;
+                }
+                const refId = nodeElement.getAttribute("data-node-id")!;
+                const oldHTML = nodeElement.outerHTML;
+                const newBlockId = await addAnnotation(refId, selectedText);
+                if (!newBlockId) return;
+
+                // Wrap selection and retrieve new inline element
+                const newNodes = protyle.toolbar.setInlineMark(protyle, "inline-memo", "range", { type: "inline-memo" }, true) as Node[];
+                const newInlineEl = newNodes[0] as HTMLElement;
+                newInlineEl.setAttribute("data-inline-memo-content", newBlockId);
+                newInlineEl.dataset.type += " mux-protyle-annotation";
+                // Persist inline annotation change
+                updateTransaction(protyle, refId, nodeElement.outerHTML, oldHTML);
+                // Open annotation panel
+                showAnnotationEditPanel(protyle, newInlineEl, newBlockId);
+                return;
+            }
+            // 多块逻辑
+            const annotationId = await addAnnotation(selectsElement[0].getAttribute("data-node-id")!, null, selectsElement);
+            if (!annotationId) return;
+            showAnnotationEditPanel(protyle, selectsElement[0] as HTMLElement, annotationId);
         }
 
         // toolbar action
