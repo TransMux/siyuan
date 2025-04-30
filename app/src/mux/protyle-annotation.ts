@@ -56,7 +56,7 @@ export async function showAnnotationEditPanel(
     const panel = protyle.toolbar.subElement;
     panel.innerHTML = `
       <div class="block__icons block__icons--menu fn__flex" style="border-radius: var(--b3-border-radius-b) var(--b3-border-radius-b) 0 0;">
-        <span class="fn__flex-1 resize__move">${window.siyuan.languages.memo}</span>
+        <span class="fn__flex-1 resize__move">批注</span>
         <span class="fn__space"></span>
         <button data-type="close" class="block__icon block__icon--show" aria-label="${window.siyuan.languages.close}"><svg><use xlink:href="#iconClose"></use></svg></button>
       </div>
