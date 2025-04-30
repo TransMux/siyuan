@@ -12,12 +12,9 @@ siyuan://blocks/20250205200123-bvfkrur
 }
 
 // 显示批注
-[custom-mux-protyle-annotation],
-[data-type~=mux-protyle-annotation] {
-    text-decoration-line: underline;
-    text-decoration-style: solid;
-    text-decoration-color: #65b84d;
-    text-decoration-thickness: 2px;
+[custom-mux-protyle-annotation] {
+    background-color: var(--b3-theme-primary-lightest);
+    border-bottom: 2px solid var(--b3-theme-primary);
 }
 
 .mux-protyle-annotation.protyle-util {
