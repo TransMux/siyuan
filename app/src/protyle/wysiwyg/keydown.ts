@@ -1434,6 +1434,9 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
             // 多块逻辑
             const annotationId = await addAnnotation(selectsElement[0].getAttribute("data-node-id")!, null, selectsElement);
             if (!annotationId) return;
+            updateBatchTransaction(selectsElement, protyle, (el: HTMLElement) => {
+                el.setAttribute("custom-mux-protyle-annotation", annotationId);
+            });
             showAnnotationEditPanel(protyle, selectsElement[0] as HTMLElement, annotationId);
         }
 

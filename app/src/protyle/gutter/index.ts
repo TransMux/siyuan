@@ -70,7 +70,6 @@ import { checkFold } from "../../util/noRelyPCFunction";
 import { copyTextByType } from "../toolbar/util";
 import { showMessage } from "../../dialog/message";
 import { 发送到第一个反链 } from "../../mux/utils";
-import { addAnnotation } from "../../mux/protyle-annotation";
 
 export class Gutter {
     public element: HTMLElement;
