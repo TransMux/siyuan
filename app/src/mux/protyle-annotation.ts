@@ -8,7 +8,7 @@ import { updateTransaction } from "../protyle/wysiwyg/transaction";
 export async function showAnnotationEditPanel(
     protyle: IProtyle,
     anchorEl: HTMLElement,
-    annotationBlockId: string
+    annotationBlockId: string,
 ) {
     // Validate annotation block exists
     try {
@@ -25,6 +25,7 @@ export async function showAnnotationEditPanel(
                     .filter(t => t !== "inline-memo" && t !== "mux-protyle-annotation");
                 inlineEl.setAttribute("data-type", types.join(" "));
                 inlineEl.removeAttribute("data-inline-memo-content");
+                inlineEl.removeAttribute("custom-mux-protyle-annotation");
                 // Commit transaction
                 if (blockId) {
                     updateTransaction(protyle, blockId, parentBlock.outerHTML, oldHTML);
