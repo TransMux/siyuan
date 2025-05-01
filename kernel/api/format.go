@@ -21,6 +21,7 @@ import (
 
 	"github.com/88250/gulu"
 	"github.com/gin-gonic/gin"
+	"github.com/siyuan-note/siyuan/kernel/logging"
 	"github.com/siyuan-note/siyuan/kernel/model"
 	"github.com/siyuan-note/siyuan/kernel/util"
 )
@@ -35,13 +36,17 @@ func netAssets2LocalAssets(c *gin.Context) {
 	}
 
 	id := arg["id"].(string)
-	err := model.NetAssets2LocalAssets(id, false, "")
-	if err != nil {
-		ret.Code = -1
-		ret.Msg = err.Error()
-		ret.Data = map[string]interface{}{"closeTimeout": 5000}
-		return
-	}
+	// Launch asset conversion asynchronously
+	go func(rootID string) {
+		if err := model.NetAssets2LocalAssets(rootID, false, ""); err != nil {
+			logging.LogErrorf("async NetAssets2LocalAssets failed: %s", err)
+			// Push error message via WebSocket
+			util.PushErrMsg(err.Error(), 5000)
+		}
+	}(id)
+	// Immediately respond; front end should listen for WebSocket progress
+	ret.Msg = "已开始后台下载资源"
+	ret.Data = map[string]interface{}{"closeTimeout": 1000}
 }
 
 func netImg2LocalAssets(c *gin.Context) {
