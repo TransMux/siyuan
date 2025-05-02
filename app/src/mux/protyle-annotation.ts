@@ -1,9 +1,10 @@
 import { Constants } from "../constants";
-import { fetchSyncPost } from "../util/fetch";
+import { fetchPost, fetchSyncPost } from "../util/fetch";
 import { hideElements } from "../protyle/ui/hideElements";
 import { setPosition } from "../util/setPosition";
 import { Protyle } from "../protyle";
 import { updateTransaction } from "../protyle/wysiwyg/transaction";
+import { get } from "./settings";
 
 export async function showAnnotationEditPanel(
     protyle: IProtyle,
@@ -133,6 +134,20 @@ export async function addAnnotation(refId: string, selectedText?: string, select
         dataType: "dom",
         data: tempElement.innerHTML,
     });
+
+    // 添加 annotationId 到数据库
+    const annotationAvID = get<string>("annotationAvID");
+    if (annotationAvID) {
+        setTimeout(async () => {
+            await fetchPost('/api/av/addAttributeViewBlocks', {
+                "avID": annotationAvID,
+                "srcs": [{
+                    "id": annotationId,
+                    "isDetached": false,
+                }]
+            });
+        }, 2000);
+    }
 
     return annotationId;
 }

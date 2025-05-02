@@ -94,6 +94,14 @@ export const SETTING_ITEMS: { [key: string]: Setting } = {
         section: "document",
         display: "input"
     },
+    批注avID: {
+        label: "批注的数据库avID",
+        description: "如果填写此项，那么在使用批注功能时，新创建的批注会自动添加到这个数据库中",
+        type: "string",
+        value: "",
+        section: "document",
+        display: "input"
+    },
     未读笔记本: {
         label: "未读笔记本",
         type: "string",
