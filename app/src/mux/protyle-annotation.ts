@@ -79,20 +79,20 @@ export async function showAnnotationEditPanel(
         }
     };
     autoHeight();
-    // Close button behavior and Escape key handling
-    const escKeyListener = (e: KeyboardEvent) => {
-        if (e.key === 'Escape' || e.key === 'Esc') {
-            panel.classList.add('fn__none');
-            document.removeEventListener('keydown', escKeyListener);
-        }
-    };
-    // Update close button to also cleanup Escape key listener
+    // Close button behavior
     panel.querySelector('[data-type="close"]')?.addEventListener("click", () => {
         panel.classList.add("fn__none");
-        document.removeEventListener('keydown', escKeyListener);
     });
-    // Add Escape key listener to close panel
-    document.addEventListener("keydown", escKeyListener);
+    // Capture Escape key globally to close the annotation panel
+    const onEscCapture = (e: KeyboardEvent) => {
+        if (e.key === 'Escape' || e.key === 'Esc') {
+            panel.classList.add('fn__none');
+            e.stopPropagation();
+            e.preventDefault();
+            document.removeEventListener('keydown', onEscCapture, true);
+        }
+    };
+    document.addEventListener('keydown', onEscCapture, true);
     // Mount a Protyle editor for the annotation block
     const container = panel.querySelector("#annotation-editor") as HTMLElement;
     // Instantiate Protyle editor for annotation block and focus
@@ -105,6 +105,16 @@ export async function showAnnotationEditPanel(
     annotationEditor.focus();
     // marker class for styling annotation panel
     panel.classList.add("mux-protyle-annotation");
+    // Add Escape key handling within nested Protyle editor to close the annotation panel
+    const escInNested = (e: KeyboardEvent) => {
+        if (e.key === 'Escape' || e.key === 'Esc') {
+            panel.classList.add('fn__none');
+            // Prevent nested Protyle from consuming the event
+            e.stopImmediatePropagation();
+        }
+    };
+    // Attach listener to nested Protyle editor content editable for capture-phase
+    annotationEditor.protyle.wysiwyg.element.addEventListener('keydown', escInNested, true);
 }
 
 export async function addAnnotation(refId: string, selectedText?: string, selectedBlocks?: Element[]) {

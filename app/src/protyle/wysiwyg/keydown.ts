@@ -1246,6 +1246,14 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
 
         // esc
         if (event.key === "Escape") {
+            // Close annotation panel if open
+            const annotationPanel = document.querySelector('.mux-protyle-annotation') as HTMLElement;
+            if (annotationPanel && !annotationPanel.classList.contains('fn__none')) {
+                annotationPanel.classList.add('fn__none');
+                event.stopPropagation();
+                event.preventDefault();
+                return;
+            }
             if (event.repeat) {
                 // https://github.com/siyuan-note/siyuan/issues/12989
                 const cardElement = hasClosestByClassName(range.startContainer, "card__main", true);

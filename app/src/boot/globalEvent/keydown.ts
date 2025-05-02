@@ -1438,6 +1438,14 @@ export const windowKeyDown = (app: App, event: KeyboardEvent) => {
     }
 
     if (event.key === "Escape" && !event.isComposing) {
+        // Close custom annotation panel if open
+        const annPanel = document.querySelector('.mux-protyle-annotation');
+        if (annPanel) {
+            (annPanel as HTMLElement).classList.add('fn__none');
+            event.stopPropagation();
+            event.preventDefault();
+            return;
+        }
         cancelDrag();
         const imgPreviewElement = document.querySelector(".protyle-img");
         if (imgPreviewElement) {
