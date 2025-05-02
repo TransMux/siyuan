@@ -11,7 +11,7 @@ export const addIDClickCount = (id: string) => {
             _idClickCounts[id] = 1
         }
         saveIDCount(id, _idClickCounts[id])
-    }
+    })
 }
 
 export const getIDClickCounts = (id: string) => {
