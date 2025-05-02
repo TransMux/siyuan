@@ -164,3 +164,33 @@ export function av在客户端渲染template(content: string, dataId: string) {
         return `渲染错误: ${error.message}, html=${content}`;
     }
 }
+
+/**
+ * Interface for the database query request
+ */
+interface SQLRequest {
+    stmt: string;
+    args?: any[];
+}
+
+/**
+ * Interface for the database query response
+ */
+interface SQLResponse {
+    code: number;
+    msg: string;
+    data: any[];
+}
+
+
+export function extraDBSQL(request: SQLRequest): Promise<any[]> {
+    return new Promise((resolve, reject) => {
+        fetchPost("/api/db/query", request, (response: SQLResponse) => {
+            if (response.code === 0) {
+                resolve(response.data || []);
+            } else {
+                reject(new Error(response.msg || "Unknown error"));
+            }
+        });
+    });
+}

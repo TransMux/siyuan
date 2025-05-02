@@ -1,21 +1,4 @@
-import { fetchPost } from "../util/fetch";
-
-/**
- * Interface for the database query request
- */
-interface SQLRequest {
-    stmt: string;
-    args?: any[];
-}
-
-/**
- * Interface for the database query response
- */
-interface SQLResponse {
-    code: number;
-    msg: string;
-    data: any[];
-}
+import { extraDBSQL } from "./utils";
 
 export interface Setting {
     label: string;
@@ -43,7 +26,7 @@ export class SettingsDB {
 
         try {
             // Create the settings table if it doesn't exist
-            await this.executeSQL({
+            await extraDBSQL({
                 stmt: `CREATE TABLE IF NOT EXISTS ${this.TABLE_NAME} (
                     key TEXT PRIMARY KEY,
                     label TEXT NOT NULL,
@@ -69,7 +52,7 @@ export class SettingsDB {
     public static async saveSetting(key: string, value: any): Promise<boolean> {
         await this.init();
         // First check if the setting exists
-        const existingResult = await this.executeSQL({
+        const existingResult = await extraDBSQL({
             stmt: `SELECT * FROM ${this.TABLE_NAME} WHERE key = ?`,
             args: [key]
         });
@@ -80,7 +63,7 @@ export class SettingsDB {
             if (typeof value === 'object') {
                 value = JSON.stringify(value);
             }
-            await this.executeSQL({
+            await extraDBSQL({
                 stmt: `UPDATE ${this.TABLE_NAME} SET value = ? WHERE key = ?`,
                 args: [value, key]
             });
@@ -96,7 +79,7 @@ export class SettingsDB {
             value = JSON.stringify(setting.value);
         }
 
-        await this.executeSQL({
+        await extraDBSQL({
             stmt: `INSERT OR REPLACE INTO ${this.TABLE_NAME} (key, label, description, type, value, section, display) VALUES (?, ?, ?, ?, ?, ?, ?)`,
             args: [setting.key, setting.label, setting.description ? setting.description : "", setting.type, value, setting.section, setting.display]
         });
@@ -111,7 +94,7 @@ export class SettingsDB {
         await this.init();
 
         try {
-            const result = await this.executeSQL({
+            const result = await extraDBSQL({
                 stmt: `SELECT value FROM ${this.TABLE_NAME} WHERE key = ?`,
                 args: [key]
             });
@@ -135,7 +118,7 @@ export class SettingsDB {
         await this.init();
 
         try {
-            await this.executeSQL({
+            await extraDBSQL({
                 stmt: `DELETE FROM ${this.TABLE_NAME} WHERE key = ?`,
                 args: [key]
             });
@@ -154,7 +137,7 @@ export class SettingsDB {
     public static async listAllSettings(): Promise<Record<string, unknown>> {
         await this.init();
 
-        const result = await this.executeSQL({
+        const result = await extraDBSQL({
             stmt: `SELECT * FROM ${this.TABLE_NAME}`
         });
 
@@ -165,22 +148,5 @@ export class SettingsDB {
         }
 
         return settings;
-    }
-
-    /**
-     * Execute a SQL query
-     * @param request The SQL request
-     * @returns The query result
-     */
-    private static executeSQL(request: SQLRequest): Promise<any[]> {
-        return new Promise((resolve, reject) => {
-            fetchPost("/api/db/query", request, (response: SQLResponse) => {
-                if (response.code === 0) {
-                    resolve(response.data || []);
-                } else {
-                    reject(new Error(response.msg || "Unknown error"));
-                }
-            });
-        });
     }
 } 
