@@ -136,7 +136,7 @@ export async function addAnnotation(refId: string, selectedText?: string, select
     });
 
     // 添加 annotationId 到数据库
-    const annotationAvID = get<string>("annotationAvID");
+    const annotationAvID = get<string>("批注avID");
     if (annotationAvID) {
         setTimeout(async () => {
             await fetchPost('/api/av/addAttributeViewBlocks', {
@@ -151,6 +151,6 @@ export async function addAnnotation(refId: string, selectedText?: string, select
 
     return annotationId;
 }
-const annotationTemplate = `<div data-marker="*" data-subtype="u" data-node-id="{annotationId}" data-type="NodeListItem" class="li"><div class="protyle-action" draggable="true"><svg><use xlink:href="#iconDot"></use></svg></div><div data-node-id="20250419185932-7on1qns" data-type="NodeParagraph" class="p"><div contenteditable="true" spellcheck="false"><span data-type="block-ref" data-subtype="s" data-id="{refId}">*</span></div><div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div></div>{selectedText}<div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div></div>`;
+const annotationTemplate = `<div data-marker="*" data-subtype="t" data-node-id="{annotationId}" data-type="NodeListItem" class="li"><div class="protyle-action" draggable="true"><svg><use xlink:href="#iconDot"></use></svg></div><div data-node-id="20250419185932-7on1qns" data-type="NodeParagraph" class="p"><div contenteditable="true" spellcheck="false"><span data-type="block-ref" data-subtype="s" data-id="{refId}">*</span></div><div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div></div>{selectedText}<div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div></div>`;
 
 const textNodeTemplate = `<div data-node-id="20250429025930-cfcmtsf" data-type="NodeParagraph" class="p"><div contenteditable="true" spellcheck="false">{text}</div><div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div></div>`
