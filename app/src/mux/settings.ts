@@ -31,6 +31,13 @@ export const SETTING_ITEMS: { [key: string]: Setting } = {
         section: "function",
         display: "toggle"
     },
+    "ref-search-order-by-frequency": {
+        label: "反链搜索结果按频率排序",
+        type: "boolean",
+        value: false,
+        section: "function",
+        display: "toggle"
+    },
     知识单元avID: {
         label: "知识单元avID",
         type: "string",
