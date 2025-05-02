@@ -20,6 +20,7 @@ import {hideElements} from "../ui/hideElements";
 import {genAssetHTML} from "../../asset/renderAssets";
 import {unicode2Emoji} from "../../emoji";
 import {avRender} from "../render/av/render";
+import {带排序的searchRefBlock} from "../../mux/idCount";
 
 const getHotkeyOrMarker = (hotkey: string, marker: string) => {
     if (hotkey) {
@@ -435,7 +436,7 @@ export const genHintItemHTML = (item: IBlock) => {
 export const hintRef = (key: string, protyle: IProtyle, source: THintSource): IHintData[] => {
     const nodeElement = hasClosestBlock(getEditorRange(protyle.wysiwyg.element).startContainer);
     protyle.hint.genLoading(protyle);
-    fetchPost("/api/search/searchRefBlock", {
+    带排序的searchRefBlock({
         k: key,
         id: nodeElement ? nodeElement.getAttribute("data-node-id") : protyle.block.parentID,
         beforeLen: Math.floor((Math.max(protyle.element.clientWidth / 2, 320) - 58) / 28.8),
@@ -491,7 +492,7 @@ export const hintEmbed = (key: string, protyle: IProtyle): IHintData[] => {
     }
     protyle.hint.genLoading(protyle);
     const nodeElement = hasClosestBlock(getEditorRange(protyle.wysiwyg.element).startContainer);
-    fetchPost("/api/search/searchRefBlock", {
+    带排序的searchRefBlock({
         k: key,
         isDatabase: false,
         beforeLen: Math.floor((Math.max(protyle.element.clientWidth / 2, 320) - 58) / 28.8),

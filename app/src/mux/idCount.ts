@@ -1,4 +1,6 @@
 // https://x.transmux.top/j/20250502210411-dyq3auf
+import { fetchPost } from "../util/fetch";
+import { get } from "./settings";
 import { extraDBSQL } from "./utils";
 
 const _idClickCounts: Record<string, number> = {}
@@ -47,4 +49,15 @@ export async function saveIDCount(id: string, count: number) {
         stmt: `INSERT OR REPLACE INTO mux_id_count (id, count) VALUES (?, ?)`,
         args: [id, count]
     });
+}
+
+export const 带排序的searchRefBlock = (data?: any, cb?: (response: any) => void, headers?: any) => {
+    fetchPost("/api/search/searchRefBlock", data, (response) => {
+        if (get<boolean>("ref-search-order-by-frequency")) {
+            response.data.blocks.sort((a: any, b: any) => {
+                return getIDClickCounts(b.id) - getIDClickCounts(a.id)
+            })
+        }
+        cb(response)
+    }, headers)
 }

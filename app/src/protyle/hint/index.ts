@@ -43,7 +43,7 @@ import { avRender } from "../render/av/render";
 import { genIconHTML } from "../render/util";
 import { updateAttrViewCellAnimation } from "../render/av/action";
 import { paste } from "../util/paste";
-import { addIDClickCount, getIDClickCounts } from "../../mux/idCount";
+import { addIDClickCount, getIDClickCounts, 带排序的searchRefBlock } from "../../mux/idCount";
 import { get } from "../../mux/settings";
 
 export class Hint {
@@ -340,7 +340,7 @@ ${unicode2Emoji(emoji.unicode)}</button>`;
 
     private genSearchHTML(protyle: IProtyle, searchElement: HTMLInputElement, nodeElement: false | HTMLElement, oldValue: string, source: THintSource) {
         this.element.lastElementChild.innerHTML = '<div class="ft__center"><img style="height:32px;width:32px;" src="/stage/loading-pure.svg"></div>';
-        fetchPost("/api/search/searchRefBlock", {
+        带排序的searchRefBlock({
             // https://x.transmux.top/j/20241101152241-xd5257k
             k: searchElement.value.trim(), // 去除 search key 两边的空格
             id: nodeElement ? nodeElement.getAttribute("data-node-id") : protyle.block.parentID,
@@ -348,15 +348,6 @@ ${unicode2Emoji(emoji.unicode)}</button>`;
             rootID: source === "av" ? "" : protyle.block.rootID,
             isDatabase: source === "av",
         }, (response) => {
-            debugger;
-            if (get<boolean>("ref-search-order-by-frequency")) {
-                // Sort blocks by click selection count (desc)
-                response.data.blocks.sort((a: IBlock, b: IBlock) => {
-                    const idA = a.id || "";
-                const idB = b.id || "";
-                return getIDClickCounts(idB) - getIDClickCounts(idA);
-                });
-            }
             let searchHTML = "";
             if (response.data.newDoc) {
                 const blockRefText = `((newFile "${oldValue}"${Constants.ZWSP}'${response.data.k}${Lute.Caret}'))`;
