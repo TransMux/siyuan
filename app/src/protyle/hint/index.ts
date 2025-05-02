@@ -43,6 +43,7 @@ import { avRender } from "../render/av/render";
 import { genIconHTML } from "../render/util";
 import { updateAttrViewCellAnimation } from "../render/av/action";
 import { paste } from "../util/paste";
+import { addIDClickCount, getIDClickCounts } from "../../mux/idCount";
 
 export class Hint {
     public timeId: number;
@@ -66,6 +67,21 @@ export class Hint {
             }
             const btnElement = hasClosestByTag(eventTarget, "BUTTON");
             if (btnElement && !btnElement.classList.contains("emojis__item") && !btnElement.classList.contains("emojis__type")) {
+                if (this.source === "search") {
+                    const dataValue = btnElement.getAttribute("data-value");
+                    try {
+                        const decoded = decodeURIComponent(dataValue || "");
+                        const tmp = document.createElement("div");
+                        tmp.innerHTML = decoded.replace(/<mark>/g, "").replace(/<\/mark>/g, "");
+                        const span = tmp.querySelector("span[data-type='block-ref']");
+                        const id = span?.getAttribute("data-id");
+                        if (id) {
+                            addIDClickCount(id)
+                        }
+                    } catch (e) {
+                        // ignore parsing errors
+                    }
+                }
                 this.fill(decodeURIComponent(btnElement.getAttribute("data-value")), protyle, false, this.source === "search" ? isNotCtrl(event) : isOnlyMeta(event));
                 event.preventDefault();
                 event.stopPropagation(); // https://github.com/siyuan-note/siyuan/issues/3710
@@ -331,6 +347,12 @@ ${unicode2Emoji(emoji.unicode)}</button>`;
             rootID: source === "av" ? "" : protyle.block.rootID,
             isDatabase: source === "av",
         }, (response) => {
+            // Sort blocks by click selection count (desc)
+            response.data.blocks.sort((a: IBlock, b: IBlock) => {
+                const idA = a.id || "";
+                const idB = b.id || "";
+                return getIDClickCounts(idB) - getIDClickCounts(idA);
+            });
             let searchHTML = "";
             if (response.data.newDoc) {
                 const blockRefText = `((newFile "${oldValue}"${Constants.ZWSP}'${response.data.k}${Lute.Caret}'))`;
