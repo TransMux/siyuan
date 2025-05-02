@@ -79,10 +79,20 @@ export async function showAnnotationEditPanel(
         }
     };
     autoHeight();
-    // Close button behavior
+    // Close button behavior and Escape key handling
+    const escKeyListener = (e: KeyboardEvent) => {
+        if (e.key === 'Escape' || e.key === 'Esc') {
+            panel.classList.add('fn__none');
+            document.removeEventListener('keydown', escKeyListener);
+        }
+    };
+    // Update close button to also cleanup Escape key listener
     panel.querySelector('[data-type="close"]')?.addEventListener("click", () => {
         panel.classList.add("fn__none");
+        document.removeEventListener('keydown', escKeyListener);
     });
+    // Add Escape key listener to close panel
+    document.addEventListener("keydown", escKeyListener);
     // Mount a Protyle editor for the annotation block
     const container = panel.querySelector("#annotation-editor") as HTMLElement;
     // Instantiate Protyle editor for annotation block and focus
