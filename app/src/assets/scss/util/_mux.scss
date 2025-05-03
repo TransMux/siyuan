@@ -12,18 +12,11 @@ siyuan://blocks/20250205200123-bvfkrur
 }
 
 // 显示批注
-[custom-mux-protyle-annotation],
-[data-type~="mux-protyle-annotation"] {
+[custom-mux-protyle-annotation] {
     text-decoration-line: underline;
     text-decoration-style: solid;
     text-decoration-color: #65b84d;
     text-decoration-thickness: 2px;
-}
-
-// 当同时存在inline-memo和mux-protyle-annotation时，取消背景色
-[data-type~="inline-memo"][data-type~="mux-protyle-annotation"] {
-    background-color: unset;
-    border-bottom: unset;
 }
 
 .mux-protyle-annotation .protyle-wysiwyg {
