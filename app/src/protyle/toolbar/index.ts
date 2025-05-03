@@ -46,7 +46,7 @@ import {confirmDialog} from "../../dialog/confirmDialog";
 import {paste, pasteAsPlainText, pasteEscaped} from "../util/paste";
 import {escapeHtml} from "../../util/escape";
 import {resizeSide} from "../../history/resizeSide";
-import { showAnnotationEditPanel, addAnnotation } from "../../mux/protyle-annotation";
+import { showAnnotationEditPanel } from "../../mux/protyle-annotation";
 import { get } from "../../mux/settings";
 
 export class Toolbar {

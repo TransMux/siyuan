@@ -1413,19 +1413,21 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
         if (get<boolean>("use-memo-as-annotation") && matchHotKey(window.siyuan.config.keymap.editor.insert.memo.custom, event)) {
             const selectsElement = Array.from(protyle.wysiwyg.element.querySelectorAll(".protyle-wysiwyg--select"));
             if (selectsElement.length === 0) {
-                const selectedText = range.toString();
-                if (!selectedText) return;
+                const tempElement = document.createElement("div");
+                tempElement.appendChild(range.cloneContents());
+                const selectedHTML = tempElement.innerHTML;
+                if (!selectedHTML) return;
 
                 const inlineEl = hasClosestByAttribute(range.startContainer, "data-type", "inline-memo") as HTMLElement;
                 // Clicking existing annotation: open editor
-                if (inlineEl && inlineEl.textContent === selectedText) {
+                if (inlineEl) {
                     const annId = inlineEl.getAttribute("data-inline-memo-content") || "";
                     showAnnotationEditPanel(protyle, inlineEl, annId);
                     return;
                 }
                 const refId = nodeElement.getAttribute("data-node-id")!;
                 const oldHTML = nodeElement.outerHTML;
-                const newBlockId = await addAnnotation(refId, selectedText);
+                const newBlockId = await addAnnotation(refId, selectedHTML);
                 if (!newBlockId) return;
 
                 // Wrap selection and retrieve new inline element

@@ -117,7 +117,7 @@ export async function showAnnotationEditPanel(
     annotationEditor.protyle.wysiwyg.element.addEventListener('keydown', escInNested, true);
 }
 
-export async function addAnnotation(refId: string, selectedText?: string, selectedBlocks?: Element[]) {
+export async function addAnnotation(refId: string, selectedHTML?: string, selectedBlocks?: Element[]) {
     // 开始构造插入dom
     let dom = annotationTemplate;
 
@@ -125,8 +125,8 @@ export async function addAnnotation(refId: string, selectedText?: string, select
     dom = dom.replace("{annotationId}", annotationId);
     dom = dom.replace("{refId}", refId);
 
-    if (selectedText) {
-        dom = dom.replace("{selectedText}", textNodeTemplate.replace("{text}", selectedText));
+    if (selectedHTML) {
+        dom = dom.replace("{selectedText}", textNodeTemplate.replace("{text}", selectedHTML));
     } else if (selectedBlocks) {
         dom = dom.replace("{selectedText}", selectedBlocks.map(block => block.outerHTML).join("\n"));
     }

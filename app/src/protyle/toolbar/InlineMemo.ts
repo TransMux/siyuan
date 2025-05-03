@@ -21,18 +21,21 @@ export class InlineMemo extends ToolbarItem {
 
             if(get<boolean>("use-memo-as-annotation")) {
                 // 批注逻辑
-                const selectedText = range.toString();
+                const tempElement = document.createElement("div");
+                tempElement.appendChild(range.cloneContents());
+                const selectedHTML = tempElement.innerHTML;
+
                 const inlineEl = hasClosestByAttribute(range.startContainer, "data-type", "inline-memo") as HTMLElement;
                 // Clicking existing annotation: open editor
-                if (inlineEl && inlineEl.textContent === selectedText) {
+                if (inlineEl) {
                     const annId = inlineEl.getAttribute("data-inline-memo-content") || "";
                     showAnnotationEditPanel(protyle, inlineEl, annId);
                     return;
                 }
-                if (!selectedText) return;
+                if (!selectedHTML) return;
                 const refId = nodeElement.getAttribute("data-node-id")!;
                 const oldHTML = nodeElement.outerHTML;
-                const newBlockId = await addAnnotation(refId, selectedText);
+                const newBlockId = await addAnnotation(refId, selectedHTML);
                 if (!newBlockId) return;
                 // Wrap selection and retrieve new inline element
                 const newNodes = protyle.toolbar.setInlineMark(protyle, "inline-memo", "range", { type: "inline-memo" }, true) as Node[];
