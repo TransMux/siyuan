@@ -21,6 +21,7 @@ import {stickyRow} from "../render/av/row";
 import {updateReadonly as updateReadonlyMethod} from "../breadcrumb/action";
 import {getContenteditableElement} from "../wysiwyg/getBlock";
 import {activeBlur} from "../../mobile/util/keyboardToolbar";
+import { avAttrRender } from "../../mux/avAttrRenderer";
 
 export const onGet = (options: {
     data: IWebSocketData,
@@ -213,6 +214,7 @@ const setHTML = (options: {
     highlightRender(protyle.wysiwyg.element);
     avRender(protyle.wysiwyg.element, protyle);
     blockRender(protyle, protyle.wysiwyg.element);
+    avAttrRender(protyle.wysiwyg.element);
     if (options.action.includes(Constants.CB_GET_HISTORY)) {
         return;
     }
