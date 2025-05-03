@@ -186,6 +186,7 @@ export async function initSettings() {
 
     console.log("Settings initialized and loaded into cache");
 }
+initSettings();
 
 // Helper function to parse setting value based on its type
 function parseSettingValue(value: any, type: string): any {
