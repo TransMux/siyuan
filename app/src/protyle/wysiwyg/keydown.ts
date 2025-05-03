@@ -1416,10 +1416,12 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                 const selectedText = range.toString();
                 if (!selectedText) return;
 
-                const inlineEl = hasClosestByAttribute(range.startContainer, "data-type", "inline-memo") as HTMLElement;
-                // Clicking existing annotation: open editor
+                // Find existing annotation by new data-type
+                const inlineEl = hasClosestByAttribute(range.startContainer, "data-type", "mux-protyle-annotation") as HTMLElement;
                 if (inlineEl && inlineEl.textContent === selectedText) {
-                    const annId = inlineEl.getAttribute("data-inline-memo-content") || "";
+                    const dataType = inlineEl.getAttribute("data-type") || "";
+                    const idToken = dataType.split(" ").find(token => token.startsWith("mux-protyle-annotation-id-"));
+                    const annId = idToken ? idToken.slice("mux-protyle-annotation-id-".length) : "";
                     showAnnotationEditPanel(protyle, inlineEl, annId);
                     return;
                 }
@@ -1428,11 +1430,11 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                 const newBlockId = await addAnnotation(refId, selectedText);
                 if (!newBlockId) return;
 
-                // Wrap selection and retrieve new inline element
-                const newNodes = protyle.toolbar.setInlineMark(protyle, "inline-memo", "range", { type: "inline-memo" }, true) as Node[];
+                // Wrap selection and retrieve new inline element as annotation
+                const newNodes = protyle.toolbar.setInlineMark(protyle, "mux-protyle-annotation", "range", { type: "mux-protyle-annotation" }, true) as Node[];
                 const newInlineEl = newNodes[0] as HTMLElement;
-                newInlineEl.setAttribute("data-inline-memo-content", newBlockId);
-                newInlineEl.dataset.type += " mux-protyle-annotation";
+                // Set data-type tokens for annotation and its ID
+                newInlineEl.setAttribute("data-type", `mux-protyle-annotation mux-protyle-annotation-id-${newBlockId}`);
                 // Persist inline annotation change
                 updateTransaction(protyle, refId, nodeElement.outerHTML, oldHTML);
                 // Open annotation panel
