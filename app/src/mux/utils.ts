@@ -143,6 +143,8 @@ async function 移除反链(element: Element, targetBlockID: string, protyle: IP
 }
 
 export function av在客户端渲染template(content: string, dataId: string) {
+    // 前端模板：html=console.log(`.action{toPrettyJson .}`.replace(/style="([^"]*)"/g, "style='$1'"))
+    // html=__avMuxTaskActionRender(`.action{toPrettyJson .}`.replace(/style="([^"]*)"/g, "style='$1'"), "$dataId")
     // https://x.transmux.top/j/20250424172333-6win6x7
     if (!get<boolean>("av-template-render-on-client")) {
         return content;
@@ -158,8 +160,6 @@ export function av在客户端渲染template(content: string, dataId: string) {
     // 设置dataId以支持异步操作，亦或是动态更新
     content = content.replace("$dataId", dataId);
     // 在客户端渲染
-    // 处理多行文本
-    content = content.replace(/\\n/g, "");
 
     try {
         return `${eval(content)}`;
