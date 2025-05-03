@@ -777,6 +777,8 @@ export class Toolbar {
                     (showMenuElement.textContent.replace(Constants.ZWSP, "") === "" || !showMenuElement.getAttribute("data-href"))) {
                     linkMenu(protyle, showMenuElement, showMenuElement.getAttribute("data-href") ? true : false);
                 }
+            } else if (type === "block-ref") {
+                this.range.collapse(false);
             }
         }
     }
