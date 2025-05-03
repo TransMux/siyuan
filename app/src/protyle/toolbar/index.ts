@@ -738,10 +738,6 @@ export class Toolbar {
         nodeElement.querySelectorAll("wbr").forEach(item => {
             item.remove();
         });
-        if (returnNewNodesOnly){
-            return newNodes;
-        }
-        updateTransaction(protyle, nodeElement.getAttribute("data-node-id"), nodeElement.outerHTML, html);
         if (startContainer && typeof startOffset === "number") {
             if (startContainer.nodeType === 3) {
                 this.range.setStart(startContainer, startOffset);
@@ -759,6 +755,10 @@ export class Toolbar {
         }
         focusByRange(this.range);
 
+        if (returnNewNodesOnly){
+            return newNodes;
+        }
+        updateTransaction(protyle, nodeElement.getAttribute("data-node-id"), nodeElement.outerHTML, html);
         const showMenuElement = newNodes[0] as HTMLElement;
         if (showMenuElement.nodeType !== 3) {
             const showMenuTypes = (showMenuElement.getAttribute("data-type") || "").split(" ");
