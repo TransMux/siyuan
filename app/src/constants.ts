@@ -647,6 +647,11 @@ export abstract class Constants {
                     show: false,
                     icon: "iconGlobalGraph",
                     hotkeyLangId: "globalGraph",
+                }, {
+                    type: "dailyNote",
+                    size: {width: 320, height: 0},
+                    show: false,
+                    icon: "iconCalendar",
                 }], [{
                     type: "backlink",
                     size: {width: 320, height: 0},

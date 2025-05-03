@@ -21,8 +21,9 @@ import {Plugin} from "../../plugin";
 import {Custom} from "./Custom";
 import {recordBeforeResizeTop} from "../../protyle/util/resize";
 import {Constants} from "../../constants";
+import {DailyNote} from "./DailyNote";
 
-const TYPES = ["file", "outline", "inbox", "bookmark", "tag", "graph", "globalGraph", "backlink"];
+const TYPES = ["file", "outline", "inbox", "bookmark", "tag", "graph", "globalGraph", "backlink", "dailyNote"];
 
 export class Dock {
     public element: HTMLElement;
@@ -652,6 +653,7 @@ export class Dock {
                             }
                         });
                         break;
+                    case "dailyNote": tab = new Tab({ callback: (tab) => { tab.addModel(new DailyNote(this.app, tab)); } }); break;
                     default:
                         tab = new Tab({
                             callback: (tab: Tab) => {
