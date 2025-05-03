@@ -22,12 +22,10 @@ export class InlineMemo extends ToolbarItem {
             if(get<boolean>("use-memo-as-annotation")) {
                 // 批注逻辑
                 const selectedText = range.toString();
-                const inlineEl = hasClosestByAttribute(range.startContainer, "data-type", "mux-protyle-annotation") as HTMLElement;
+                const inlineEl = hasClosestByAttribute(range.startContainer, "data-type", "inline-memo") as HTMLElement;
                 // Clicking existing annotation: open editor
                 if (inlineEl && inlineEl.textContent === selectedText) {
-                    const dataType = inlineEl.getAttribute("data-type") || "";
-                    const idToken = dataType.split(" ").find(token => token.startsWith("mux-protyle-annotation-id-"));
-                    const annId = idToken ? idToken.slice("mux-protyle-annotation-id-".length) : "";
+                    const annId = inlineEl.getAttribute("data-inline-memo-content") || "";
                     showAnnotationEditPanel(protyle, inlineEl, annId);
                     return;
                 }
@@ -37,15 +35,30 @@ export class InlineMemo extends ToolbarItem {
                 const newBlockId = await addAnnotation(refId, selectedText);
                 if (!newBlockId) return;
                 // Wrap selection and retrieve new inline element
-                const newNodes = protyle.toolbar.setInlineMark(protyle, "mux-protyle-annotation", "range", { type: "mux-protyle-annotation" }, true) as Node[];
+                const newNodes = protyle.toolbar.setInlineMark(protyle, "inline-memo", "range", { type: "inline-memo" }, true) as Node[];
                 const newInlineEl = newNodes[0] as HTMLElement;
-                // Set data-type to include annotation identifier token
-                newInlineEl.setAttribute("data-type", `mux-protyle-annotation mux-protyle-annotation-id-${newBlockId}`);
+                newInlineEl.setAttribute("data-inline-memo-content", newBlockId);
+                newInlineEl.dataset.type += " mux-protyle-annotation";
                 // Persist inline annotation change
                 updateTransaction(protyle, refId, nodeElement.outerHTML, oldHTML);
                 // Open annotation panel
                 showAnnotationEditPanel(protyle, newInlineEl, newBlockId);
             }
+            // 原版逻辑
+            const memoElement = hasClosestByAttribute(range.startContainer, "data-type", "inline-memo");
+            if (memoElement && memoElement.textContent === range.toString()) {
+                // https://github.com/siyuan-note/siyuan/issues/6569
+                protyle.toolbar.showRender(protyle, memoElement);
+                return;
+            }
+
+            if (range.toString() === "") {
+                return;
+            }
+
+            protyle.toolbar.setInlineMark(protyle, "inline-memo", "range", {
+                type: "inline-memo",
+            });
         });
     }
 }
