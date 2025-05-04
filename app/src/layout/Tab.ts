@@ -14,6 +14,7 @@ import {openNewWindow} from "../window/openNewWindow";
 import {ipcRenderer} from "electron";
 /// #endif
 import {layoutToJSON, saveLayout} from "./util";
+import { removeTabBackground, setTabBackground } from "../mux/colorfulTab";
 
 export class Tab {
     public parent: Wnd;
@@ -28,6 +29,7 @@ export class Tab {
 
     constructor(options: ITab) {
         this.id = genUUID();
+        setTabBackground(this.id);
         this.callback = options.callback;
         if (options.title || options.icon) {
             this.title = options.title;
@@ -236,5 +238,6 @@ export class Tab {
 
     public close() {
         this.parent.removeTab(this.id);
+        removeTabBackground(this.id);
     }
 }
