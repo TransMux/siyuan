@@ -166,6 +166,11 @@ export const commandPanel = (app: App) => {
     </li>`;
     
 
+    // 新增命令：删除当前选中块的全部 inline 样式
+    commandHtml += `<li class="b3-list-item" data-command="removeInlineStyles">
+        <span class="b3-list-item__text">选中范围：删除全部 inline 样式 (selected range: remove inline styles)</span>
+    </li>`;
+
     // https://x.transmux.top/j/20241101223108-o9zjabn
     let recentDocsHtml = "";
     let index = 0;
@@ -663,6 +668,49 @@ export const execByCommand = async (options: {
                 if (operations.length > 0) {
                     transaction(protyle, operations, []);
                     hideElements(["select"], protyle);
+                }
+            }
+            break;
+        case "removeInlineStyles":
+            if (!isFileFocus && protyle) {
+                // 1. 获取所有选中的块
+                const selectedBlocks = protyle.wysiwyg.element.querySelectorAll('.protyle-wysiwyg--select');
+                if (selectedBlocks.length === 0) {
+                    return;
+                }
+                const operations: IOperation[] = [];
+                const undoOperations: IOperation[] = [];
+                // 2. 遍历每个选中块，移除所有内联样式元素
+                selectedBlocks.forEach(element => {
+                    const blockId = element.getAttribute('data-node-id');
+                    if (!blockId) return;
+                    // 保存原始 HTML 用于撤销
+                    const oldHTML = element.outerHTML;
+                    // 不断查找并展开第一个内联样式span，直到没有为止
+                    let inlineEl = element.querySelector('span[data-type]');
+                    while (inlineEl) {
+                        const parentNode = inlineEl.parentNode;
+                        // 将所有子节点移到父节点中，并移除wrapper
+                        while (inlineEl.firstChild) {
+                            parentNode.insertBefore(inlineEl.firstChild, inlineEl);
+                        }
+                        parentNode.removeChild(inlineEl);
+                        inlineEl = element.querySelector('span[data-type]');
+                    }
+                    // 标记更新用于撤销
+                    element.setAttribute('updated', dayjs().format('YYYYMMDDHHmmss'));
+                    operations.push({
+                        action: 'update',
+                        id: blockId,
+                        data: element.outerHTML,
+                        parentID: element.parentElement?.getAttribute('data-node-id') || protyle.block.parentID
+                    });
+                    undoOperations.push({ action: 'update', id: blockId, data: oldHTML });
+                });
+                // 3. 执行事务并隐藏选中样式
+                if (operations.length > 0) {
+                    transaction(protyle, operations, undoOperations);
+                    hideElements(['select'], protyle);
                 }
             }
             break;
