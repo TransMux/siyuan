@@ -160,6 +160,7 @@ export function av在客户端渲染template(content: string, dataId: string) {
     // 设置dataId以支持异步操作，亦或是动态更新
     content = content.replace("$dataId", dataId);
     // 在客户端渲染
+    content = content.replace(/\n/g, "");
 
     try {
         return `${eval(content)}`;
