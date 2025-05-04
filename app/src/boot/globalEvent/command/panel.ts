@@ -680,12 +680,16 @@ export const execByCommand = async (options: {
                 }
                 const operations: IOperation[] = [];
                 const undoOperations: IOperation[] = [];
-                // 2. 遍历每个选中块，移除所有内联样式元素
+                // 2. 遍历每个选中块，移除所有自定义属性及内联样式元素
                 selectedBlocks.forEach(element => {
                     const blockId = element.getAttribute('data-node-id');
                     if (!blockId) return;
                     // 保存原始 HTML 用于撤销
                     const oldHTML = element.outerHTML;
+                    // 删除块元素上的所有自定义属性 (属性名以 'custom-' 开头)
+                    Array.from(element.attributes).map(a => a.name)
+                        .filter(name => name.startsWith('custom-'))
+                        .forEach(name => element.removeAttribute(name));
                     // 不断查找并展开第一个内联样式span，直到没有为止
                     let inlineEl = element.querySelector('span[data-type]');
                     while (inlineEl) {
