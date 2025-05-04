@@ -38,6 +38,14 @@ export const SETTING_ITEMS: { [key: string]: Setting } = {
         section: "function",
         display: "toggle"
     },
+    "fetch-request-cache": {
+        label: "fetch请求缓存",
+        description: "缓存100ms内的重复请求，返回之前的结果，避免重复请求",
+        type: "boolean",
+        value: false,
+        section: "function",
+        display: "toggle"
+    },
     知识单元avID: {
         label: "知识单元avID",
         type: "string",
