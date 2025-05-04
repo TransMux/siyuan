@@ -148,7 +148,7 @@ export async function addAnnotation(refId: string, selectedHTML?: string, select
         e.removeAttribute("refcount");
         e.removeAttribute("custom-mux-protyle-annotation");
     });
-
+    debugger;
     await fetchSyncPost("/api/block/appendDailyNoteBlock", {
         notebook: window.siyuan.storage[Constants.LOCAL_DAILYNOTEID],
         dataType: "dom",
@@ -171,6 +171,6 @@ export async function addAnnotation(refId: string, selectedHTML?: string, select
 
     return annotationId;
 }
-const annotationTemplate = `<div data-marker="*" data-subtype="t" data-node-id="{annotationId}" data-type="NodeListItem" class="li"><div class="protyle-action" draggable="true"><svg><use xlink:href="#iconUncheck"></use></svg></div><div data-node-id="20250419185932-7on1qns" data-type="NodeParagraph" class="p"><div contenteditable="true" spellcheck="false"><span data-type="block-ref" data-subtype="s" data-id="{refId}">*</span></div><div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div></div>{selectedText}<div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div></div>`;
+const annotationTemplate = `<div data-marker="*" data-subtype="t" data-node-id="{annotationId}" data-type="NodeListItem" class="li"><div class="protyle-action protyle-action--task" draggable="true"><svg><use xlink:href="#iconUncheck"></use></svg></div><div data-node-id="20250419185932-7on1qns" data-type="NodeParagraph" class="p"><div contenteditable="true" spellcheck="false"><span data-type="block-ref" data-subtype="s" data-id="{refId}">*</span></div><div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div></div>{selectedText}<div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div></div>`;
 
 const textNodeTemplate = `<div data-node-id="20250429025930-cfcmtsf" data-type="NodeParagraph" class="p"><div contenteditable="true" spellcheck="false">{text}</div><div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div></div>`
