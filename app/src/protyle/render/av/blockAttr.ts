@@ -192,6 +192,16 @@ export const renderAVAttribute = (element: HTMLElement, id: string, protyle: IPr
     <div class="fn__flex-1"></div>
     <span data-type="remove" class="block__icon block__icon--warning block__icon--show b3-tooltips__w b3-tooltips" aria-label="${window.siyuan.languages.removeAV}"><svg><use xlink:href="#iconTrashcan"></use></svg></span>
 </div>`;
+            // https://x.transmux.top/j/20250504122200-mq0p2zr
+            // 文档内数据库渲染，支持自定义规则
+            if (!renderInFloatPanel) {
+                // @ts-ignore
+                if (window.__muxPrerenderDocAvAttribute) {
+                    // @ts-ignore
+                    window.__muxPrerenderDocAvAttribute(table);
+                }
+            }
+
             // siyuan://blocks/20241030141818-poymuxo
             for (let i = 0; i < table.keyValues.length; i++) {
                 // 排除主键类型
