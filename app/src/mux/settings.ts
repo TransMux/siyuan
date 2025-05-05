@@ -10,6 +10,13 @@ export const SETTING_ITEMS: { [key: string]: Setting } = {
         section: "function",
         display: "toggle"
     },
+    "disable-protyle-tail-click-insert": {
+        label: "禁止在编辑器尾部点击时自动插入新块",
+        type: "boolean",
+        value: false,
+        section: "function",
+        display: "toggle"
+    },
     "av-template-render-on-client": {
         label: "av模板 html= 在客户端渲染 eval",
         type: "boolean",
