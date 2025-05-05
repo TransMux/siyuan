@@ -171,6 +171,8 @@ export async function addAnnotation(refId: string, selectedHTML?: string, select
 
     return annotationId;
 }
-const annotationTemplate = `<div data-marker="*" data-subtype="t" data-node-id="{annotationId}" data-type="NodeListItem" class="li"><div class="protyle-action protyle-action--task" draggable="true"><svg><use xlink:href="#iconUncheck"></use></svg></div><div data-node-id="20250419185932-7on1qns" data-type="NodeParagraph" class="p"><div contenteditable="true" spellcheck="false"><span data-type="block-ref" data-subtype="s" data-id="{refId}">*</span></div><div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div></div>{selectedText}<div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div></div>`;
+
+// TODO：这里的插入总是会有问题。。。
+const annotationTemplate = `<div data-marker="*" data-subtype="t" data-node-id="{annotationId}" data-type="NodeListItem" class="li"><div class="protyle-action protyle-action--task" draggable="true"><svg><use xlink:href="#iconUncheck"></use></svg></div><div data-node-id="20250419185932-7on1qns" data-node-index="1" data-type="NodeParagraph" class="p"><div contenteditable="true" spellcheck="false"><span data-type="block-ref" data-subtype="s" data-id="{refId}">*</span></div><div class="protyle-attr" contenteditable="false"></div></div>{selectedText}<div class="protyle-attr" contenteditable="false"></div></div>`;
 
 const textNodeTemplate = `<div data-node-id="20250429025930-cfcmtsf" data-type="NodeParagraph" class="p"><div contenteditable="true" spellcheck="false">{text}</div><div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div></div>`
