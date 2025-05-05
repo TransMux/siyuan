@@ -113,6 +113,17 @@ func appendDailyNoteBlock(c *gin.Context) {
 	}
 
 	parentID := util.GetTreeID(p)
+	if dataType == "markdown" || dataType == "dom" {
+		luteEngine2 := util.NewLute()
+		tree2 := luteEngine2.BlockDOM2Tree(data)
+		if tree2 != nil && tree2.Root != nil && tree2.Root.FirstChild != nil && tree2.Root.FirstChild.Type == ast.NodeList {
+			dailyTree, lerr := model.LoadTreeByBlockID(parentID)
+			if lerr == nil && dailyTree != nil && dailyTree.Root != nil && dailyTree.Root.LastChild != nil && dailyTree.Root.LastChild.Type == ast.NodeList {
+				parentID = dailyTree.Root.LastChild.ID
+			}
+		}
+	}
+
 	transactions := []*model.Transaction{
 		{
 			DoOperations: []*model.Operation{
@@ -147,7 +158,7 @@ func prependDailyNoteBlock(c *gin.Context) {
 	if util.InvalidIDPattern(boxID, ret) {
 		return
 	}
-	if "markdown" == dataType {
+	if dataType == "markdown" || dataType == "dom" {
 		luteEngine := util.NewLute()
 		var err error
 		data, err = dataBlockDOM(data, luteEngine)
@@ -397,7 +408,7 @@ func appendBlock(c *gin.Context) {
 	if util.InvalidIDPattern(parentID, ret) {
 		return
 	}
-	if "markdown" == dataType {
+	if dataType == "markdown" || dataType == "dom" {
 		luteEngine := util.NewLute()
 		var err error
 		data, err = dataBlockDOM(data, luteEngine)
@@ -442,7 +453,7 @@ func prependBlock(c *gin.Context) {
 	if util.InvalidIDPattern(parentID, ret) {
 		return
 	}
-	if "markdown" == dataType {
+	if dataType == "markdown" || dataType == "dom" {
 		luteEngine := util.NewLute()
 		var err error
 		data, err = dataBlockDOM(data, luteEngine)
@@ -503,7 +514,7 @@ func insertBlock(c *gin.Context) {
 		}
 	}
 
-	if "markdown" == dataType {
+	if dataType == "markdown" || dataType == "dom" {
 		luteEngine := util.NewLute()
 		var err error
 		data, err = dataBlockDOM(data, luteEngine)
@@ -552,7 +563,7 @@ func updateBlock(c *gin.Context) {
 	}
 
 	luteEngine := util.NewLute()
-	if "markdown" == dataType {
+	if dataType == "markdown" || dataType == "dom" {
 		var err error
 		data, err = dataBlockDOM(data, luteEngine)
 		if err != nil {
@@ -656,7 +667,7 @@ func batchUpdateBlock(c *gin.Context) {
 
 		data := blockMap["data"].(string)
 		dataType := blockMap["dataType"].(string)
-		if "markdown" == dataType {
+		if dataType == "markdown" || dataType == "dom" {
 			var err error
 			data, err = dataBlockDOM(data, luteEngine)
 			if err != nil {
