@@ -270,7 +270,7 @@ const updateEmbed = (protyle: IProtyle, operation: IOperation) => {
 
     const updateHTML = (item: Element, html: string) => {
         const tempElement = document.createElement("template");
-        tempElement.innerHTML = html;
+        tempElement.innerHTML = protyle.lute.SpinBlockDOM(html);
         tempElement.content.querySelectorAll('[contenteditable="true"]').forEach(editItem => {
             editItem.setAttribute("contenteditable", "false");
         });
@@ -655,14 +655,15 @@ export const onTransaction = (protyle: IProtyle, operation: IOperation, isUndo: 
                     }, 450);
                 }
             });
+            const attrElement = item.querySelector(".protyle-attr");
             if (data.new["custom-avs"] && !data.new["av-names"]) {
-                nodeAttrHTML += item.lastElementChild.querySelector(".protyle-attr--av")?.outerHTML || "";
+                nodeAttrHTML += attrElement.querySelector(".protyle-attr--av")?.outerHTML || "";
             }
-            const refElement = item.lastElementChild.querySelector(".protyle-attr--refcount");
+            const refElement = attrElement.querySelector(".protyle-attr--refcount");
             if (refElement) {
                 nodeAttrHTML += refElement.outerHTML;
             }
-            item.lastElementChild.innerHTML = nodeAttrHTML + Constants.ZWSP;
+            attrElement.innerHTML = nodeAttrHTML + Constants.ZWSP;
         });
         return;
     }

@@ -72,6 +72,11 @@ export const input = async (protyle: IProtyle, blockElement: HTMLElement, range:
                 (brNextElement as HTMLElement).getAttribute("data-type")?.indexOf("inline-math") > -1) {
                 wbrNextElement.remove();
             }
+            // https://github.com/siyuan-note/siyuan/issues/14290
+            if (event.inputType === "deleteContentBackward" &&
+                wbrNextElement.previousSibling.previousSibling?.textContent.endsWith("\n")) {
+                wbrNextElement.outerHTML = "\n";
+            }
         }
     }
     const id = blockElement.getAttribute("data-node-id");
@@ -207,6 +212,7 @@ export const input = async (protyle: IProtyle, blockElement: HTMLElement, range:
                 }
             });
         }
+        html = "";
         Array.from(tempElement.content.children).forEach((item, index) => {
             const tempId = item.getAttribute("data-node-id");
             let realElement;
@@ -266,6 +272,8 @@ export const input = async (protyle: IProtyle, blockElement: HTMLElement, range:
                     }
                 }
             }
+            // https://github.com/siyuan-note/siyuan/issues/14766
+            html += realElement.outerHTML;
         });
     } else if (blockElement.getAttribute("data-type") === "NodeCodeBlock") {
         editElement.parentElement.removeAttribute("data-render");

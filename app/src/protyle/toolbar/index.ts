@@ -12,7 +12,7 @@ import {
     setFirstNodeRange,
     setLastNodeRange
 } from "../util/selection";
-import {hasClosestBlock, hasClosestByAttribute, hasClosestByClassName, hasClosestByTag} from "../util/hasClosest";
+import {hasClosestBlock, hasClosestByAttribute, hasClosestByClassName} from "../util/hasClosest";
 import {Link} from "./Link";
 import {setPosition} from "../../util/setPosition";
 import {transaction, updateTransaction} from "../wysiwyg/transaction";
@@ -195,6 +195,9 @@ export class Toolbar {
             startElement = startElement.parentElement;
         } else if (startElement.childElementCount > 0 && startElement.childNodes[range.startOffset]?.nodeType !== 3) {
             startElement = startElement.childNodes[range.startOffset] as HTMLElement;
+            if (startElement?.tagName === "WBR") {
+                startElement = startElement.parentElement;
+            }
         }
         if (!startElement || startElement.nodeType === 3) {
             return [];
@@ -208,10 +211,10 @@ export class Toolbar {
         } else if (endElement.childElementCount > 0 && endElement.childNodes[range.endOffset]?.nodeType !== 3) {
             endElement = endElement.childNodes[range.endOffset] as HTMLElement;
         }
-        if (!endElement || endElement.nodeType === 3) {
+        if (types.length === 0 && (!endElement || endElement.nodeType === 3)) {
             return [];
         }
-        if (!["DIV", "TD", "TH", "TR"].includes(endElement.tagName) && !startElement.isSameNode(endElement)) {
+        if (endElement && !["DIV", "TD", "TH", "TR"].includes(endElement.tagName) && !startElement.isSameNode(endElement)) {
             types = types.concat((endElement.getAttribute("data-type") || "").split(" "));
         }
         range.cloneContents().childNodes.forEach((item: HTMLElement) => {
@@ -259,6 +262,23 @@ export class Toolbar {
             this.range.startOffset > -1 && this.range.endOffset <= this.range.startContainer.textContent.length) {
             rangeTypes = rangeTypes.concat((this.range.startContainer.parentElement.getAttribute("data-type") || "").split(" "));
         }
+        const selectText = this.range.toString();
+        let keepZWPS = false;
+        // ctrl+b/u/i  https://github.com/siyuan-note/siyuan/issues/14820
+        if (!selectText && this.range.startOffset === 1 && this.range.startContainer.textContent === Constants.ZWSP) {
+            let newElement;
+            if (this.range.startContainer.nodeType === 1) {
+                newElement = this.range.startContainer as HTMLElement;
+            } else {
+                newElement = this.range.startContainer.parentElement;
+            }
+            if (newElement.tagName === "SPAN") {
+                rangeTypes = rangeTypes.concat((newElement.getAttribute("data-type") || "").split(" "));
+                this.range.setStart(newElement.firstChild, 0);
+                this.range.setEnd(newElement.lastChild, newElement.lastChild.textContent.length || 0);
+                keepZWPS = true;
+            }
+        }
         if (rangeTypes.length === 1) {
             // https://github.com/siyuan-note/siyuan/issues/6501
             // https://github.com/siyuan-note/siyuan/issues/12877
@@ -273,7 +293,6 @@ export class Toolbar {
                 return;
             }
         }
-        const selectText = this.range.toString();
         fixTableRange(this.range);
 
         let contents;
@@ -330,8 +349,11 @@ export class Toolbar {
                 item.remove();
             }
         });
-        if (this.range.startContainer.nodeType !== 3) {
+        if (selectText && this.range.startContainer.nodeType !== 3) {
             let emptyNode: Element = this.range.startContainer.childNodes[this.range.startOffset] as HTMLElement;
+            if (!emptyNode) {
+                emptyNode = this.range.startContainer.childNodes[this.range.startOffset - 1] as HTMLElement;
+            }
             if (emptyNode && emptyNode.nodeType === 3) {
                 if ((this.range.startContainer as HTMLElement).tagName === "DIV") {
                     emptyNode = emptyNode.previousSibling as HTMLElement;
@@ -339,7 +361,8 @@ export class Toolbar {
                     emptyNode = this.range.startContainer as HTMLElement;
                 }
             }
-            if (emptyNode && emptyNode.nodeType !== 3 && emptyNode.textContent.replace(Constants.ZWSP, "") === "") {
+            if (emptyNode && emptyNode.nodeType !== 3 && emptyNode.textContent.replace(Constants.ZWSP, "") === "" &&
+                !["TD", "TH"].includes(emptyNode.tagName)) {
                 emptyNode.remove();
             }
         }
@@ -360,7 +383,6 @@ export class Toolbar {
         const toolbarElement = isMobile() ? document.querySelector("#keyboardToolbar .keyboard__dynamic").nextElementSibling : this.element;
         const actionBtn = action === "toolbar" ? toolbarElement.querySelector(`[data-type="${type}"]`) : undefined;
         const newNodes: Node[] = [];
-        let keepZWPS = false;
         let startContainer: Node;
         let endContainer: Node;
         let startOffset: number;
@@ -495,7 +517,7 @@ export class Toolbar {
                         if (item.textContent) {
                             const inlineElement = document.createElement("span");
                             inlineElement.setAttribute("data-type", type);
-                            inlineElement.textContent = item.textContent;
+                            inlineElement.textContent = type === "a" ? (item.textContent.trim() || "*") : item.textContent;
                             setFontStyle(inlineElement, textObj);
 
                             if (type === "text" && !inlineElement.getAttribute("style")) {
@@ -608,7 +630,17 @@ export class Toolbar {
         for (let i = newNodes.length - 1; i > -1; i--) {
             this.range.insertNode(newNodes[i]);
         }
-
+        if (newNodes.length === 1 && newNodes[0].textContent === Constants.ZWSP) {
+            this.range.setStart(newNodes[0], 1);
+            this.range.collapse(true);
+            if (newNodes[0].nodeType !== 3) {
+                // 不选中后，ctrl+g 光标重置
+                const currentType = ((newNodes[0] as HTMLElement).getAttribute("data-type") || "").split(" ");
+                if (currentType.includes("code") || currentType.includes("tag") || currentType.includes("kbd")) {
+                    keepZWPS = false;
+                }
+            }
+        }
         if (!keepZWPS) {
             // 合并元素
             for (let i = 0; i <= newNodes.length; i++) {
@@ -693,6 +725,12 @@ export class Toolbar {
                     currentNode = hasNextSibling(newNodes[i - 1]) as HTMLElement;
                 }
                 if (!currentNode) {
+                    if (previousElement.nodeType !== 3) {
+                        const currentType = (previousElement.getAttribute("data-type") || "").split(" ");
+                        if (currentType.includes("code") || currentType.includes("tag") || currentType.includes("kbd")) {
+                            previousElement.insertAdjacentText("afterend", Constants.ZWSP);
+                        }
+                    }
                     break;
                 }
                 if (currentNode.nodeType === 3) {
@@ -1533,7 +1571,7 @@ ${item.name}
         let html = "";
         const hasCopy = range.toString() !== "" || (range.cloneContents().childNodes[0] as HTMLElement)?.classList?.contains("emoji");
         if (hasCopy) {
-            html += "<button class=\"keyboard__action\" data-action=\"copy\"><svg><use xlink:href=\"#iconCopy\"></use></svg></button>";
+            html += '<button class="keyboard__action" data-action="copy"><svg><use xlink:href="#iconCopy"></use></svg></button>';
             if (!protyle.disabled) {
                 html += `<button class="keyboard__action" data-action="cut"><svg><use xlink:href="#iconCut"></use></svg></button>
 <button class="keyboard__action" data-action="delete"><svg><use xlink:href="#iconTrashcan"></use></svg></button>`;
