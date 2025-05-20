@@ -86,7 +86,10 @@ export function openUnreadWeekArticle(app: App) {
         path: `/${get<string>("本周未读目录")}.sy`,
     }).then((response) => {
         const blockIds = response.data.files.map((item: any) => item.id).slice(0, 5);
-        console.log(blockIds);
+        if (blockIds.length === 0) {
+            showMessage("本周未读文章为空", 1000, "error");
+            return;
+        }
         for (const blockId of blockIds) {
             openFileById({
                 app,
