@@ -11,6 +11,12 @@ import { translateText } from "../protyle/util/mux/translate";
 import { openFileById } from "../editor/util";
 import { muxInsertAnnotationAfterBlock, muxInsertPictureAnnotationAfterBlock } from "../util/mux";
 
+// Add a function to check if a string contains only English characters
+const isEnglishOnly = (text: string): boolean => {
+    // Check if the string contains only English letters, numbers, punctuation and spaces
+    return /^[A-Za-z0-9\s.,;:!?"'()\-\[\]{}\/\\<>@#$%^&*+=_|~`]+$/.test(text);
+};
+
 export const initAnno = (element: HTMLElement, pdf: any) => {
     getConfig(pdf);
     const pdfConfig = pdf.appConfig;
@@ -420,14 +426,24 @@ const showToolbar = (element: HTMLElement, range: Range, target?: HTMLElement) =
         setPosition(utilElement, rect.left, rect.bottom);
         rectElement = null;
 
-        // https://x.transmux.top/j/20241102123919-980m43m
-        translateElement.value = range.toString();
-        translateText(translateElement.value).then((result) => {
-            translateElement.value = result;
-            // https://x.transmux.top/j/20241102172534-dmknlgc
-            translateElement.style.height = "auto";
-            translateElement.style.height = translateElement.scrollHeight + "px";
-        });
+        // Get the selected text
+        const selectedText = range.toString();
+        
+        // Only show translation element and trigger translation if the text is entirely in English
+        if (isEnglishOnly(selectedText)) {
+            translateElement.value = selectedText;
+            translateText(selectedText).then((result) => {
+                translateElement.value = result;
+                // https://x.transmux.top/j/20241102172534-dmknlgc
+                translateElement.style.height = "auto";
+                translateElement.style.height = translateElement.scrollHeight + "px";
+            });
+            // Make the translation element visible
+            translateElement.style.display = "block";
+        } else {
+            // Hide the translation element if the text is not entirely in English
+            translateElement.style.display = "none";
+        }
         return;
     }
     // 选中已有的标注 https://x.transmux.top/j/20241102165258-ltqvdsx
@@ -436,13 +452,20 @@ const showToolbar = (element: HTMLElement, range: Range, target?: HTMLElement) =
     // https://x.transmux.top/j/20241102165817-9eunfgk
     const targetRect = target.children[target.children.length - 2].getBoundingClientRect();
     setPosition(utilElement, targetRect.left, targetRect.top + targetRect.height + 4);
-    // 设置翻译
-    translateText(target.dataset.content).then((result) => {
-        translateElement.value = result;
-        // https://x.transmux.top/j/20241102172534-dmknlgc
-        translateElement.style.height = "auto";
-        translateElement.style.height = translateElement.scrollHeight + "px";
-    });
+    // 设置翻译 - only if the content is in English
+    if (target.dataset.content && isEnglishOnly(target.dataset.content)) {
+        translateText(target.dataset.content).then((result) => {
+            translateElement.value = result;
+            // https://x.transmux.top/j/20241102172534-dmknlgc
+            translateElement.style.height = "auto";
+            translateElement.style.height = translateElement.scrollHeight + "px";
+        });
+        // Make the translation element visible
+        translateElement.style.display = "block";
+    } else {
+        // Hide the translation element if the content is not entirely in English
+        translateElement.style.display = "none";
+    }
 };
 
 const getTextNode = (element: HTMLElement, isFirst: boolean) => {
