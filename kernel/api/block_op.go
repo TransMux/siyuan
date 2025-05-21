@@ -158,7 +158,7 @@ func prependDailyNoteBlock(c *gin.Context) {
 	if util.InvalidIDPattern(boxID, ret) {
 		return
 	}
-	if dataType == "markdown" || dataType == "dom" {
+	if dataType == "markdown" {
 		luteEngine := util.NewLute()
 		var err error
 		data, err = dataBlockDOM(data, luteEngine)
@@ -408,7 +408,7 @@ func appendBlock(c *gin.Context) {
 	if util.InvalidIDPattern(parentID, ret) {
 		return
 	}
-	if dataType == "markdown" || dataType == "dom" {
+	if dataType == "markdown" {
 		luteEngine := util.NewLute()
 		var err error
 		data, err = dataBlockDOM(data, luteEngine)
@@ -453,7 +453,7 @@ func prependBlock(c *gin.Context) {
 	if util.InvalidIDPattern(parentID, ret) {
 		return
 	}
-	if dataType == "markdown" || dataType == "dom" {
+	if dataType == "markdown" {
 		luteEngine := util.NewLute()
 		var err error
 		data, err = dataBlockDOM(data, luteEngine)
@@ -514,7 +514,7 @@ func insertBlock(c *gin.Context) {
 		}
 	}
 
-	if dataType == "markdown" || dataType == "dom" {
+	if dataType == "markdown" {
 		luteEngine := util.NewLute()
 		var err error
 		data, err = dataBlockDOM(data, luteEngine)
@@ -563,7 +563,7 @@ func updateBlock(c *gin.Context) {
 	}
 
 	luteEngine := util.NewLute()
-	if dataType == "markdown" || dataType == "dom" {
+	if dataType == "markdown" {
 		var err error
 		data, err = dataBlockDOM(data, luteEngine)
 		if err != nil {
@@ -667,7 +667,7 @@ func batchUpdateBlock(c *gin.Context) {
 
 		data := blockMap["data"].(string)
 		dataType := blockMap["dataType"].(string)
-		if dataType == "markdown" || dataType == "dom" {
+		if dataType == "markdown" {
 			var err error
 			data, err = dataBlockDOM(data, luteEngine)
 			if err != nil {

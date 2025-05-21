@@ -29,8 +29,8 @@ export function muxInsertAnnotationAfterBlock(blockId: string, idPath: string, c
         if (response.code === 0 && response.data) {
             fetchPost("/api/block/insertBlock", {
                 previousID: blockId,
-                dataType: "dom",
-                data: `<div data-marker="*" data-subtype="u" data-node-id="${randomBlockId()}" data-type="NodeListItem" class="li" updated="${updatedTime()}"><div class="protyle-action" draggable="true"><svg><use xlink:href="#iconDot"></use></svg></div><div data-node-id="${randomBlockId()}" data-type="NodeParagraph" class="p block-focus" updated="${updatedTime()}"><div contenteditable="true" spellcheck="false"><span data-type="file-annotation-ref" data-id="${idPath}">${content}</span></div><div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div></div><div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div></div>`
+                dataType: "DOM",
+                data: `<div data-marker="*" data-subtype="u" data-node-id="${randomBlockId()}" data-type="NodeListItem" class="li" updated="${updatedTime()}"><div class="protyle-action" draggable="true"><svg><use xlink:href="#iconDot"></use></svg></div><div data-node-id="${randomBlockId()}" data-type="NodeParagraph" class="p block-focus" updated="${updatedTime()}"><div contenteditable="true" spellcheck="false"><span data-type="file-annotation-ref" data-id="${idPath}">${content}</span></div><div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div></div><div class="protyle-attr" contenteditable="false"></div></div>`
             },
                 (response: any) => {
                     const newBlockId = response.data[0]["doOperations"][0]["id"];
@@ -58,8 +58,8 @@ export function muxInsertPictureAnnotationAfterBlock(blockId: string, idPath: st
         if (response.code === 0 && response.data) {
             fetchPost("/api/block/insertBlock", {
                 previousID: blockId,
-                dataType: "dom",
-                data: `<div data-marker="*" data-subtype="u" data-node-id="${randomBlockId()}" data-type="NodeListItem" class="li" updated="${updatedTime()}"><div class="protyle-action" draggable="true"><svg><use xlink:href="#iconDot"></use></svg></div><div data-node-id="${randomBlockId()}" data-node-index="1" data-type="NodeParagraph" class="p block-focus" updated="${updatedTime()}"><div contenteditable="true" spellcheck="false"><span data-type="file-annotation-ref" data-id="${idPath}">${nowTimestring}</span><span contenteditable="false" data-type="img" class="img"><span> </span><span><span class="protyle-action protyle-icons"><span class="protyle-icon protyle-icon--only"><svg class="svg"><use xlink:href="#iconMore"></use></svg></span></span><img src="${firstImageUrl}" data-src="${firstImageUrl}" loading="lazy"><span class="protyle-action__drag"></span><span class="protyle-action__title"><span></span></span></span><span> </span></span>&ZeroWidthSpace;</div><div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div></div><div class="protyle-attr" contenteditable="false"></div></div>`
+                dataType: "DOM",
+                data: `<div data-marker="*" data-subtype="u" data-node-id="${randomBlockId()}" data-type="NodeListItem" class="li" updated="${updatedTime()}"><div class="protyle-action" draggable="true"><svg><use xlink:href="#iconDot"></use></svg></div><div data-node-id="${randomBlockId()}" data-node-index="1" data-type="NodeParagraph" class="p block-focus" updated="${updatedTime()}"><div contenteditable="true" spellcheck="false"><span data-type="file-annotation-ref" data-id="${idPath}">${nowTimestring}</span><span contenteditable="false" data-type="img" class="img"><span> </span><span><span class="protyle-action protyle-icons"><span class="protyle-icon protyle-icon--only"><svg class="svg"><use xlink:href="#iconMore"></use></svg></span></span><img src="${firstImageUrl}" data-src="${firstImageUrl}" loading="lazy"><span class="protyle-action__drag"></span><span class="protyle-action__title"><span></span></span></span><span> </span></span>&ZeroWidthSpace;</div><div class="protyle-attr" contenteditable="false"></div></div><div class="protyle-attr" contenteditable="false"></div></div>`
             },
                 (response: any) => {
                     const newBlockId = response.data[0]["doOperations"][0]["id"];
