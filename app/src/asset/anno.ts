@@ -442,6 +442,7 @@ const showToolbar = (element: HTMLElement, range: Range, target?: HTMLElement) =
             translateElement.style.display = "block";
         } else {
             // Hide the translation element if the text is not entirely in English
+            translateElement.value = "";
             translateElement.style.display = "none";
         }
         return;
@@ -464,6 +465,7 @@ const showToolbar = (element: HTMLElement, range: Range, target?: HTMLElement) =
         translateElement.style.display = "block";
     } else {
         // Hide the translation element if the content is not entirely in English
+        translateElement.value = "";
         translateElement.style.display = "none";
     }
 };
