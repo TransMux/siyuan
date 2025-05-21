@@ -2259,6 +2259,22 @@ export class WYSIWYG {
                 return;
             }
 
+            // handle math ref & id ref click
+            const target = event.target as HTMLElement;
+            const hrefElement = target.querySelector('a[href^="#"]') || target.closest('a[href^="#"]');
+            if (hrefElement) {
+                const href = hrefElement.getAttribute('href');
+                if (href && href.startsWith('#')) {
+                    event.preventDefault();
+                    const labelId = href.substring(1);
+                    const labelElement = document.getElementById(labelId);
+                    if (labelElement) {
+                        labelElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    return;
+                }
+            }
+
             if (!event.shiftKey) {
                 this.shiftStartElement = undefined;
             }

@@ -25,21 +25,32 @@ export const mathRender = (element: Element, cdn = Constants.PROTYLE_CDN, maxWid
                     return;
                 }
                 mathElement.setAttribute("data-render", "true");
-                let macros = {};
+                let macros: Record<string, string> = {};
                 try {
                     macros = looseJsonParse(window.siyuan.config.editor.katexMacros || "{}");
+                    // Add support for \label and \eqref
+                    macros["\\label"] = "\\htmlId{#1}{}";
+                    macros["\\eqref"] = "\\href{###1}{(\\text{#1})}";
+                    macros["\\ref"] = "\\href{###1}{\\text{#1}}";
                 } catch (e) {
                     console.warn("KaTex macros is not JSON", e);
                 }
                 const isBlock = mathElement.tagName === "DIV";
                 try {
-                    const mathHTML = window.katex.renderToString(Lute.UnEscapeHTMLStr(mathElement.getAttribute("data-content")), {
+                    // Use type assertion to avoid TypeScript errors with the trust function
+                    const options: any = {
                         displayMode: isBlock,
                         output: "html",
                         macros,
-                        trust: true, // REF: https://katex.org/docs/supported#html
-                        strict: (errorCode) => errorCode === "unicodeTextInMathMode" ? "ignore" : "warn",
-                    });
+                        trust: (context: { command: string }) => ['\\htmlId', '\\href'].includes(context.command),
+                        strict: (errorCode: string) => errorCode === "unicodeTextInMathMode" ? "ignore" : "warn",
+                    };
+                    
+                    const mathHTML = window.katex.renderToString(
+                        Lute.UnEscapeHTMLStr(mathElement.getAttribute("data-content")), 
+                        options
+                    );
+                    
                     const blockElement = hasClosestBlock(mathElement);
                     if (isBlock) {
                         genRenderFrame(mathElement);
