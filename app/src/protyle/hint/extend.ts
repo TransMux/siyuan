@@ -451,7 +451,13 @@ export const hintRef = (key: string, protyle: IProtyle, source: THintSource): IH
                 removeInlineType(ref, cancelType);
             }
         });
+        // 移除nodeElement中所有的wbr
+        const wbrs = nodeElement.querySelectorAll("wbr");
+        wbrs.forEach((wbr) => {
+            wbr.remove();
+        });
         updateTransaction(protyle, nodeElement.getAttribute("data-node-id"), nodeElement.outerHTML, oldHTML);
+        // 选中原来的范围
         focusByRange(range);
         return [];
     }
