@@ -489,7 +489,8 @@ func getRefIDsByFileAnnotationID(c *gin.Context) {
 	var refTexts []string
 	for i, rt := range rawRefTexts {
 		if rt == "*" {
-			refTexts = append(refTexts, model.GetBlockRefText(refIDs[i]))
+			// use static content from database
+			refTexts = append(refTexts, model.GetStaticBlockContent(refIDs[i]))
 		} else {
 			refTexts = append(refTexts, "")
 		}

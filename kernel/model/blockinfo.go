@@ -17,12 +17,13 @@
 package model
 
 import (
-	"github.com/emirpasic/gods/sets/hashset"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/emirpasic/gods/sets/hashset"
 
 	"github.com/88250/gulu"
 	"github.com/88250/lute/ast"
@@ -671,4 +672,13 @@ func buildBacklinkListItemRefs(refDefs []*RefDefs) (originalRefBlockIDs map[stri
 		}
 	}
 	return
+}
+
+// GetStaticBlockContent returns the stored block content directly from the database, avoiding AST/Lute overhead.
+func GetStaticBlockContent(id string) string {
+	blk := sql.GetBlock(id)
+	if blk == nil {
+		return ""
+	}
+	return blk.Content
 }
