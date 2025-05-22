@@ -53,6 +53,13 @@ export const SETTING_ITEMS: { [key: string]: Setting } = {
         section: "function",
         display: "toggle"
     },
+    "引用时先取消选区内的反链": {
+        label: "引用，如果选区内存在反链（block-ref 和 file-annotation-ref），先取消这些反链",
+        type: "boolean",
+        value: false,
+        section: "function",
+        display: "toggle"
+    },
     知识单元avID: {
         label: "知识单元avID",
         type: "string",

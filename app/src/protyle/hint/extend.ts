@@ -22,6 +22,7 @@ import {unicode2Emoji} from "../../emoji";
 import {avRender} from "../render/av/render";
 import {带排序的searchRefBlock} from "../../mux/idCount";
 import { removeInlineType } from "../toolbar/util";
+import { get } from "../../mux/settings";
 
 const getHotkeyOrMarker = (hotkey: string, marker: string) => {
     if (hotkey) {
@@ -440,26 +441,28 @@ export const hintRef = (key: string, protyle: IProtyle, source: THintSource): IH
     if (!nodeElement) {
         return [];
     }
-    // 如果选中区域包含引用，先取消这些引用并返回
-    const refs = nodeElement.querySelectorAll("[data-type='block-ref'], [data-type='file-annotation-ref']") as NodeListOf<HTMLElement>;
-    if (refs.length > 0) {
-        const oldHTML = nodeElement.outerHTML;
-        refs.forEach((ref) => {
-            const refTypes = (ref.getAttribute("data-type") || "").split(" ");
-            const cancelType = refTypes.find(t => t === "block-ref" || t === "file-annotation-ref");
-            if (cancelType) {
-                removeInlineType(ref, cancelType);
-            }
-        });
-        // 移除nodeElement中所有的wbr
-        const wbrs = nodeElement.querySelectorAll("wbr");
-        wbrs.forEach((wbr) => {
-            wbr.remove();
-        });
-        updateTransaction(protyle, nodeElement.getAttribute("data-node-id"), nodeElement.outerHTML, oldHTML);
-        // 选中原来的范围
-        focusByRange(range);
-        return [];
+    if(get<boolean>("引用时先取消选区内的反链")){
+        // 如果选中区域包含引用，先取消这些引用并返回
+        const refs = nodeElement.querySelectorAll("[data-type='block-ref'], [data-type='file-annotation-ref']") as NodeListOf<HTMLElement>;
+        if (refs.length > 0) {
+            const oldHTML = nodeElement.outerHTML;
+            refs.forEach((ref) => {
+                const refTypes = (ref.getAttribute("data-type") || "").split(" ");
+                const cancelType = refTypes.find(t => t === "block-ref" || t === "file-annotation-ref");
+                if (cancelType) {
+                    removeInlineType(ref, cancelType);
+                }
+            });
+            // 移除nodeElement中所有的wbr
+            const wbrs = nodeElement.querySelectorAll("wbr");
+            wbrs.forEach((wbr) => {
+                wbr.remove();
+            });
+            updateTransaction(protyle, nodeElement.getAttribute("data-node-id"), nodeElement.outerHTML, oldHTML);
+            // 选中原来的范围
+            focusByRange(range);
+            return [];
+        }
     }
 
     protyle.hint.genLoading(protyle);
