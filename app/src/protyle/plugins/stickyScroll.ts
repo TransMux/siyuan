@@ -72,7 +72,7 @@ export const initStickyScroll = (protyle: any) => {
         }
         lastId = id;
         // 使用双向搜索构建面包屑路径
-        const ancestors: HTMLElement[] = [];
+        let ancestors: HTMLElement[] = [];
         let current: HTMLElement | null = blockElement;
         while (current && current !== protyle.wysiwyg.element) {
             // 方向1：在同级中搜索前面的兄弟元素
@@ -103,6 +103,9 @@ export const initStickyScroll = (protyle: any) => {
                 ancestors.unshift(parentBlock);
             }
             current = parentBlock;
+        }
+        if (ancestors.length > 3) {
+            ancestors = ancestors.slice(-3);
         }
         if (!ancestors.length) {
             stickyContainer.style.display = 'none';
@@ -136,7 +139,6 @@ export const initStickyScroll = (protyle: any) => {
                     const target = protyle.contentElement.querySelector(`[data-node-id="${nodeId}"]`) as HTMLElement | null;
                     if (target) {
                         target.scrollIntoView({ behavior: 'auto', block: 'start' });
-                        protyle.wysiwyg.element.focus();
                         event.stopPropagation();
                         event.preventDefault();
                     }
