@@ -441,20 +441,18 @@ export const hintRef = (key: string, protyle: IProtyle, source: THintSource): IH
         return [];
     }
     // 如果选中区域包含引用，先取消这些引用并返回
-    const startRefEl = hasClosestByAttribute(range.startContainer, "data-type", "block-ref") as HTMLElement
-        || hasClosestByAttribute(range.startContainer, "data-type", "file-annotation-ref") as HTMLElement;
-    const endRefEl = hasClosestByAttribute(range.endContainer, "data-type", "block-ref") as HTMLElement
-        || hasClosestByAttribute(range.endContainer, "data-type", "file-annotation-ref") as HTMLElement;
-    const refEl = startRefEl || endRefEl;
-    if (refEl) {
-        const refTypes = (refEl.getAttribute("data-type") || "").split(" ");
-        const cancelType = refTypes.find(t => t === "block-ref" || t === "file-annotation-ref");
-        if (cancelType) {
-            const oldHTML = nodeElement.outerHTML;
-            removeInlineType(refEl, cancelType);
-            updateTransaction(protyle, nodeElement.getAttribute("data-node-id"), nodeElement.outerHTML, oldHTML);
-            focusByRange(range);
-        }
+    const refs = nodeElement.querySelectorAll("[data-type='block-ref'], [data-type='file-annotation-ref']") as NodeListOf<HTMLElement>;
+    if (refs.length > 0) {
+        const oldHTML = nodeElement.outerHTML;
+        refs.forEach((ref) => {
+            const refTypes = (ref.getAttribute("data-type") || "").split(" ");
+            const cancelType = refTypes.find(t => t === "block-ref" || t === "file-annotation-ref");
+            if (cancelType) {
+                removeInlineType(ref, cancelType);
+            }
+        });
+        updateTransaction(protyle, nodeElement.getAttribute("data-node-id"), nodeElement.outerHTML, oldHTML);
+        focusByRange(range);
         return [];
     }
 
