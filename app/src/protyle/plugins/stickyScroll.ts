@@ -17,21 +17,22 @@ export const initStickyScroll = (protyle: any) => {
   border-bottom: 1px solid var(--b3-border-color);
   width: 100%;
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   padding: 4px 24px;
   box-sizing: border-box;
   z-index: 1;
 }
-.protyle-sticky-scroll__item {
+.protyle-sticky-scroll__row {
+  width: 100%;
   cursor: pointer;
-  margin-right: 16px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding: 4px 8px;
-  border-radius: var(--b3-border-radius);
-  font-size: var(--b3-font-size-editor);
+  line-height: 24px;
+  padding: 2px 0;
 }
-.protyle-sticky-scroll__item:hover {
+.protyle-sticky-scroll__row:hover {
   background-color: var(--b3-list-hover);
 }
 `;
@@ -77,38 +78,36 @@ export const initStickyScroll = (protyle: any) => {
             }
             // Build breadcrumb into sticky container
             stickyContainer.innerHTML = '';
-            data.forEach((item, idx) => {
-                // icon
-                const icon = document.createElement('svg');
-                icon.className = 'popover__block';
-                icon.setAttribute('data-id', item.id);
-                const use = document.createElement('use');
-                use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', `#${getIconByType(item.type, item.subType)}`);
-                icon.appendChild(use);
-                stickyContainer.appendChild(icon);
-                // text
-                if (item.name) {
-                    const span = document.createElement('span');
-                    span.className = 'protyle-sticky-scroll__item';
-                    span.textContent = item.name;
-                    span.title = item.name;
-                    span.addEventListener('click', () => {
-                        // jump to this block
-                        const el = protyle.wysiwyg.element.querySelector(`[data-node-id="${item.id}"]`);
-                        el?.scrollIntoView({ behavior: 'auto', block: 'start' });
+            data.forEach(item => {
+                // Find corresponding DOM block for indent
+                const el = protyle.wysiwyg.element.querySelector(`[data-node-id="${item.id}"]`) as HTMLElement | null;
+                const indent = el ? el.offsetLeft : 0;
+                // Row container
+                const row = document.createElement('div');
+                row.className = 'protyle-sticky-scroll__row';
+                row.style.paddingLeft = indent + 'px';
+                row.textContent = item.name || '';
+                // Click to jump
+                row.addEventListener('click', () => {
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'auto', block: 'start' });
                         protyle.wysiwyg.element.focus();
-                    });
-                    stickyContainer.appendChild(span);
-                }
-                // arrow
-                if (idx < data.length - 1) {
-                    const arrow = document.createElement('svg');
-                    arrow.className = 'protyle-sticky-scroll__arrow';
-                    const useArrow = document.createElement('use');
-                    useArrow.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', '#iconRight');
-                    arrow.appendChild(useArrow);
-                    stickyContainer.appendChild(arrow);
-                }
+                    }
+                });
+                // Right-click to show context menu
+                row.addEventListener('contextmenu', ev => {
+                    ev.preventDefault();
+                    if (el) {
+                        const rect = el.getBoundingClientRect();
+                        el.dispatchEvent(new MouseEvent('contextmenu', {
+                            bubbles: true,
+                            cancelable: true,
+                            clientX: rect.left,
+                            clientY: rect.top
+                        }));
+                    }
+                });
+                stickyContainer.appendChild(row);
             });
             stickyContainer.style.display = '';
         });
