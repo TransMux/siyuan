@@ -1,4 +1,7 @@
 // Plugin for Protyle to implement VSCode-like sticky scroll
+import {fetchPost} from "../../util/fetch";
+import {getIconByType} from "../../editor/getIcon";
+import {hasClosestBlock} from "../util/hasClosest";
 export const initStickyScroll = (protyle: any) => {
     // Prevent duplicate initialization
     if (protyle.stickyScrollInitialized) {
@@ -41,49 +44,74 @@ export const initStickyScroll = (protyle: any) => {
     // Insert it before the scrollable content
     protyle.element.insertBefore(stickyContainer, protyle.contentElement);
 
-    // Update function to render the current heading
+    // Update function: find topmost block and fetch its breadcrumb path
+    let lastId: string | null = null;
     const updateSticky = () => {
-        const headings = Array.from(
-            protyle.wysiwyg.element.querySelectorAll('[data-type="NodeHeading"]')
-        ) as HTMLElement[];
-        const scrollTop = protyle.contentElement.scrollTop;
-        let current: HTMLElement | null = null;
-        for (const h of headings) {
-            if (h.offsetTop <= scrollTop) {
-                current = h;
-            } else {
-                break;
-            }
+        const rect = protyle.contentElement.getBoundingClientRect();
+        let target = document.elementFromPoint(rect.left + rect.width / 2, rect.top + 5) as HTMLElement | null;
+        if (target && target.classList.contains('protyle-wysiwyg')) {
+            target = document.elementFromPoint(rect.left + rect.width / 2, rect.top + 20) as HTMLElement | null;
         }
-        if (current) {
-            // Only render the active heading
-            stickyContainer.innerHTML = '';
-            const item = document.createElement('div');
-            item.className = 'protyle-sticky-scroll__item';
-            item.textContent = current.textContent || '';
-            item.title = current.textContent || '';
-            // Click to jump to the heading
-            item.addEventListener('click', () => {
-                current.scrollIntoView({ behavior: 'auto', block: 'start' });
-                protyle.wysiwyg.element.focus();
-            });
-            // Right-click to show context menu
-            item.addEventListener('contextmenu', (ev) => {
-                ev.preventDefault();
-                const rect = current.getBoundingClientRect();
-                current.dispatchEvent(new MouseEvent('contextmenu', {
-                    bubbles: true,
-                    cancelable: true,
-                    clientX: rect.left,
-                    clientY: rect.top
-                }));
-            });
-            stickyContainer.appendChild(item);
-            stickyContainer.style.display = '';
-        } else {
+        const rawBlock = target ? hasClosestBlock(target) : false;
+        if (!rawBlock) {
             stickyContainer.style.display = 'none';
-            stickyContainer.innerHTML = '';
+            return;
         }
+        const blockElement = rawBlock as HTMLElement;
+        const id = blockElement.getAttribute('data-node-id');
+        if (!id || id === lastId) {
+            return;
+        }
+        lastId = id;
+        // Fetch breadcrumb path for the current block
+        fetchPost('/api/block/getBlockBreadcrumb', { id, excludeTypes: [] }, (response: IWebSocketData | string) => {
+            // Handle text or error
+            if (typeof response === 'string') {
+                stickyContainer.style.display = 'none';
+                return;
+            }
+            const data = response.data as any[];
+            if (!data.length) {
+                stickyContainer.style.display = 'none';
+                return;
+            }
+            // Build breadcrumb into sticky container
+            stickyContainer.innerHTML = '';
+            data.forEach((item, idx) => {
+                // icon
+                const icon = document.createElement('svg');
+                icon.className = 'popover__block';
+                icon.setAttribute('data-id', item.id);
+                const use = document.createElement('use');
+                use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', `#${getIconByType(item.type, item.subType)}`);
+                icon.appendChild(use);
+                stickyContainer.appendChild(icon);
+                // text
+                if (item.name) {
+                    const span = document.createElement('span');
+                    span.className = 'protyle-sticky-scroll__item';
+                    span.textContent = item.name;
+                    span.title = item.name;
+                    span.addEventListener('click', () => {
+                        // jump to this block
+                        const el = protyle.wysiwyg.element.querySelector(`[data-node-id="${item.id}"]`);
+                        el?.scrollIntoView({ behavior: 'auto', block: 'start' });
+                        protyle.wysiwyg.element.focus();
+                    });
+                    stickyContainer.appendChild(span);
+                }
+                // arrow
+                if (idx < data.length - 1) {
+                    const arrow = document.createElement('svg');
+                    arrow.className = 'protyle-sticky-scroll__arrow';
+                    const useArrow = document.createElement('use');
+                    useArrow.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', '#iconRight');
+                    arrow.appendChild(useArrow);
+                    stickyContainer.appendChild(arrow);
+                }
+            });
+            stickyContainer.style.display = '';
+        });
     };
 
     // Attach scroll listener on editor content
