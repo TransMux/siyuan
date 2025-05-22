@@ -115,15 +115,19 @@ export const initStickyScroll = (protyle: any) => {
         stickyContainer.innerHTML = '';
         ancestors.forEach(orig => {
             const clone = orig.cloneNode(true) as HTMLElement;
-
             if (orig.getAttribute('data-type') === 'NodeListItem') {
-                // For list items, keep only the first block child
+                // For list items, keep only the first block child and its preceding protyle-action div
                 const blocks = Array.from(clone.children).filter(child => 
                     (child as HTMLElement).hasAttribute('data-node-id')
                 );
                 clone.innerHTML = '';
                 if (blocks.length > 0) {
-                    clone.appendChild(blocks[0]);
+                    const firstBlock = blocks[0];
+                    const actionDiv = firstBlock.previousElementSibling;
+                    if (actionDiv && actionDiv.classList.contains('protyle-action')) {
+                        clone.appendChild(actionDiv.cloneNode(true));
+                    }
+                    clone.appendChild(firstBlock);
                 }
             }
 
