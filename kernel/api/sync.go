@@ -31,6 +31,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/siyuan-note/siyuan/kernel/conf"
 	"github.com/siyuan-note/siyuan/kernel/model"
+	"github.com/siyuan-note/siyuan/kernel/mux"
 	"github.com/siyuan-note/siyuan/kernel/util"
 )
 
@@ -440,7 +441,10 @@ func getBootSync(c *gin.Context) {
 
 func performSync(c *gin.Context) {
 	ret := gulu.Ret.NewResult()
-	defer c.JSON(http.StatusOK, ret)
+	defer func() {
+		mux.ReopenPluginDatabaseAfterSync()
+		c.JSON(http.StatusOK, ret)
+	}()
 
 	arg, ok := util.JsonArg(c, ret)
 	if !ok {

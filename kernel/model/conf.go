@@ -625,6 +625,8 @@ func Close(force, setCurrentWorkspace bool, execInstallPkg int) (exitCode int) {
 			((IsSubscriber() && conf.ProviderSiYuan == Conf.Sync.Provider) || conf.ProviderSiYuan != Conf.Sync.Provider) {
 			syncData(true, false)
 			if 0 != ExitSyncSucc {
+				// Kernel sync failed; close plugin database to unlock extra.db
+				mux.ClosePluginDatabaseForSync()
 				exitCode = 1
 				return
 			}
