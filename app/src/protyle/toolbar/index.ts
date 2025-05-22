@@ -35,7 +35,7 @@ import {insertEmptyBlock} from "../../block/util";
 import {matchHotKey} from "../util/hotKey";
 import {hideElements} from "../ui/hideElements";
 import {electronUndo} from "../undo";
-import {previewTemplate, toolbarKeyToMenu} from "./util";
+import {previewTemplate, toolbarKeyToMenu, removeInlineType} from "./util";
 import {hideMessage, showMessage} from "../../dialog/message";
 import {InlineMath} from "./InlineMath";
 import {InlineMemo} from "./InlineMemo";
@@ -1006,6 +1006,9 @@ export class Toolbar {
                     formData.append("file", blob);
                     formData.append("type", "image/svg+xml");
                     fetchPost("/api/export/exportAsFile", formData, (response) => {
+                        if (typeof response === 'string') {
+                            return;
+                        }
                         openByMobile(response.data.file);
                         hideMessage(msgId);
                     });
@@ -1021,6 +1024,9 @@ export class Toolbar {
                         formData.append("file", blob);
                         formData.append("type", "image/png");
                         fetchPost("/api/export/exportAsFile", formData, (response) => {
+                            if (typeof response === 'string') {
+                                return;
+                            }
                             openByMobile(response.data.file);
                             hideMessage(msgId);
                         });
@@ -1398,6 +1404,9 @@ export class Toolbar {
             fetchPost("/api/search/searchTemplate", {
                 k: inputElement.value,
             }, (response) => {
+                if (typeof response === 'string') {
+                    return;
+                }
                 let searchHTML = "";
                 response.data.blocks.forEach((item: { path: string, content: string }, index: number) => {
                     searchHTML += `<div data-value="${item.path}" class="b3-list-item${index === 0 ? " b3-list-item--focus" : ""}">${item.content}</div>`;
@@ -1477,6 +1486,9 @@ export class Toolbar {
         fetchPost("/api/search/searchTemplate", {
             k: "",
         }, (response) => {
+            if (typeof response === 'string') {
+                return;
+            }
             let html = "";
             response.data.blocks.forEach((item: { path: string, content: string }, index: number) => {
                 html += `<div data-value="${item.path}" class="b3-list-item--hide-action b3-list-item${index === 0 ? " b3-list-item--focus" : ""}">
@@ -1535,6 +1547,9 @@ export class Toolbar {
             fetchPost("/api/search/searchWidget", {
                 k: inputElement.value,
             }, (response) => {
+                if (typeof response === 'string') {
+                    return;
+                }
                 let searchHTML = "";
                 response.data.blocks.forEach((item: { path: string, content: string, name: string }, index: number) => {
                     searchHTML += `<div data-value="${item.path}" data-content="${item.content}" class="b3-list-item${index === 0 ? " b3-list-item--focus" : ""}">
@@ -1561,6 +1576,9 @@ export class Toolbar {
         fetchPost("/api/search/searchWidget", {
             k: "",
         }, (response) => {
+            if (typeof response === 'string') {
+                return;
+            }
             let html = "";
             response.data.blocks.forEach((item: { content: string, name: string }, index: number) => {
                 html += `<div class="b3-list-item${index === 0 ? " b3-list-item--focus" : ""}" data-content="${item.content}">
