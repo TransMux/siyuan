@@ -129,8 +129,14 @@ export const initStickyScroll = (protyle: any) => {
             const relativeLeft = origRect.left - containerRect.left;
             clone.style.paddingLeft = `${relativeLeft}px`;
             clone.addEventListener('click', () => {
-                orig.scrollIntoView({ behavior: 'auto', block: 'start' });
-                protyle.wysiwyg.element.focus();
+                const nodeId = orig.getAttribute('data-node-id');
+                if (nodeId) {
+                    const target = protyle.element.querySelector(`[data-node-id="${nodeId}"]`) as HTMLElement | null;
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'auto', block: 'start' });
+                        protyle.wysiwyg.element.focus();
+                    }
+                }
             });
             clone.addEventListener('contextmenu', ev => {
                 ev.preventDefault();
