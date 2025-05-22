@@ -17,7 +17,7 @@ export const initStickyScroll = (protyle: any) => {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 4px 24px;
+  padding: 0px;
   box-sizing: border-box;
   z-index: 1;
 }
@@ -34,7 +34,7 @@ export const initStickyScroll = (protyle: any) => {
   background-color: var(--b3-list-hover);
 }
 .mux-protyle-sticky-scroll * {
-  margin: 0 !important;
+  margin: 0;
 }
 `;
     document.head.appendChild(style);
@@ -120,10 +120,11 @@ export const initStickyScroll = (protyle: any) => {
                 const blocks = Array.from(clone.children).filter(child => 
                     (child as HTMLElement).hasAttribute('data-node-id')
                 );
-                clone.innerHTML = '';
+                debugger
                 if (blocks.length > 0) {
                     const firstBlock = blocks[0];
                     const actionDiv = firstBlock.previousElementSibling;
+                    clone.innerHTML = '';
                     if (actionDiv && actionDiv.classList.contains('protyle-action')) {
                         clone.appendChild(actionDiv.cloneNode(true));
                     }
@@ -136,7 +137,7 @@ export const initStickyScroll = (protyle: any) => {
             const origRect = orig.getBoundingClientRect();
             const containerRect = protyle.element.getBoundingClientRect();
             const relativeLeft = origRect.left - containerRect.left;
-            clone.style.paddingLeft = `${relativeLeft}px`;
+            clone.style.marginLeft = `${relativeLeft}px`;
             clone.addEventListener('click', (event) => {
                 const nodeId = orig.getAttribute('data-node-id');
                 if (nodeId) {
