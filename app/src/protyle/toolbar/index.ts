@@ -250,6 +250,22 @@ export class Toolbar {
         if (!nodeElement.isSameNode(endElement)) {
             this.range = setLastNodeRange(getContenteditableElement(nodeElement), this.range, false);
         }
+        // 如果选中区域包含引用，先取消这些引用并返回
+        if (action === "range" && (type === "block-ref" || type === "file-annotation-ref")) {
+            const startRefEl = hasClosestByAttribute(this.range.startContainer, "data-type", "block-ref") as HTMLElement
+                || hasClosestByAttribute(this.range.startContainer, "data-type", "file-annotation-ref") as HTMLElement;
+            const endRefEl = hasClosestByAttribute(this.range.endContainer, "data-type", "block-ref") as HTMLElement
+                || hasClosestByAttribute(this.range.endContainer, "data-type", "file-annotation-ref") as HTMLElement;
+            const refEl = startRefEl || endRefEl;
+            if (refEl) {
+                const refTypes = (refEl.getAttribute("data-type") || "").split(" ");
+                const cancelType = refTypes.find(t => t === "block-ref" || t === "file-annotation-ref");
+                if (cancelType) {
+                    removeInlineType(refEl, cancelType, this.range);
+                }
+                return;
+            }
+        }
 
         let rangeTypes: string[] = [];
         this.range.cloneContents().childNodes.forEach((item: HTMLElement) => {
