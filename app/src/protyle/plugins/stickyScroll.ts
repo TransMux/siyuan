@@ -10,7 +10,7 @@ export const initStickyScroll = (protyle: any) => {
     // Inject styles for sticky scroll UI
     const style = document.createElement('style');
     style.textContent = `
-.protyle-sticky-scroll {
+.mux-protyle-sticky-scroll {
   background-color: var(--b3-surface);
   border-bottom: 1px solid var(--b3-border-color);
   width: 100%;
@@ -21,7 +21,7 @@ export const initStickyScroll = (protyle: any) => {
   box-sizing: border-box;
   z-index: 1;
 }
-.protyle-sticky-scroll__row {
+.mux-protyle-sticky-scroll__row {
   width: 100%;
   cursor: pointer;
   white-space: nowrap;
@@ -30,15 +30,18 @@ export const initStickyScroll = (protyle: any) => {
   line-height: 24px;
   padding: 2px 0;
 }
-.protyle-sticky-scroll__row:hover {
+.mux-protyle-sticky-scroll__row:hover {
   background-color: var(--b3-list-hover);
+}
+.mux-protyle-sticky-scroll * {
+  margin: 0 !important;
 }
 `;
     document.head.appendChild(style);
 
     // Create the sticky container element
     const stickyContainer = document.createElement('div');
-    stickyContainer.className = 'protyle-sticky-scroll protyle-wysiwyg';
+    stickyContainer.className = 'mux-protyle-sticky-scroll protyle-wysiwyg';
     stickyContainer.style.display = 'none';
     // Insert it before the scrollable content
     protyle.element.insertBefore(stickyContainer, protyle.contentElement);
@@ -108,7 +111,6 @@ export const initStickyScroll = (protyle: any) => {
         // 渲染克隆的行，保留实际缩进和内容
         stickyContainer.innerHTML = '';
         ancestors.forEach(orig => {
-            console.log("orig", orig)
             const clone = orig.cloneNode(true) as HTMLElement;
 
             if (orig.getAttribute('data-type') === 'NodeListItem') {
@@ -122,19 +124,21 @@ export const initStickyScroll = (protyle: any) => {
                 }
             }
 
-            clone.className = 'protyle-sticky-scroll__row ' + (clone.className || '');
+            clone.className = 'mux-protyle-sticky-scroll__row ' + (clone.className || '');
             // 根据相对于protyle.element的偏移量计算内边距
             const origRect = orig.getBoundingClientRect();
             const containerRect = protyle.element.getBoundingClientRect();
             const relativeLeft = origRect.left - containerRect.left;
             clone.style.paddingLeft = `${relativeLeft}px`;
-            clone.addEventListener('click', () => {
+            clone.addEventListener('click', (event) => {
                 const nodeId = orig.getAttribute('data-node-id');
                 if (nodeId) {
-                    const target = protyle.element.querySelector(`[data-node-id="${nodeId}"]`) as HTMLElement | null;
+                    const target = protyle.contentElement.querySelector(`[data-node-id="${nodeId}"]`) as HTMLElement | null;
                     if (target) {
                         target.scrollIntoView({ behavior: 'auto', block: 'start' });
                         protyle.wysiwyg.element.focus();
+                        event.stopPropagation();
+                        event.preventDefault();
                     }
                 }
             });
