@@ -474,7 +474,9 @@ func getRefIDsByFileAnnotationID(c *gin.Context) {
 	}
 
 	id := arg["id"].(string)
-	refIDs, refTexts := model.GetBlockRefIDsByFileAnnotationID(id)
+	// 从数据库获取引用块 IDs 及其原始 refText
+	refIDs, rawRefTexts := model.GetBlockRefIDsByFileAnnotationID(id)
+
 	var retRefDefs []model.RefDefs
 	for _, blockID := range refIDs {
 		retRefDefs = append(retRefDefs, model.RefDefs{RefID: blockID, DefIDs: []string{}})
@@ -483,6 +485,15 @@ func getRefIDsByFileAnnotationID(c *gin.Context) {
 		retRefDefs = []model.RefDefs{}
 	}
 
+	// 根据原始 refText 决定返回内容："*" 时返回块完整文本，否则为空字符串
+	var refTexts []string
+	for i, rt := range rawRefTexts {
+		if rt == "*" {
+			refTexts = append(refTexts, model.GetBlockRefText(refIDs[i]))
+		} else {
+			refTexts = append(refTexts, "")
+		}
+	}
 	ret.Data = map[string]any{
 		"refDefs":  retRefDefs,
 		"refTexts": refTexts,
