@@ -7,10 +7,10 @@ import {Constants} from "../../constants";
 import {processRender} from "../util/processCode";
 import {highlightRender} from "../render/highlightRender";
 import {focusBlock, focusByRange, getEditorRange} from "../util/selection";
-import {hasClosestBlock, hasClosestByClassName} from "../util/hasClosest";
+import {hasClosestBlock, hasClosestByAttribute, hasClosestByClassName} from "../util/hasClosest";
 import {getContenteditableElement, getTopAloneElement} from "../wysiwyg/getBlock";
 import {replaceFileName} from "../../editor/rename";
-import {transaction} from "../wysiwyg/transaction";
+import {transaction, updateTransaction} from "../wysiwyg/transaction";
 import {getAssetName, getDisplayName, pathPosix} from "../../util/pathName";
 import {genEmptyElement} from "../../block/util";
 import {updateListOrder} from "../wysiwyg/list";
@@ -21,6 +21,7 @@ import {genAssetHTML} from "../../asset/renderAssets";
 import {unicode2Emoji} from "../../emoji";
 import {avRender} from "../render/av/render";
 import {带排序的searchRefBlock} from "../../mux/idCount";
+import { removeInlineType } from "../toolbar/util";
 
 const getHotkeyOrMarker = (hotkey: string, marker: string) => {
     if (hotkey) {
@@ -434,7 +435,29 @@ export const genHintItemHTML = (item: IBlock) => {
 };
 
 export const hintRef = (key: string, protyle: IProtyle, source: THintSource): IHintData[] => {
-    const nodeElement = hasClosestBlock(getEditorRange(protyle.wysiwyg.element).startContainer);
+    const range = getEditorRange(protyle.wysiwyg.element);
+    const nodeElement = hasClosestBlock(range.startContainer);
+    if (!nodeElement) {
+        return [];
+    }
+    // 如果选中区域包含引用，先取消这些引用并返回
+    const startRefEl = hasClosestByAttribute(range.startContainer, "data-type", "block-ref") as HTMLElement
+        || hasClosestByAttribute(range.startContainer, "data-type", "file-annotation-ref") as HTMLElement;
+    const endRefEl = hasClosestByAttribute(range.endContainer, "data-type", "block-ref") as HTMLElement
+        || hasClosestByAttribute(range.endContainer, "data-type", "file-annotation-ref") as HTMLElement;
+    const refEl = startRefEl || endRefEl;
+    if (refEl) {
+        const refTypes = (refEl.getAttribute("data-type") || "").split(" ");
+        const cancelType = refTypes.find(t => t === "block-ref" || t === "file-annotation-ref");
+        if (cancelType) {
+            const oldHTML = nodeElement.outerHTML;
+            removeInlineType(refEl, cancelType);
+            updateTransaction(protyle, nodeElement.getAttribute("data-node-id"), nodeElement.outerHTML, oldHTML);
+            focusByRange(range);
+        }
+        return [];
+    }
+
     protyle.hint.genLoading(protyle);
     带排序的searchRefBlock({
         k: key,

@@ -35,7 +35,7 @@ import {insertEmptyBlock} from "../../block/util";
 import {matchHotKey} from "../util/hotKey";
 import {hideElements} from "../ui/hideElements";
 import {electronUndo} from "../undo";
-import {previewTemplate, toolbarKeyToMenu, removeInlineType} from "./util";
+import {previewTemplate, toolbarKeyToMenu} from "./util";
 import {hideMessage, showMessage} from "../../dialog/message";
 import {InlineMath} from "./InlineMath";
 import {InlineMemo} from "./InlineMemo";
@@ -249,22 +249,6 @@ export class Toolbar {
         // 三击后还没有重新纠正 range 时使用快捷键标记会导致异常 https://github.com/siyuan-note/siyuan/issues/7068
         if (!nodeElement.isSameNode(endElement)) {
             this.range = setLastNodeRange(getContenteditableElement(nodeElement), this.range, false);
-        }
-        // 如果选中区域包含引用，先取消这些引用并返回
-        if (action === "range" && (type === "block-ref" || type === "file-annotation-ref")) {
-            const startRefEl = hasClosestByAttribute(this.range.startContainer, "data-type", "block-ref") as HTMLElement
-                || hasClosestByAttribute(this.range.startContainer, "data-type", "file-annotation-ref") as HTMLElement;
-            const endRefEl = hasClosestByAttribute(this.range.endContainer, "data-type", "block-ref") as HTMLElement
-                || hasClosestByAttribute(this.range.endContainer, "data-type", "file-annotation-ref") as HTMLElement;
-            const refEl = startRefEl || endRefEl;
-            if (refEl) {
-                const refTypes = (refEl.getAttribute("data-type") || "").split(" ");
-                const cancelType = refTypes.find(t => t === "block-ref" || t === "file-annotation-ref");
-                if (cancelType) {
-                    removeInlineType(refEl, cancelType, this.range);
-                }
-                return;
-            }
         }
 
         let rangeTypes: string[] = [];
