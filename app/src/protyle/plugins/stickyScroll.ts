@@ -1,6 +1,4 @@
 // Plugin for Protyle to implement VSCode-like sticky scroll
-import {fetchPost} from "../../util/fetch";
-import {getIconByType} from "../../editor/getIcon";
 import {hasClosestBlock} from "../util/hasClosest";
 export const initStickyScroll = (protyle: any) => {
     // Prevent duplicate initialization
@@ -40,7 +38,7 @@ export const initStickyScroll = (protyle: any) => {
 
     // Create the sticky container element
     const stickyContainer = document.createElement('div');
-    stickyContainer.className = 'protyle-sticky-scroll';
+    stickyContainer.className = 'protyle-sticky-scroll protyle-wysiwyg';
     stickyContainer.style.display = 'none';
     // Insert it before the scrollable content
     protyle.element.insertBefore(stickyContainer, protyle.contentElement);
@@ -53,64 +51,79 @@ export const initStickyScroll = (protyle: any) => {
         if (target && target.classList.contains('protyle-wysiwyg')) {
             target = document.elementFromPoint(rect.left + rect.width / 2, rect.top + 20) as HTMLElement | null;
         }
+        // Determine the block element at top of viewport
         const rawBlock = target ? hasClosestBlock(target) : false;
         if (!rawBlock) {
             stickyContainer.style.display = 'none';
             return;
         }
-        const blockElement = rawBlock as HTMLElement;
+        let blockElement = rawBlock as HTMLElement;
+        const blockType = blockElement.getAttribute('data-type');
+        // If it's a paragraph inside a list item, use the list item container
+        if (blockType === 'NodeParagraph' &&
+            blockElement.parentElement?.getAttribute('data-type') === 'NodeListItem') {
+            blockElement = blockElement.parentElement;
+        }
         const id = blockElement.getAttribute('data-node-id');
         if (!id || id === lastId) {
             return;
         }
         lastId = id;
-        // Fetch breadcrumb path for the current block
-        fetchPost('/api/block/getBlockBreadcrumb', { id, excludeTypes: [] }, (response: IWebSocketData | string) => {
-            // Handle text or error
-            if (typeof response === 'string') {
-                stickyContainer.style.display = 'none';
-                return;
-            }
-            const data = response.data as any[];
-            if (!data.length) {
-                stickyContainer.style.display = 'none';
-                return;
-            }
-            // Build breadcrumb into sticky container
-            stickyContainer.innerHTML = '';
-            data.forEach(item => {
-                // Find corresponding DOM block for indent
-                const el = protyle.wysiwyg.element.querySelector(`[data-node-id="${item.id}"]`) as HTMLElement | null;
-                const indent = el ? el.offsetLeft : 0;
-                // Row container
-                const row = document.createElement('div');
-                row.className = 'protyle-sticky-scroll__row';
-                row.style.paddingLeft = indent + 'px';
-                row.textContent = item.name || '';
-                // Click to jump
-                row.addEventListener('click', () => {
-                    if (el) {
-                        el.scrollIntoView({ behavior: 'auto', block: 'start' });
-                        protyle.wysiwyg.element.focus();
+        // Build path: include headings and, for lists, only the first list item
+        const ancestors: HTMLElement[] = [];
+        let node: HTMLElement | null = blockElement;
+        while (node && node !== protyle.wysiwyg.element) {
+            const type = node.getAttribute('data-type');
+            if (type === 'NodeHeading') {
+                ancestors.unshift(node);
+            } else if (type === 'NodeListItem') {
+                // Only include the first list item of this list
+                const parentList = node.parentElement;
+                if (parentList && parentList.getAttribute('data-type') === 'NodeList') {
+                    const firstItem = parentList.querySelector(':scope > [data-type="NodeListItem"]') as HTMLElement;
+                    if (firstItem) {
+                        ancestors.unshift(firstItem);
                     }
-                });
-                // Right-click to show context menu
-                row.addEventListener('contextmenu', ev => {
-                    ev.preventDefault();
-                    if (el) {
-                        const rect = el.getBoundingClientRect();
-                        el.dispatchEvent(new MouseEvent('contextmenu', {
-                            bubbles: true,
-                            cancelable: true,
-                            clientX: rect.left,
-                            clientY: rect.top
-                        }));
-                    }
-                });
-                stickyContainer.appendChild(row);
+                }
+            }
+            // Move up to closest block parent
+            const parentNode = node.parentElement
+                ? hasClosestBlock(node.parentElement) as HTMLElement
+                : null;
+            if (!parentNode || parentNode === node) {
+                break;
+            }
+            node = parentNode;
+        }
+        if (!ancestors.length) {
+            stickyContainer.style.display = 'none';
+            return;
+        }
+        // Render cloned rows preserving real indent and content
+        stickyContainer.innerHTML = '';
+        ancestors.forEach(orig => {
+            const clone = orig.cloneNode(true) as HTMLElement;
+            clone.className = 'protyle-sticky-scroll__row ' + (clone.className || '');
+            // Preserve real indent via offsetLeft from editor content
+            clone.style.paddingLeft = orig.offsetLeft + 'px';
+            // Ensure interactive behavior
+            clone.addEventListener('click', () => {
+                orig.scrollIntoView({ behavior: 'auto', block: 'start' });
+                protyle.wysiwyg.element.focus();
             });
-            stickyContainer.style.display = '';
+            clone.addEventListener('contextmenu', ev => {
+                ev.preventDefault();
+                const rect = orig.getBoundingClientRect();
+                orig.dispatchEvent(new MouseEvent('contextmenu', {
+                    bubbles: true,
+                    cancelable: true,
+                    clientX: rect.left,
+                    clientY: rect.top
+                }));
+            });
+            stickyContainer.appendChild(clone);
         });
+        stickyContainer.style.display = '';
     };
 
     // Attach scroll listener on editor content
