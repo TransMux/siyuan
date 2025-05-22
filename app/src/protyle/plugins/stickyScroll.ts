@@ -43,25 +43,24 @@ export const initStickyScroll = (protyle: any) => {
     // Insert it before the scrollable content
     protyle.element.insertBefore(stickyContainer, protyle.contentElement);
 
-    // Update function: find topmost block and fetch its breadcrumb path
+    // 更新函数：查找最顶部的块并获取其面包屑路径
     let lastId: string | null = null;
     const updateSticky = () => {
+        // 1. 在视口顶部查找块元素(data-node-id)
         const rect = protyle.contentElement.getBoundingClientRect();
         let target = document.elementFromPoint(rect.left + rect.width / 2, rect.top + 5) as HTMLElement | null;
         if (target && target.classList.contains('protyle-wysiwyg')) {
             target = document.elementFromPoint(rect.left + rect.width / 2, rect.top + 20) as HTMLElement | null;
         }
-        // Determine the block element at top of viewport
-        const rawBlock = target ? hasClosestBlock(target) : false;
+        const rawBlock = target ? hasClosestBlock(target) as HTMLElement : null;
         if (!rawBlock) {
             stickyContainer.style.display = 'none';
             return;
         }
-        let blockElement = rawBlock as HTMLElement;
-        const blockType = blockElement.getAttribute('data-type');
-        // If it's a paragraph inside a list item, use the list item container
-        if (blockType === 'NodeParagraph' &&
-            blockElement.parentElement?.getAttribute('data-type') === 'NodeListItem') {
+        // 如果是列表项内的段落，使用列表项容器
+        let blockElement = rawBlock;
+        if (blockElement.getAttribute('data-type') === 'NodeParagraph'
+            && blockElement.parentElement?.getAttribute('data-type') === 'NodeListItem') {
             blockElement = blockElement.parentElement;
         }
         const id = blockElement.getAttribute('data-node-id');
@@ -69,56 +68,78 @@ export const initStickyScroll = (protyle: any) => {
             return;
         }
         lastId = id;
-        // Build path: include headings and, for lists, only the first list item
+        // 使用双向搜索构建面包屑路径
         const ancestors: HTMLElement[] = [];
-        let node: HTMLElement | null = blockElement;
-        while (node && node !== protyle.wysiwyg.element) {
-            const type = node.getAttribute('data-type');
-            if (type === 'NodeHeading') {
-                ancestors.unshift(node);
-            } else if (type === 'NodeListItem') {
-                // Only include the first list item of this list
-                const parentList = node.parentElement;
-                if (parentList && parentList.getAttribute('data-type') === 'NodeList') {
-                    const firstItem = parentList.querySelector(':scope > [data-type="NodeListItem"]') as HTMLElement;
-                    if (firstItem) {
-                        ancestors.unshift(firstItem);
+        let current: HTMLElement | null = blockElement;
+        while (current && current !== protyle.wysiwyg.element) {
+            // 方向1：在同级中搜索前面的兄弟元素
+            let foundHeading: HTMLElement | null = null;
+            let sib = current.previousElementSibling as HTMLElement | null;
+            while (sib) {
+                if (sib.hasAttribute('data-node-id')) {
+                    if (sib.getAttribute('data-type') === 'NodeHeading') {
+                        foundHeading = sib;
                     }
+                    break;
                 }
+                sib = sib.previousElementSibling as HTMLElement | null;
             }
-            // Move up to closest block parent
-            const parentNode = node.parentElement
-                ? hasClosestBlock(node.parentElement) as HTMLElement
+            if (foundHeading) {
+                ancestors.unshift(foundHeading);
+                current = foundHeading;
+                continue;
+            }
+            // 方向2：如果没有标题兄弟元素，则向上移动到父块
+            const parentBlock = current.parentElement
+                ? hasClosestBlock(current.parentElement) as HTMLElement
                 : null;
-            if (!parentNode || parentNode === node) {
+            if (!parentBlock || parentBlock === current) {
                 break;
             }
-            node = parentNode;
+            if (parentBlock.getAttribute('data-type') === 'NodeListItem') {
+                ancestors.unshift(parentBlock);
+            }
+            current = parentBlock;
         }
         if (!ancestors.length) {
             stickyContainer.style.display = 'none';
             return;
         }
-        // Render cloned rows preserving real indent and content
+        // 渲染克隆的行，保留实际缩进和内容
         stickyContainer.innerHTML = '';
         ancestors.forEach(orig => {
+            console.log("orig", orig)
             const clone = orig.cloneNode(true) as HTMLElement;
+
+            if (orig.getAttribute('data-type') === 'NodeListItem') {
+                // For list items, keep only the first block child
+                const blocks = Array.from(clone.children).filter(child => 
+                    (child as HTMLElement).hasAttribute('data-node-id')
+                );
+                clone.innerHTML = '';
+                if (blocks.length > 0) {
+                    clone.appendChild(blocks[0]);
+                }
+            }
+
             clone.className = 'protyle-sticky-scroll__row ' + (clone.className || '');
-            // Preserve real indent via offsetLeft from editor content
-            clone.style.paddingLeft = orig.offsetLeft + 'px';
-            // Ensure interactive behavior
+            // 根据相对于protyle.element的偏移量计算内边距
+            const origRect = orig.getBoundingClientRect();
+            const containerRect = protyle.element.getBoundingClientRect();
+            const relativeLeft = origRect.left - containerRect.left;
+            clone.style.paddingLeft = `${relativeLeft}px`;
             clone.addEventListener('click', () => {
                 orig.scrollIntoView({ behavior: 'auto', block: 'start' });
                 protyle.wysiwyg.element.focus();
             });
             clone.addEventListener('contextmenu', ev => {
                 ev.preventDefault();
-                const rect = orig.getBoundingClientRect();
+                const r = orig.getBoundingClientRect();
                 orig.dispatchEvent(new MouseEvent('contextmenu', {
                     bubbles: true,
                     cancelable: true,
-                    clientX: rect.left,
-                    clientY: rect.top
+                    clientX: r.left,
+                    clientY: r.top
                 }));
             });
             stickyContainer.appendChild(clone);
@@ -128,4 +149,4 @@ export const initStickyScroll = (protyle: any) => {
 
     // Attach scroll listener on editor content
     protyle.contentElement.addEventListener('scroll', updateSticky, { passive: true });
-}; 
+};
