@@ -48,6 +48,7 @@ import {getAllModels} from "../layout/getAll";
 import {isSupportCSSHL} from "./render/searchMarkRender";
 import {renderAVAttribute} from "./render/av/blockAttr";
 import {genEmptyElement} from "../block/util";
+import { initStickyScroll } from "./plugins/stickyScroll";
 
 export class Protyle {
 
@@ -404,6 +405,7 @@ export class Protyle {
         this.protyle.preview = new Preview(this.protyle);
 
         initUI(this.protyle);
+        initStickyScroll(this.protyle);
     }
 
     /** 聚焦到编辑器 */
