@@ -60,6 +60,13 @@ export const SETTING_ITEMS: { [key: string]: Setting } = {
         section: "function",
         display: "toggle"
     },
+    "stickyScroll": {
+        label: "Protyle Sticky Scroll",
+        type: "boolean",
+        value: false,
+        section: "function",
+        display: "toggle"
+    },
     知识单元avID: {
         label: "知识单元avID",
         type: "string",
