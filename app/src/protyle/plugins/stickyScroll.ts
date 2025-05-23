@@ -48,20 +48,23 @@ export const initStickyScroll = (protyle: any) => {
 
     // 更新函数：查找最顶部的块并获取其面包屑路径
     let lastId: string | null = null;
-    const updateSticky = () => {
-        // 1. 在视口顶部查找块元素(data-node-id)
-        const rect = protyle.contentElement.getBoundingClientRect();
-        let target = document.elementFromPoint(rect.left + rect.width / 2, rect.top + 5) as HTMLElement | null;
-        if (target && target.classList.contains('protyle-wysiwyg')) {
-            target = document.elementFromPoint(rect.left + rect.width / 2, rect.top + 20) as HTMLElement | null;
-        }
-        const rawBlock = target ? hasClosestBlock(target) as HTMLElement : null;
-        if (!rawBlock) {
-            stickyContainer.style.display = 'none';
-            return;
+    const updateSticky = (event: CustomEvent) => {
+        let blockElement = event.detail;
+        // 1. 如果未指定：在视口顶部查找块元素(data-node-id)
+        if (!blockElement) {
+            const rect = protyle.contentElement.getBoundingClientRect();
+            let target = document.elementFromPoint(rect.left + rect.width / 2, rect.top + 5) as HTMLElement | null;
+            if (target && target.classList.contains('protyle-wysiwyg')) {
+                target = document.elementFromPoint(rect.left + rect.width / 2, rect.top + 20) as HTMLElement | null;
+            }
+            const rawBlock = target ? hasClosestBlock(target) as HTMLElement : null;
+            if (!rawBlock) {
+                stickyContainer.style.display = 'none';
+                return;
+            }
+            blockElement = rawBlock;
         }
         // 如果是列表项内的段落，使用列表项容器
-        let blockElement = rawBlock;
         if (blockElement.getAttribute('data-type') === 'NodeParagraph'
             && blockElement.parentElement?.getAttribute('data-type') === 'NodeListItem') {
             blockElement = blockElement.parentElement;
@@ -120,7 +123,6 @@ export const initStickyScroll = (protyle: any) => {
                 const blocks = Array.from(clone.children).filter(child => 
                     (child as HTMLElement).hasAttribute('data-node-id')
                 );
-                debugger
                 if (blocks.length > 0) {
                     const firstBlock = blocks[0];
                     const actionDiv = firstBlock.previousElementSibling;
@@ -165,5 +167,6 @@ export const initStickyScroll = (protyle: any) => {
     };
 
     // Attach scroll listener on editor content
-    protyle.contentElement.addEventListener('scroll', updateSticky, { passive: true });
+    // protyle.contentElement.addEventListener('scroll', updateSticky, { passive: true });
+    window.addEventListener('muxBlockFocus', updateSticky, { passive: true });
 };

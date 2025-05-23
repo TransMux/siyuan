@@ -33,7 +33,7 @@ function focusHandler() {
     if (editor) {
         editor.querySelectorAll(`.block-focus`).forEach((element: HTMLElement) => element.classList.remove(`block-focus`));
         block.classList.add(`block-focus`);
-        // setSelector(block);
+        window.dispatchEvent(new CustomEvent('muxBlockFocus', { detail: block }));
     }
 }
 
