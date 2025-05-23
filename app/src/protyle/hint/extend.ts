@@ -443,10 +443,12 @@ export const hintRef = (key: string, protyle: IProtyle, source: THintSource): IH
     }
     if(get<boolean>("引用时先取消选区内的反链")){
         // 如果选中区域包含引用，先取消这些引用并返回
-        const refs = nodeElement.querySelectorAll("[data-type='block-ref'], [data-type='file-annotation-ref']") as NodeListOf<HTMLElement>;
-        if (refs.length > 0) {
+        const selectedRefs = Array.from(nodeElement.querySelectorAll("[data-type='block-ref'], [data-type='file-annotation-ref']") as NodeListOf<HTMLElement>)
+            .filter(ref => range.intersectsNode(ref));
+            
+        if (selectedRefs.length > 0) {
             const oldHTML = nodeElement.outerHTML;
-            refs.forEach((ref) => {
+            selectedRefs.forEach((ref) => {
                 const refTypes = (ref.getAttribute("data-type") || "").split(" ");
                 const cancelType = refTypes.find(t => t === "block-ref" || t === "file-annotation-ref");
                 if (cancelType) {
