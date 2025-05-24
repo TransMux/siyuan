@@ -235,6 +235,7 @@ export const editor = {
       <option value="0" ${window.siyuan.config.editor.floatWindowMode === 0 ? "selected" : ""}>${window.siyuan.languages.floatWindowMode0}</option>
       <option value="1" ${window.siyuan.config.editor.floatWindowMode === 1 ? "selected" : ""}>${window.siyuan.languages.floatWindowMode1.replace("${hotkey}", updateHotkeyTip("⌘"))}</option>
       <option value="2" ${window.siyuan.config.editor.floatWindowMode === 2 ? "selected" : ""}>${window.siyuan.languages.floatWindowMode2}</option>
+      <option value="3" ${window.siyuan.config.editor.floatWindowMode === 3 ? "selected" : ""}>按住 Shift+悬停</option>
     </select>    
 </div>
 <div class="fn__flex b3-label config__item">

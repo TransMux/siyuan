@@ -43,7 +43,7 @@ type Editor struct {
 	EmbedBlockBreadcrumb            bool           `json:"embedBlockBreadcrumb"`            // 嵌入块是否显示面包屑
 	ListLogicalOutdent              bool           `json:"listLogicalOutdent"`              // 列表逻辑反向缩进
 	ListItemDotNumberClickFocus     bool           `json:"listItemDotNumberClickFocus"`     // 单击列表项标记聚焦
-	FloatWindowMode                 int            `json:"floatWindowMode"`                 // 浮窗触发模式，0：光标悬停，1：按住 Ctrl 悬停，2：不触发浮窗
+	FloatWindowMode                 int            `json:"floatWindowMode"`                 // 浮窗触发模式，0：光标悬停，1：按住 Ctrl 悬停，2：不触发浮窗，3：按住 Shift 悬停
 	DynamicLoadBlocks               int            `json:"dynamicLoadBlocks"`               // 块动态数，可配置区间 [48, 1024]
 	Justify                         bool           `json:"justify"`                         // 是否两端对齐
 	RTL                             bool           `json:"rtl"`                             // 是否从右到左显示

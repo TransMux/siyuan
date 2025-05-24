@@ -145,7 +145,8 @@ export const initBlockPopover = (app: App) => {
                 hideTooltip();
             }
         }
-        if (window.siyuan.config.editor.floatWindowMode === 1 || window.siyuan.shiftIsPressed) {
+        if (window.siyuan.config.editor.floatWindowMode === 1 || 
+            (window.siyuan.config.editor.floatWindowMode === 3 && window.siyuan.shiftIsPressed)) {
             clearTimeout(timeoutHide);
             timeoutHide = window.setTimeout(() => {
                 hidePopover(event);
@@ -158,10 +159,13 @@ export const initBlockPopover = (app: App) => {
             if (event.relatedTarget && !document.contains(event.relatedTarget as Node)) {
                 return;
             }
-            if (window.siyuan.ctrlIsPressed) {
+            if (window.siyuan.config.editor.floatWindowMode === 1 && window.siyuan.ctrlIsPressed) {
                 clearTimeout(timeoutHide);
                 showPopover(app);
-            } else if (window.siyuan.shiftIsPressed) {
+            } else if (window.siyuan.config.editor.floatWindowMode === 1 && window.siyuan.shiftIsPressed) {
+                clearTimeout(timeoutHide);
+                showPopover(app, true);
+            } else if (window.siyuan.config.editor.floatWindowMode === 3 && window.siyuan.shiftIsPressed) {
                 clearTimeout(timeoutHide);
                 showPopover(app, true);
             }
@@ -339,6 +343,7 @@ const getTarget = (event: MouseEvent & { target: HTMLElement }, aElement: false 
     }
     if (!popoverTargetElement || window.siyuan.altIsPressed ||
         (window.siyuan.config.editor.floatWindowMode === 0 && window.siyuan.ctrlIsPressed) ||
+        (window.siyuan.config.editor.floatWindowMode === 3 && !window.siyuan.shiftIsPressed) ||
         (popoverTargetElement && popoverTargetElement.getAttribute("prevent-popover") === "true")) {
         return false;
     }
