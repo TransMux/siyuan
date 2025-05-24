@@ -10,17 +10,17 @@ import { openGlobalSearch } from "../../search/util";
 /// #else
 import { popSearch } from "../../mobile/menu/search";
 /// #endif
-import { getEventName } from "../util/compatibility";
-import { Dialog } from "../../dialog";
-import { Constants } from "../../constants";
-import { assetMenu } from "../../menus/protyle";
-import { previewImage } from "../preview/image";
-import { Menu } from "../../plugin/Menu";
-import { escapeHtml } from "../../util/escape";
-import { deleteFile } from "../../editor/deleteFile";
-import { showMessage } from "../../dialog/message";
-import { get } from "../../mux/settings";
-import { 获取当前ISO周数, 获取文件ID } from "../../mux/utils";
+import {getEventName} from "../util/compatibility";
+import {Dialog} from "../../dialog";
+import {Constants} from "../../constants";
+import {assetMenu} from "../../menus/protyle";
+import {previewImages} from "../preview/image";
+import {Menu} from "../../plugin/Menu";
+import {escapeHtml} from "../../util/escape";
+import {deleteFile} from "../../editor/deleteFile";
+import {showMessage} from "../../dialog/message";
+import {get} from "../../mux/settings";
+import {获取当前ISO周数, 获取文件ID} from "../../mux/utils";
 
 const bgs = [
     "background:radial-gradient(black 3px, transparent 4px),radial-gradient(black 3px, transparent 4px),linear-gradient(#fff 4px, transparent 0),linear-gradient(45deg, transparent 74px, transparent 75px, #a4a4a4 75px, #a4a4a4 76px, transparent 77px, transparent 109px),linear-gradient(-45deg, transparent 75px, transparent 76px, #a4a4a4 76px, #a4a4a4 77px, transparent 78px, transparent 109px),#fff;background-size: 109px 109px, 109px 109px,100% 6px, 109px 109px, 109px 109px;",
@@ -233,7 +233,7 @@ export class Background {
                 if (target.tagName === "IMG" && target.parentElement.classList.contains("protyle-background__img")) {
                     const imgSrc = target.getAttribute("src");
                     if (event.detail > 1 && !imgSrc.startsWith("data:image/png;base64")) {
-                        previewImage(imgSrc);
+                        previewImages([imgSrc]);
                         event.preventDefault();
                         event.stopPropagation();
                     }

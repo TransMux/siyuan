@@ -475,11 +475,13 @@ export class WYSIWYG {
                 return;
             }
             const documentSelf = document;
-            const rect = protyle.element.getBoundingClientRect();
-            const mostLeft = rect.left + (parseInt(protyle.wysiwyg.element.style.paddingLeft) || 24) + 1;
-            // 不能用 firstElement，否则 https://ld246.com/article/1668758661338
-            const mostRight = mostLeft + (protyle.wysiwyg.element.clientWidth - (parseInt(protyle.wysiwyg.element.style.paddingLeft) || 24) - (parseInt(protyle.wysiwyg.element.style.paddingRight) || 16)) - 2;
-            const mostBottom = rect.bottom;
+            const wysiwygRect = protyle.wysiwyg.element.getBoundingClientRect();
+            const wysiwygStyle = window.getComputedStyle(protyle.wysiwyg.element);
+            const mostLeft = wysiwygRect.left + (parseInt(wysiwygStyle.paddingLeft) || 24) + 1;
+            const mostRight = wysiwygRect.right - (parseInt(wysiwygStyle.paddingRight) || 16) - 2;
+
+            const protyleRect = protyle.element.getBoundingClientRect();
+            const mostBottom = protyleRect.bottom;
             const y = event.clientY;
             const contentRect = protyle.contentElement.getBoundingClientRect();
             // av col resize
@@ -816,7 +818,7 @@ export class WYSIWYG {
             } else if (event.clientX < mostLeft) {
                 clentX = mostLeft;
             }
-            const mostTop = rect.top + (protyle.options.render.breadcrumb ? protyle.breadcrumb.element.parentElement.clientHeight : 0);
+            const mostTop = protyleRect.top + (protyle.options.render.breadcrumb ? protyle.breadcrumb.element.parentElement.clientHeight : 0);
 
             let mouseElement: Element;
             let moveCellElement: HTMLElement;
@@ -1118,6 +1120,7 @@ export class WYSIWYG {
                         window.siyuan.menus.menu.remove();
                         if (!protyle.disabled) {
                             window.siyuan.menus.menu.append(new MenuItem({
+                                id: "mergeCell",
                                 label: window.siyuan.languages.mergeCell,
                                 click: () => {
                                     if (tableBlockElement) {
@@ -1238,8 +1241,9 @@ export class WYSIWYG {
                                     }
                                 }
                             }).element);
-                            window.siyuan.menus.menu.append(new MenuItem({type: "separator"}).element);
+                            window.siyuan.menus.menu.append(new MenuItem({id: "separator_1", type: "separator"}).element);
                             window.siyuan.menus.menu.append(new MenuItem({
+                                id: "alignLeft",
                                 icon: "iconAlignLeft",
                                 accelerator: window.siyuan.config.keymap.editor.general.alignLeft.custom,
                                 label: window.siyuan.languages.alignLeft,
@@ -1265,6 +1269,7 @@ export class WYSIWYG {
                                 }
                             }).element);
                             window.siyuan.menus.menu.append(new MenuItem({
+                                id: "alignCenter",
                                 icon: "iconAlignCenter",
                                 accelerator: window.siyuan.config.keymap.editor.general.alignCenter.custom,
                                 label: window.siyuan.languages.alignCenter,
@@ -1290,6 +1295,7 @@ export class WYSIWYG {
                                 }
                             }).element);
                             window.siyuan.menus.menu.append(new MenuItem({
+                                id: "alignRight",
                                 icon: "iconAlignRight",
                                 accelerator: window.siyuan.config.keymap.editor.general.alignRight.custom,
                                 label: window.siyuan.languages.alignRight,
@@ -1314,6 +1320,7 @@ export class WYSIWYG {
                                 }
                             }).element);
                             window.siyuan.menus.menu.append(new MenuItem({
+                                id: "useDefaultAlign",
                                 icon: "",
                                 label: window.siyuan.languages.useDefaultAlign,
                                 click: () => {
@@ -1337,7 +1344,7 @@ export class WYSIWYG {
                                     }
                                 }
                             }).element);
-                            window.siyuan.menus.menu.append(new MenuItem({type: "separator"}).element);
+                            window.siyuan.menus.menu.append(new MenuItem({id: "separator_2", type: "separator"}).element);
                         }
                         window.siyuan.menus.menu.append(new MenuItem({
                             id: "copyPlainText",
@@ -1372,6 +1379,7 @@ export class WYSIWYG {
                             }
                         }).element);
                         window.siyuan.menus.menu.append(new MenuItem({
+                            id: "copy",
                             icon: "iconCopy",
                             accelerator: "⌘C",
                             label: window.siyuan.languages.copy,
@@ -1384,6 +1392,7 @@ export class WYSIWYG {
                         }).element);
                         if (!protyle.disabled) {
                             window.siyuan.menus.menu.append(new MenuItem({
+                                id: "cut",
                                 icon: "iconCut",
                                 accelerator: "⌘X",
                                 label: window.siyuan.languages.cut,
@@ -1395,6 +1404,7 @@ export class WYSIWYG {
                                 }
                             }).element);
                             window.siyuan.menus.menu.append(new MenuItem({
+                                id: "clear",
                                 label: window.siyuan.languages.clear,
                                 icon: "iconTrashcan",
                                 accelerator: "⌦",
@@ -1403,6 +1413,7 @@ export class WYSIWYG {
                                 }
                             }).element);
                             window.siyuan.menus.menu.append(new MenuItem({
+                                id: "paste",
                                 label: window.siyuan.languages.paste,
                                 icon: "iconPaste",
                                 accelerator: "⌘V",
