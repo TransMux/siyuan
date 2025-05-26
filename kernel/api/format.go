@@ -63,13 +63,19 @@ func netImg2LocalAssets(c *gin.Context) {
 	if urlArg := arg["url"]; nil != urlArg {
 		url = urlArg.(string)
 	}
-	err := model.NetAssets2LocalAssets(id, true, url)
-	if err != nil {
-		ret.Code = -1
-		ret.Msg = err.Error()
-		ret.Data = map[string]interface{}{"closeTimeout": 5000}
-		return
-	}
+
+	// Launch image conversion asynchronously
+	go func(rootID, originalURL string) {
+		if err := model.NetAssets2LocalAssets(rootID, true, originalURL); err != nil {
+			logging.LogErrorf("async NetImg2LocalAssets failed: %s", err)
+			// Push error message via WebSocket
+			util.PushErrMsg(err.Error(), 5000)
+		}
+	}(id, url)
+
+	// Immediately respond; front end should listen for WebSocket progress
+	ret.Msg = "已开始后台下载图片"
+	ret.Data = map[string]interface{}{"closeTimeout": 1000}
 }
 
 func autoSpace(c *gin.Context) {
