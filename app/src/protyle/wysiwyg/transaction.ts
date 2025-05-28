@@ -5,7 +5,7 @@ import {Constants} from "../../constants";
 import {blockRender} from "../render/blockRender";
 import {processRender} from "../util/processCode";
 import {highlightRender} from "../render/highlightRender";
-import {hasClosestBlock, hasClosestByAttribute, hasTopClosestByAttribute, isInEmbedBlock} from "../util/hasClosest";
+import {hasClosestBlock, hasClosestByAttribute, hasTopClosestByAttribute, hasTopClosestByClassName, isInEmbedBlock} from "../util/hasClosest";
 import {setFold, zoomOut} from "../../menus/protyle";
 import {disabledProtyle, enableProtyle, onGet} from "../util/onGet";
 /// #if !MOBILE
@@ -22,6 +22,7 @@ import {resize} from "../util/resize";
 import {processClonePHElement} from "../render/util";
 import { renderAVAttribute } from "../render/av/blockAttr";
 import { renderCustomAttr } from "../../mux/attributeView";
+import {handleFloatingWindowCleanup} from "../util/floatingWindowManager";
 
 const removeTopElement = (updateElement: Element, protyle: IProtyle) => {
     // 移动到其他文档中，该块需移除
@@ -36,25 +37,9 @@ const removeTopElement = (updateElement: Element, protyle: IProtyle) => {
         });
     }
     topAloneElement.remove();
-    if (protyle.wysiwyg.element.childElementCount === 0) {
-        if (protyle.block.rootID === protyle.block.id) {
-            const newId = Lute.NewNodeID();
-            const newElement = genEmptyElement(false, false, newId);
-            doOperations.push({
-                action: "insert",
-                data: newElement.outerHTML,
-                id: newId,
-                parentID: protyle.block.parentID
-            });
-            protyle.wysiwyg.element.innerHTML = newElement.outerHTML;
-        } else {
-            zoomOut({
-                protyle,
-                id: protyle.block.rootID,
-                isPushBack: false,
-                focusId: protyle.block.id,
-            });
-        }
+    // 使用统一的浮窗清理逻辑
+    if (!handleFloatingWindowCleanup(protyle)) {
+        return;
     }
     if (doOperations.length > 0) {
         transaction(protyle, doOperations, []);
@@ -79,7 +64,7 @@ const promiseTransaction = () => {
             doOperations,
             undoOperations // 目前用于 ws 推送更新大纲
         }]
-    }, (response) => {
+    }, (response: any) => {
         if (window.siyuan.transactions.length === 0) {
             countBlockWord([], protyle.block.rootID, true);
         } else {
@@ -96,7 +81,7 @@ const promiseTransaction = () => {
         if (getSelection().rangeCount > 0) {
             range = getSelection().getRangeAt(0);
         }
-        response.data[0].doOperations.forEach((operation: IOperation) => {
+        (response as any).data[0].doOperations.forEach((operation: IOperation) => {
             if (operation.action === "unfoldHeading" || operation.action === "foldHeading") {
                 processFold(operation, protyle);
                 return;
@@ -250,17 +235,30 @@ const promiseTransaction = () => {
         if (protyle.wysiwyg.element.childElementCount === 0 &&
             // 聚焦时不需要新增块，否则会导致 https://github.com/siyuan-note/siyuan/issues/12326 第一点
             !protyle.block.showAll) {
-            const newID = Lute.NewNodeID();
-            const emptyElement = genEmptyElement(false, true, newID);
-            protyle.wysiwyg.element.insertAdjacentElement("afterbegin", emptyElement);
-            transaction(protyle, [{
-                action: "insert",
-                data: emptyElement.outerHTML,
-                id: newID,
-                parentID: protyle.block.parentID
-            }]);
-            // 不能撤销，否则就无限循环了
-            focusByWbr(emptyElement, range);
+            // 检查是否在浮窗中
+            const popoverElement = hasTopClosestByClassName(protyle.element, "block__popover", true);
+            if (popoverElement) {
+                // 在浮窗中，查找对应的 BlockPanel 并关闭
+                const blockPanel = window.siyuan.blockPanels.find(panel => 
+                    panel.element === popoverElement
+                );
+                if (blockPanel) {
+                    blockPanel.destroy();
+                    return; // 直接返回，不创建新的空元素
+                }
+            } else {
+                const newID = Lute.NewNodeID();
+                const emptyElement = genEmptyElement(false, true, newID);
+                protyle.wysiwyg.element.insertAdjacentElement("afterbegin", emptyElement);
+                transaction(protyle, [{
+                    action: "insert",
+                    data: emptyElement.outerHTML,
+                    id: newID,
+                    parentID: protyle.block.parentID
+                }]);
+                // 不能撤销，否则就无限循环了
+                focusByWbr(emptyElement, range);
+            }
         }
     });
 };
@@ -448,13 +446,9 @@ export const onTransaction = (protyle: IProtyle, operation: IOperation, isUndo: 
                     blockRender(protyle, embedElement);
                 }
             });
-            if (protyle.wysiwyg.element.childElementCount === 0) {
-                zoomOut({
-                    protyle,
-                    id: protyle.block.rootID,
-                    isPushBack: false,
-                    focusId: operation.id,
-                });
+            // 使用统一的浮窗清理逻辑
+            if (!handleFloatingWindowCleanup(protyle)) {
+                return;
             }
         }
         return;
@@ -883,7 +877,7 @@ export const onTransaction = (protyle: IProtyle, operation: IOperation, isUndo: 
         "replaceAttrViewBlock", "updateAttrViewColTemplate", "setAttrViewColPin", "addAttrViewView", "setAttrViewColIcon",
         "removeAttrViewView", "setAttrViewViewName", "setAttrViewViewIcon", "duplicateAttrViewView", "sortAttrViewView",
         "updateAttrViewColRelation", "setAttrViewPageSize", "updateAttrViewColRollup", "sortAttrViewKey",
-        "duplicateAttrViewKey", "setAttrViewViewDesc", "setAttrViewColDesc"].includes(operation.action)) {
+        "duplicateAttrViewKey", "setAttrViewViewDesc"].includes(operation.action)) {
         if (!isUndo) {
             // 撤销 transaction 会进行推送，需使用推送来进行刷新最新数据 https://github.com/siyuan-note/siyuan/issues/13607
             refreshAV(protyle, operation);

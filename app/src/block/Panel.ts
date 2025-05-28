@@ -154,7 +154,7 @@ export class BlockPanel {
 
     private initProtyle(editorElement: HTMLElement, afterCB?: () => void) {
         const index = parseInt(editorElement.getAttribute("data-index"));
-        fetchPost("/api/block/getBlockInfo", {id: this.refDefs[index].refID}, (response) => {
+        fetchPost("/api/block/getBlockInfo", {id: this.refDefs[index].refID}, (response: any) => {
             if (response.code === 3) {
                 showMessage(response.msg);
                 return;
@@ -231,6 +231,46 @@ export class BlockPanel {
             // https://github.com/siyuan-note/siyuan/issues/9854 右键菜单不是从浮窗中弹出的则不进行移除
             window.siyuan.menus.menu.remove();
         }
+    }
+
+    public removeEditorForProtyle(protyle: any): boolean {
+        const idx = this.editors.findIndex(e => e.protyle === protyle);
+        if (idx === -1) {
+            return false;
+        }
+        // 销毁并移除编辑器实例及对应的数据
+        this.editors[idx].destroy();
+        this.editors.splice(idx, 1);
+        this.refDefs.splice(idx, 1);
+        // 移除对应的 DOM 元素
+        const el = protyle.element;
+        el.remove();
+        // 更新浮窗状态
+        if (this.editors.length === 0) {
+            this.destroy();
+        } else {
+            // 重新设置剩余编辑器的 data-index
+            const editEls = this.element.querySelectorAll(".block__edit.fn__flex-1.protyle");
+            editEls.forEach((ele: HTMLElement, index: number) => {
+                ele.setAttribute("data-index", index.toString());
+            });
+            // 如果只剩一个编辑器，更新图标按钮
+            if (this.editors.length === 1) {
+                const iconsEl = this.element.querySelector(".block__icons--menu");
+                if (iconsEl) {
+                    // 移除旧按钮
+                    const oldBtns = iconsEl.querySelectorAll('[data-type="stickTab"], [data-type="open"]');
+                    oldBtns.forEach(btn => btn.remove());
+                    // 添加新的在新标签打开按钮
+                    const openHTML = `<span data-type="stickTab" class="block__icon block__icon--show b3-tooltips b3-tooltips__sw" aria-label="${window.siyuan.languages.openInNewTab}"><svg><use xlink:href="#iconOpen"></use></svg></span><span class="fn__space"></span>`;
+                    const spacer = iconsEl.querySelector(".fn__space.fn__flex-1.resize__move");
+                    if (spacer && spacer.nextSibling) {
+                        spacer.insertAdjacentHTML("afterend", openHTML);
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     private render() {

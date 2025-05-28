@@ -23,6 +23,7 @@ import {hasClosestByClassName} from "../util/hasClosest";
 import {getInstanceById} from "../../layout/util";
 import {Tab} from "../../layout/Tab";
 import {Backlink} from "../../layout/dock/Backlink";
+import {handleFloatingWindowCleanup} from "../util/floatingWindowManager";
 
 export const removeBlock = async (protyle: IProtyle, blockElement: Element, range: Range, type: "Delete" | "Backspace" | "remove") => {
     protyle.observerLoad?.disconnect();
@@ -32,8 +33,9 @@ export const removeBlock = async (protyle: IProtyle, blockElement: Element, rang
     if (selectElements?.length > 0) {
         const deletes: IOperation[] = [];
         const inserts: IOperation[] = [];
-        let sideElement;
+        let sideElement: any = null;
         let sideIsNext = false;
+        let earlyExit = false;
         if (type === "Backspace") {
             sideElement = selectElements[0].previousElementSibling;
             if (!sideElement) {
@@ -139,48 +141,45 @@ export const removeBlock = async (protyle: IProtyle, blockElement: Element, rang
         });
         if (sideElement) {
             if (protyle.block.showAll && sideElement.classList.contains("protyle-wysiwyg") && protyle.wysiwyg.element.childElementCount === 0) {
-                setTimeout(() => {
-                    zoomOut({protyle, id: protyle.block.parent2ID, focusId: protyle.block.parent2ID});
-                }, Constants.TIMEOUT_INPUT * 2 + 100);
-            } else {
-                if ((sideElement.classList.contains("protyle-wysiwyg") && protyle.wysiwyg.element.childElementCount === 0)) {
-                    const newID = Lute.NewNodeID();
-                    const emptyElement = genEmptyElement(false, true, newID);
-                    sideElement.insertAdjacentElement("afterbegin", emptyElement);
-                    deletes.push({
-                        action: "insert",
-                        data: emptyElement.outerHTML,
-                        id: newID,
-                        parentID: sideElement.getAttribute("data-node-id") || protyle.block.parentID
-                    });
-                    inserts.push({
-                        action: "delete",
-                        id: newID,
-                    });
-                    sideElement = undefined;
-                    focusByWbr(emptyElement, range);
-                }
-                // https://github.com/siyuan-note/siyuan/issues/5485
-                // https://github.com/siyuan-note/siyuan/issues/10389
-                // https://github.com/siyuan-note/siyuan/issues/10899
-                if (type !== "Backspace" && sideIsNext) {
-                    focusBlock(sideElement);
+                // 使用统一的浮窗清理逻辑，如果在浮窗中关闭，则跳过后续 UI 逻辑
+                if (!handleFloatingWindowCleanup(protyle)) {
+                    earlyExit = true;
                 } else {
-                    focusBlock(sideElement, undefined, false);
+                    // 非浮窗情况，延迟执行 zoomOut
+                    setTimeout(() => {
+                        zoomOut({protyle, id: protyle.block.parent2ID, focusId: protyle.block.parent2ID});
+                    }, Constants.TIMEOUT_INPUT * 2 + 100);
                 }
-                scrollCenter(protyle, sideElement);
-                if (listElement) {
-                    inserts.push({
-                        action: "update",
-                        id: listElement.getAttribute("data-node-id"),
-                        data: listElement.outerHTML
-                    });
-                    updateListOrder(listElement, 1);
-                    deletes.push({
-                        action: "update",
-                        id: listElement.getAttribute("data-node-id"),
-                        data: listElement.outerHTML
-                    });
+            } else {
+                if (sideElement.classList.contains("protyle-wysiwyg") && protyle.wysiwyg.element.childElementCount === 0) {
+                    // 使用统一的浮窗清理逻辑，如果在浮窗中关闭，则跳过后续 UI 逻辑
+                    if (!handleFloatingWindowCleanup(protyle)) {
+                        earlyExit = true;
+                    }
+                    // 重置 sideElement
+                    sideElement = undefined;
+                }
+                // 后续 UI 逻辑，仅在非清理场景下执行
+                if (!earlyExit) {
+                    if (type !== "Backspace" && sideIsNext) {
+                        focusBlock(sideElement);
+                    } else {
+                        focusBlock(sideElement, undefined, false);
+                    }
+                    scrollCenter(protyle, sideElement);
+                    if (listElement) {
+                        inserts.push({
+                            action: "update",
+                            id: listElement.getAttribute("data-node-id"),
+                            data: listElement.outerHTML
+                        });
+                        updateListOrder(listElement, 1);
+                        deletes.push({
+                            action: "update",
+                            id: listElement.getAttribute("data-node-id"),
+                            data: listElement.outerHTML
+                        });
+                    }
                 }
             }
         }
