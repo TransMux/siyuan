@@ -1,4 +1,5 @@
 import {Menu} from "../plugin/Menu";
+import {showMessage} from "../dialog/message";
 
 export const textMenu = (target: Element) => {
     const menu = new Menu();
@@ -18,6 +19,7 @@ export const textMenu = (target: Element) => {
                 getSelection().getRangeAt(0).selectNode(target);
             }
             document.execCommand("copy");
+            showMessage(window.siyuan.languages.copy);
         }
     });
     menu.addItem({

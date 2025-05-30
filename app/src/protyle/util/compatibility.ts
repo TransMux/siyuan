@@ -1,6 +1,7 @@
 import {focusByRange} from "./selection";
 import {fetchPost} from "../../util/fetch";
 import {Constants} from "../../constants";
+import {showMessage} from "../../dialog/message";
 
 export const openByMobile = (uri: string) => {
     if (!uri) {
@@ -135,6 +136,8 @@ export const writeText = (text: string) => {
 export const copyPlainText = async (text: string) => {
     text = text.replace(new RegExp(Constants.ZWSP, "g"), ""); // `复制纯文本` 时移除所有零宽空格 https://github.com/siyuan-note/siyuan/issues/6674
     await writeText(text);
+    // Show success message for copying plain text
+    showMessage(window.siyuan.languages.copyPlainText);
 };
 
 // 用户 iPhone 点击延迟/需要双击的处理

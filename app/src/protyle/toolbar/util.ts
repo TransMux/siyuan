@@ -2,6 +2,7 @@ import {fetchPost, fetchSyncPost} from "../../util/fetch";
 import {Constants} from "../../constants";
 import {focusByRange, focusByWbr} from "../util/selection";
 import {writeText} from "../util/compatibility";
+import {showMessage} from "../../dialog/message";
 
 export const previewTemplate = (pathString: string, element: Element, parentId: string) => {
     if (!pathString) {
@@ -244,4 +245,14 @@ export const copyTextByType = async (ids: string[],
         }
     }
     writeText(text);
+    // Show success message based on copy type
+    const messageMap: Record<string, string> = {
+        ref: window.siyuan.languages.copyBlockRef,
+        blockEmbed: window.siyuan.languages.copyBlockEmbed,
+        protocol: window.siyuan.languages.copyProtocol,
+        protocolMd: window.siyuan.languages.copyProtocolInMd,
+        hPath: window.siyuan.languages.copyHPath,
+        id: window.siyuan.languages.copyID,
+    };
+    showMessage(messageMap[type]);
 };
