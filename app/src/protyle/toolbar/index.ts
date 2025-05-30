@@ -312,7 +312,15 @@ export class Toolbar {
                     // https://github.com/siyuan-note/siyuan/issues/14869
                     (this.range.startOffset === 0 && this.range.startContainer.previousSibling?.nodeType === 3 &&
                         this.range.startContainer.previousSibling.parentElement.isSameNode(this.range.startContainer.parentElement))
-                ) && this.range.endOffset !== this.range.endContainer.textContent.length &&
+                ) && (
+                    this.range.endOffset !== this.range.endContainer.textContent.length ||
+                    // https://github.com/siyuan-note/siyuan/issues/14869#issuecomment-2911553387
+                    (
+                        this.range.endOffset === this.range.endContainer.textContent.length &&
+                        this.range.endContainer.nextSibling?.nodeType === 3 &&
+                        this.range.endContainer.nextSibling.parentElement.isSameNode(this.range.endContainer.parentElement)
+                    )
+                ) &&
                 !(this.range.startOffset === 1 && this.range.startContainer.textContent.startsWith(Constants.ZWSP))) {
                 // 切割元素
                 const parentElement = this.range.startContainer.parentElement;
@@ -688,7 +696,7 @@ export class Toolbar {
                         previousElement && previousElement.nodeType !== 3 &&
                         currentNode.nodeType !== 3 &&
                         isArrayEqual(currentType, (previousElement.getAttribute("data-type") || "").split(" ")) &&
-                        hasSameTextStyle(currentNode, previousElement, textObj)) {
+                        hasSameTextStyle(currentNode, previousElement)) {
                         if (currentType.includes("code") || currentType.includes("tag") || currentType.includes("kbd")) {
                             if (currentNode.textContent.startsWith(Constants.ZWSP)) {
                                 currentNode.textContent = currentNode.textContent.substring(1);
