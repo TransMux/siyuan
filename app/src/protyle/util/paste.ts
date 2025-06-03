@@ -589,6 +589,20 @@ export const paste = async (protyle: IProtyle, event: (ClipboardEvent | DragEven
             uploadFiles(protyle, files);
             return;
         } else if (textPlain.trim() !== "" && (files && files.length === 0 || !files)) {
+            // Handle GitHub code URL paste when no selection
+            if (!range.toString()) {
+                const match = textPlain.match(/^https?:\/\/github\.com\/([^\/]+\/[^\/]+)\/blob\/[^\/]+\/(.+?#L\d+)$/);
+                if (match) {
+                    const ownerRepo = match[1];
+                    const pathAndLine = match[2];
+                    const label = `code@${ownerRepo}/${pathAndLine}`;
+                    protyle.toolbar.setInlineMark(protyle, "a", "range", {
+                        type: "a",
+                        color: `${textPlain}${Constants.ZWSP}${label}`
+                    });
+                    return;
+                }
+            }
             if (range.toString() !== "") {
                 const firstLine = textPlain.split("\n")[0];
                 if (isDynamicRef(textPlain)) {
