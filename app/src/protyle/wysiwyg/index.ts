@@ -1054,7 +1054,8 @@ export class WYSIWYG {
                                     hasJump = true;
                                 }
                             } else {
-                                if (!currentElement.classList.contains("protyle-breadcrumb__bar")) {
+                                if (!currentElement.classList.contains("protyle-breadcrumb__bar") &&
+                                    !currentElement.classList.contains("protyle-breadcrumb__item")) {
                                     selectElements.push(currentElement);
                                 }
                                 currentElement = currentElement.nextElementSibling;
@@ -1241,7 +1242,10 @@ export class WYSIWYG {
                                     }
                                 }
                             }).element);
-                            window.siyuan.menus.menu.append(new MenuItem({id: "separator_1", type: "separator"}).element);
+                            window.siyuan.menus.menu.append(new MenuItem({
+                                id: "separator_1",
+                                type: "separator"
+                            }).element);
                             window.siyuan.menus.menu.append(new MenuItem({
                                 id: "alignLeft",
                                 icon: "iconAlignLeft",
@@ -1306,11 +1310,11 @@ export class WYSIWYG {
                                         const scrollTop = tableBlockElement.querySelector("table").scrollTop;
                                         tableBlockElement.querySelectorAll("th, td").forEach((item: HTMLTableCellElement) => {
                                             if (!item.classList.contains("fn__none") && isIncludeCell({
-                                                    tableSelectElement,
-                                                    scrollLeft,
-                                                    scrollTop,
-                                                    item,
-                                                }) && (selectCellElements.length === 0 || (selectCellElements.length > 0 && item.offsetTop === selectCellElements[0].offsetTop))) {
+                                                tableSelectElement,
+                                                scrollLeft,
+                                                scrollTop,
+                                                item,
+                                            }) && (selectCellElements.length === 0 || (selectCellElements.length > 0 && item.offsetTop === selectCellElements[0].offsetTop))) {
                                                 selectCellElements.push(item);
                                             }
                                         });
@@ -1344,7 +1348,10 @@ export class WYSIWYG {
                                     }
                                 }
                             }).element);
-                            window.siyuan.menus.menu.append(new MenuItem({id: "separator_2", type: "separator"}).element);
+                            window.siyuan.menus.menu.append(new MenuItem({
+                                id: "separator_2",
+                                type: "separator"
+                            }).element);
                         }
                         window.siyuan.menus.menu.append(new MenuItem({
                             id: "copyPlainText",

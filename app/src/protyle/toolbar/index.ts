@@ -1110,7 +1110,8 @@ export class Toolbar {
             }
         });
         this.subElementCloseCB = () => {
-            if (!renderElement.parentElement || protyle.disabled || oldTextValue === textElement.value) {
+            if (!renderElement.parentElement || protyle.disabled ||
+                (oldTextValue === textElement.value && textElement.value)) {
                 return;
             }
             let inlineLastNode: Element;
