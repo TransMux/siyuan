@@ -278,6 +278,20 @@ func performTx(tx *Transaction) (ret *TxErr) {
 			ret = tx.doUnbindAttrViewBlock(op)
 		case "duplicateAttrViewKey":
 			ret = tx.doDuplicateAttrViewKey(op)
+		case "setAttrViewCoverFrom":
+			ret = tx.doSetAttrViewCoverFrom(op)
+		case "setAttrViewCoverFromAssetKeyID":
+			ret = tx.doSetAttrViewCoverFromAssetKeyID(op)
+		case "setAttrViewCardSize":
+			ret = tx.doSetAttrViewCardSize(op)
+		case "setAttrViewFitImage":
+			ret = tx.doSetAttrViewFitImage(op)
+		case "setAttrViewShowIcon":
+			ret = tx.doSetAttrViewShowIcon(op)
+		case "setAttrViewWrapField":
+			ret = tx.doSetAttrViewWrapField(op)
+		case "changeAttrViewLayout":
+			ret = tx.doChangeAttrViewLayout(op)
 		}
 
 		if nil != ret {
@@ -1482,6 +1496,7 @@ type Operation struct {
 	IsTwoWay            bool                     `json:"isTwoWay"`          // 属性视图关联列是否是双向关系
 	BackRelationKeyID   string                   `json:"backRelationKeyID"` // 属性视图关联列回链关联列的 ID
 	RemoveDest          bool                     `json:"removeDest"`        // 属性视图删除关联目标
+	Layout              av.LayoutType            `json:"layout"`            // 属性视图布局类型
 }
 
 type Transaction struct {

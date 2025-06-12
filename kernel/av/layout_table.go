@@ -18,20 +18,35 @@ package av
 
 import (
 	"sort"
+
+	"github.com/88250/lute/ast"
 )
 
 // LayoutTable 描述了表格布局的结构。
 type LayoutTable struct {
-	Spec int    `json:"spec"` // 布局格式版本
-	ID   string `json:"id"`   // 布局 ID
+	*BaseLayout
 
-	Columns  []*ViewTableColumn `json:"columns"`  // 表格列
-	RowIDs   []string           `json:"rowIds"`   // 行 ID，用于自定义排序
-	Filters  []*ViewFilter      `json:"filters"`  // 过滤规则
-	Sorts    []*ViewSort        `json:"sorts"`    // 排序规则
-	PageSize int                `json:"pageSize"` // 每页行数
+	Columns []*ViewTableColumn `json:"columns"` // 表格列
+	RowIDs  []string           `json:"rowIds"`  // 行 ID，用于自定义排序
 }
 
+func (layoutTable *LayoutTable) GetItemIDs() (ret []string) {
+	return layoutTable.RowIDs
+}
+
+func NewLayoutTable() *LayoutTable {
+	return &LayoutTable{
+		BaseLayout: &BaseLayout{
+			Spec:     0,
+			ID:       ast.NewNodeID(),
+			Filters:  []*ViewFilter{},
+			Sorts:    []*ViewSort{},
+			PageSize: TableViewDefaultPageSize,
+		},
+	}
+}
+
+// ViewTableColumn 描述了表格列的结构。
 type ViewTableColumn struct {
 	ID string `json:"id"` // 列 ID
 
@@ -45,62 +60,35 @@ type ViewTableColumn struct {
 
 // Table 描述了表格实例的结构。
 type Table struct {
-	ID               string         `json:"id"`               // 表格布局 ID
-	Icon             string         `json:"icon"`             // 表格图标
-	Name             string         `json:"name"`             // 表格名称
-	Desc             string         `json:"desc"`             // 表格描述
-	HideAttrViewName bool           `json:"hideAttrViewName"` // 是否隐藏属性视图名称
-	Filters          []*ViewFilter  `json:"filters"`          // 过滤规则
-	Sorts            []*ViewSort    `json:"sorts"`            // 排序规则
-	Columns          []*TableColumn `json:"columns"`          // 表格列
-	Rows             []*TableRow    `json:"rows"`             // 表格行
-	RowCount         int            `json:"rowCount"`         // 表格总行数
-	PageSize         int            `json:"pageSize"`         // 每页行数
+	*BaseInstance
+
+	Columns  []*TableColumn `json:"columns"`  // 表格列
+	Rows     []*TableRow    `json:"rows"`     // 表格行
+	RowCount int            `json:"rowCount"` // 表格总行数
 }
 
+// TableColumn 描述了表格实例列的结构。
 type TableColumn struct {
-	ID     string      `json:"id"`     // 列 ID
-	Name   string      `json:"name"`   // 列名
-	Type   KeyType     `json:"type"`   // 列类型
-	Icon   string      `json:"icon"`   // 列图标
-	Wrap   bool        `json:"wrap"`   // 是否换行
-	Hidden bool        `json:"hidden"` // 是否隐藏
-	Pin    bool        `json:"pin"`    // 是否固定
-	Width  string      `json:"width"`  // 列宽度
-	Desc   string      `json:"desc"`   // 列描述
-	Calc   *ColumnCalc `json:"calc"`   // 计算
+	*BaseInstanceField
 
-	// 以下是某些列类型的特有属性
-
-	Options      []*SelectOption `json:"options,omitempty"`  // 选项列表
-	NumberFormat NumberFormat    `json:"numberFormat"`       // 数字列格式化
-	Template     string          `json:"template"`           // 模板列内容
-	Relation     *Relation       `json:"relation,omitempty"` // 关联列
-	Rollup       *Rollup         `json:"rollup,omitempty"`   // 汇总列
-	Date         *Date           `json:"date,omitempty"`     // 日期设置
+	Wrap  bool        `json:"wrap"`  // 是否换行
+	Pin   bool        `json:"pin"`   // 是否固定
+	Width string      `json:"width"` // 列宽度
+	Calc  *ColumnCalc `json:"calc"`  // 计算
 }
 
-type TableCell struct {
-	ID        string  `json:"id"`
-	Value     *Value  `json:"value"`
-	ValueType KeyType `json:"valueType"`
-	Color     string  `json:"color"`
-	BgColor   string  `json:"bgColor"`
-}
-
+// TableRow 描述了表格实例行的结构。
 type TableRow struct {
-	ID    string       `json:"id"`
-	Cells []*TableCell `json:"cells"`
+	ID    string       `json:"id"`    // 行 ID
+	Cells []*TableCell `json:"cells"` // 行单元格
 }
 
-func (row *TableRow) GetBlockValue() (ret *Value) {
-	for _, cell := range row.Cells {
-		if KeyTypeBlock == cell.ValueType {
-			ret = cell.Value
-			break
-		}
-	}
-	return
+// TableCell 描述了表格实例单元格的结构。
+type TableCell struct {
+	*BaseValue
+
+	Color   string `json:"color"`   // 单元格颜色
+	BgColor string `json:"bgColor"` // 单元格背景颜色
 }
 
 func (row *TableRow) GetValue(keyID string) (ret *Value) {
@@ -122,7 +110,48 @@ func (table *Table) GetColumn(id string) *TableColumn {
 	return nil
 }
 
-func (table *Table) GetType() LayoutType {
+func (row *TableRow) GetID() string {
+	return row.ID
+}
+
+func (row *TableRow) GetBlockValue() (ret *Value) {
+	for _, cell := range row.Cells {
+		if KeyTypeBlock == cell.ValueType {
+			ret = cell.Value
+			break
+		}
+	}
+	return
+}
+
+func (row *TableRow) GetValues() (ret []*Value) {
+	ret = []*Value{}
+	for _, cell := range row.Cells {
+		if nil != cell.Value {
+			ret = append(ret, cell.Value)
+		}
+	}
+	return
+}
+
+func (table *Table) GetItems() (ret []Item) {
+	ret = []Item{}
+	for _, row := range table.Rows {
+		if nil != row {
+			ret = append(ret, row)
+		}
+	}
+	return
+}
+
+func (table *Table) SetItems(items []Item) {
+	table.Rows = []*TableRow{}
+	for _, item := range items {
+		table.Rows = append(table.Rows, item.(*TableRow))
+	}
+}
+
+func (*Table) GetType() LayoutType {
 	return LayoutTypeTable
 }
 
@@ -130,7 +159,7 @@ func (table *Table) GetID() string {
 	return table.ID
 }
 
-func (table *Table) SortRows(attrView *AttributeView) {
+func (table *Table) Sort(attrView *AttributeView) {
 	if 1 > len(table.Sorts) {
 		return
 	}
@@ -243,7 +272,7 @@ func (table *Table) SortRows(attrView *AttributeView) {
 	}
 }
 
-func (table *Table) FilterRows(attrView *AttributeView) {
+func (table *Table) Filter(attrView *AttributeView) {
 	if 1 > len(table.Filters) {
 		return
 	}

@@ -1,4 +1,14 @@
 {
+  "cardPreview1": "Aperçu de la carte",
+  "contentImage": "Image du contenu",
+  "cardSize": "Taille de la carte",
+  "large": "Grand",
+  "medium": "Moyen",
+  "small": "Petit",
+  "fitImage": "Ajuster automatiquement la taille de l'image",
+  "showIcon": "Afficher l'icône",
+  "wrapAllFields": "Retour automatique des champs",
+  "gallery": "Galerie",
   "newTag": "Nouvelle étiquette",
   "pleaseWait": "Veuillez patienter...",
   "reconnectPrompt": "Après avoir changé d'application, il faudra un certain temps pour rétablir le fonctionnement du noyau SiYuan. Veuillez patienter quelques secondes ou cliquer sur le bouton « Réessayer »",
@@ -1336,6 +1346,7 @@
   },
   "_attrView": {
     "table": "Tableau",
+    "gallery": "Galerie",
     "key": "Clé primaire",
     "select": "Sélectionner"
   },
@@ -1596,6 +1607,7 @@
     "253": "Compression du fichier [%s], veuillez patienter...",
     "254": "[Region ID] ID de région incorrect, veuillez consulter la documentation du fournisseur de services S3 pour configurer l'ID de région",
     "255": "Le site cible a activé la protection contre le hotlinking, il est donc impossible de télécharger [%d] ressources",
-    "256": "Le chemin spécifié [%s] contient un chemin d'espace de travail parent [%s]"
+    "256": "Le chemin spécifié [%s] contient un chemin d'espace de travail parent [%s]",
+    "257": "Souviens-toi de moi pendant 30 jours"
   }
 }

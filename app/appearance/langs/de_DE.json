@@ -1,4 +1,14 @@
 {
+  "cardPreview1": "Kartenansicht",
+  "contentImage": "Inhaltsbild",
+  "cardSize": "Kartengröße",
+  "large": "Groß",
+  "medium": "Mittel",
+  "small": "Klein",
+  "fitImage": "Bildgröße automatisch anpassen",
+  "showIcon": "Symbol anzeigen",
+  "wrapAllFields": "Felder automatisch umbrechen",
+  "gallery": "Galerie",
   "newTag": "Neuer Tag",
   "pleaseWait": "Bitte warten...",
   "reconnectPrompt": "Nach dem Wechseln der Anwendungen dauert es einige Zeit, bis der Betrieb des SiYuan-Kernels wiederhergestellt ist. Bitte warten Sie einige Sekunden oder klicken Sie auf die Schaltfläche „Erneut versuchen“",
@@ -1336,6 +1346,7 @@
   },
   "_attrView": {
     "table": "Tabelle",
+    "gallery": "Galerie",
     "key": "Primärschlüssel",
     "select": "Auswählen"
   },
@@ -1596,6 +1607,7 @@
     "253": "Datei [%s] wird komprimiert, bitte warten...",
     "254": "[Region ID] Falsche Regions-ID, bitte konsultieren Sie die Dokumentation des S3-Dienstanbieters zur Konfiguration der Regions-ID",
     "255": "Die Zielseite hat den Hotlink-Schutz aktiviert, daher ist es nicht möglich, [%d] Ressourcen herunterzuladen",
-    "256": "Der angegebene Pfad [%s] hat einen übergeordneten Arbeitsbereichspfad [%s]"
+    "256": "Der angegebene Pfad [%s] hat einen übergeordneten Arbeitsbereichspfad [%s]",
+    "257": "Erinnere dich 30 Tage an mich"
   }
 }

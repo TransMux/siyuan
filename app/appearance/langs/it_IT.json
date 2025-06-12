@@ -1,4 +1,14 @@
 {
+  "cardPreview1": "Anteprima della carta",
+  "contentImage": "Immagine del contenuto",
+  "cardSize": "Dimensione della carta",
+  "large": "Grande",
+  "medium": "Medio",
+  "small": "Piccolo",
+  "fitImage": "Adatta automaticamente la dimensione dell'immagine",
+  "showIcon": "Mostra icona",
+  "wrapAllFields": "Avvolgi automaticamente i campi",
+  "gallery": "Galleria",
   "newTag": "Nuova etichetta",
   "pleaseWait": "Attendere prego...",
   "reconnectPrompt": "Dopo aver cambiato applicazione, ci vorrà un po' di tempo per ripristinare il funzionamento del kernel SiYuan. Attendere qualche secondo o fare clic sul pulsante \"Riprova\"",
@@ -1336,6 +1346,7 @@
   },
   "_attrView": {
     "table": "Tabella",
+    "gallery": "Galleria",
     "key": "Chiave primaria",
     "select": "Seleziona"
   },
@@ -1596,6 +1607,7 @@
     "253": "Compressione del file [%s], attendere prego...",
     "254": "[Region ID] ID regione non corretto, si prega di consultare la documentazione del fornitore di servizi S3 per configurare l'ID regione",
     "255": "Il sito di destinazione ha abilitato la protezione hotlink, quindi non è possibile scaricare [%d] risorse",
-    "256": "Il percorso specificato [%s] ha un percorso di spazio di lavoro padre [%s]"
+    "256": "Il percorso specificato [%s] ha un percorso di spazio di lavoro padre [%s]",
+    "257": "Ricordati di me per 30 giorni"
   }
 }

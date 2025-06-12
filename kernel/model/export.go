@@ -80,11 +80,11 @@ func ExportAv2CSV(avID, blockID string) (zipPath string, err error) {
 	}
 
 	name := util.FilterFileName(getAttrViewName(attrView))
-	table := sql.RenderAttributeViewTable(attrView, view, "")
+	table := getAttrViewTable(attrView, view)
 
 	// 遵循视图过滤和排序规则 Use filtering and sorting of current view settings when exporting database blocks https://github.com/siyuan-note/siyuan/issues/10474
-	table.FilterRows(attrView)
-	table.SortRows(attrView)
+	table.Filter(attrView)
+	table.Sort(attrView)
 
 	exportFolder := filepath.Join(util.TempDir, "export", "csv", name)
 	if err = os.MkdirAll(exportFolder, 0755); err != nil {
@@ -796,7 +796,7 @@ func ExportMarkdownHTML(id, savePath string, docx, merge bool) (name, dom string
 		} else if n.IsTextMarkType("code") {
 			if nil != n.Next && ast.NodeText == n.Next.Type {
 				// 行级代码导出 word 之后会有多余的零宽空格 https://github.com/siyuan-note/siyuan/issues/14825
-				n.Next.Tokens = bytes.TrimPrefix(n.Tokens, []byte(editor.Zwsp))
+				n.Next.Tokens = bytes.TrimPrefix(n.Next.Tokens, []byte(editor.Zwsp))
 			}
 		}
 		return ast.WalkContinue
@@ -1993,13 +1993,13 @@ func ExportMarkdownContent(id string, refMode, embedMode int, addYfm bool) (hPat
 	return
 }
 
-func exportMarkdownContent(id, ext string, exportRefMode int, defBlockIDs []string, singleFile bool, treeCache *map[string]*parse.Tree) (hPath, exportedMd string) {
+func exportMarkdownContent(id, ext string, exportRefMode int, defBlockIDs []string, singleFile bool, treeCache *map[string]*parse.Tree) (tree *parse.Tree, exportedMd string, isEmpty bool) {
 	tree, err := loadTreeWithCache(id, treeCache)
 	if err != nil {
 		logging.LogErrorf("load tree by block id [%s] failed: %s", id, err)
 		return
 	}
-	hPath = tree.HPath
+	isEmpty = nil == tree.Root.FirstChild.FirstChild
 	exportedMd = exportMarkdownContent0(tree, "", false,
 		ext, exportRefMode, Conf.Export.BlockEmbedMode, Conf.Export.FileAnnotationRefMode,
 		Conf.Export.TagOpenMarker, Conf.Export.TagCloseMarker,
@@ -2492,11 +2492,11 @@ func exportTree(tree *parse.Tree, wysiwyg, keepFold, avHiddenCol bool,
 			return ast.WalkContinue
 		}
 
-		table := sql.RenderAttributeViewTable(attrView, view, "")
+		table := getAttrViewTable(attrView, view)
 
 		// 遵循视图过滤和排序规则 Use filtering and sorting of current view settings when exporting database blocks https://github.com/siyuan-note/siyuan/issues/10474
-		table.FilterRows(attrView)
-		table.SortRows(attrView)
+		table.Filter(attrView)
+		table.Sort(attrView)
 
 		var aligns []int
 		for range table.Columns {
@@ -3128,7 +3128,11 @@ func exportPandocConvertZip(baseFolderName string, docPaths, defBlockIDs []strin
 	luteEngine := util.NewLute()
 	for i, p := range docPaths {
 		id := util.GetTreeID(p)
-		hPath, md := exportMarkdownContent(id, ext, exportRefMode, defBlockIDs, false, treeCache)
+		tree, md, isEmpty := exportMarkdownContent(id, ext, exportRefMode, defBlockIDs, false, treeCache)
+		if nil == tree {
+			continue
+		}
+		hPath := tree.HPath
 		dir, name = path.Split(hPath)
 		dir = util.FilterFilePath(dir) // 导出文档时未移除不支持的文件名符号 https://github.com/siyuan-note/siyuan/issues/4590
 		name = util.FilterFileName(name)
@@ -3147,8 +3151,17 @@ func exportPandocConvertZip(baseFolderName string, docPaths, defBlockIDs []strin
 			continue
 		}
 
+		if isEmpty {
+			entries, readErr := os.ReadDir(filepath.Join(util.DataDir, tree.Box, strings.TrimSuffix(tree.Path, ".sy")))
+			if nil == readErr && 0 < len(entries) {
+				// 如果文档内容为空并且存在子文档则仅导出文件夹
+				// Improve export of empty documents with subdocuments https://github.com/siyuan-note/siyuan/issues/15009
+				continue
+			}
+		}
+
 		// 解析导出后的标准 Markdown，汇总 assets
-		tree := parse.Parse("", gulu.Str.ToBytes(md), luteEngine.ParseOptions)
+		tree = parse.Parse("", gulu.Str.ToBytes(md), luteEngine.ParseOptions)
 		var assets []string
 		assets = append(assets, assetsLinkDestsInTree(tree)...)
 		for _, asset := range assets {
@@ -3378,5 +3391,20 @@ func loadTreeWithCache(id string, treeCache *map[string]*parse.Tree) (tree *pars
 	if nil == err && nil != tree {
 		(*treeCache)[id] = tree
 	}
+	return
+}
+
+func getAttrViewTable(attrView *av.AttributeView, view *av.View) (ret *av.Table) {
+	switch view.LayoutType {
+	case av.LayoutTypeGallery:
+		view.Table = av.NewLayoutTable()
+		for _, field := range view.Gallery.CardFields {
+			view.Table.Columns = append(view.Table.Columns, &av.ViewTableColumn{ID: field.ID})
+		}
+		for _, cardID := range view.Gallery.CardIDs {
+			view.Table.RowIDs = append(view.Table.RowIDs, cardID)
+		}
+	}
+	ret = sql.RenderAttributeViewTable(attrView, view, "")
 	return
 }

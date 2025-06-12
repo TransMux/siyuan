@@ -1,4 +1,14 @@
 {
+  "cardPreview1": "Vista previa de la tarjeta",
+  "contentImage": "Imagen del contenido",
+  "cardSize": "Tamaño de la tarjeta",
+  "large": "Grande",
+  "medium": "Mediano",
+  "small": "Pequeño",
+  "fitImage": "Ajustar automáticamente el tamaño de la imagen",
+  "showIcon": "Mostrar ícono",
+  "wrapAllFields": "Ajuste automático de campos",
+  "gallery": "Galería",
   "newTag": "Nueva etiqueta",
   "pleaseWait": "Por favor, espere...",
   "reconnectPrompt": "Después de cambiar de aplicación, tomará algún tiempo restaurar el funcionamiento del núcleo de SiYuan. Espere unos segundos o haga clic en el botón \"Reintentar\"",
@@ -1336,6 +1346,7 @@
   },
   "_attrView": {
     "table": "Tabla",
+    "gallery": "Galería",
     "key": "Clave principal",
     "select": "Selección"
   },
@@ -1596,6 +1607,7 @@
     "253": "Comprimiendo el archivo [%s], por favor espere...",
     "254": "[Region ID] ID de región incorrecto, por favor consulte la documentación del proveedor de servicios S3 para configurar el ID de región",
     "255": "El sitio de destino ha activado la protección contra hotlinking, por lo que no es posible descargar [%d] recursos",
-    "256": "La ruta especificada [%s] tiene una ruta de espacio de trabajo padre [%s]"
+    "256": "La ruta especificada [%s] tiene una ruta de espacio de trabajo padre [%s]",
+    "257": "Recuérdame durante 30 días"
   }
 }

@@ -97,8 +97,9 @@ func setDatabaseBlockView(c *gin.Context) {
 
 	blockID := arg["id"].(string)
 	viewID := arg["viewID"].(string)
+	avID := arg["avID"].(string)
 
-	err := model.SetDatabaseBlockView(blockID, viewID)
+	err := model.SetDatabaseBlockView(blockID, avID, viewID)
 	if err != nil {
 		ret.Code = -1
 		ret.Msg = err.Error()
@@ -572,8 +573,11 @@ func renderAttributeView(c *gin.Context) {
 	var views []map[string]interface{}
 	for _, v := range attrView.Views {
 		pSize := 10
-		if nil != v.Table && av.LayoutTypeTable == v.LayoutType {
+		switch v.LayoutType {
+		case av.LayoutTypeTable:
 			pSize = v.Table.PageSize
+		case av.LayoutTypeGallery:
+			pSize = v.Gallery.PageSize
 		}
 
 		view := map[string]interface{}{

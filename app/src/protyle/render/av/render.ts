@@ -14,8 +14,12 @@ import {escapeAriaLabel, escapeAttr, escapeHtml} from "../../../util/escape";
 import {electronUndo} from "../../undo";
 import {isInAndroid, isInHarmony, isInIOS} from "../../util/compatibility";
 import {isMobile} from "../../../util/functions";
+import {renderGallery} from "./gallery/render";
+import {getViewIcon} from "./view";
+import {bindLayoutEvent, getLayoutHTML} from "./layout";
+import {setPosition} from "../../../util/setPosition";
 
-export const avRender = (element: Element, protyle: IProtyle, cb?: () => void, viewID?: string, renderAll = true) => {
+export const avRender = (element: Element, protyle: IProtyle, cb?: (data: IAV) => void, viewID?: string, renderAll = true) => {
     let avElements: Element[] = [];
     if (element.getAttribute("data-type") === "NodeAttributeView") {
         // 编辑器内代码块编辑渲染
@@ -34,6 +38,12 @@ export const avRender = (element: Element, protyle: IProtyle, cb?: () => void, v
             if (isMobile() || isInIOS() || isInAndroid() || isInHarmony()) {
                 e.classList.add("av--touch");
             }
+
+            if (e.getAttribute("data-av-type") === "gallery") {
+                renderGallery({blockElement: e, protyle, cb, viewID, renderAll});
+                return;
+            }
+
             const alignSelf = e.style.alignSelf;
             if (e.firstElementChild.innerHTML === "") {
                 e.style.alignSelf = "";
@@ -82,7 +92,7 @@ export const avRender = (element: Element, protyle: IProtyle, cb?: () => void, v
                     e.dataset.pageSize = viewTabElement.dataset.page;
                 }
                 newViewID = viewID;
-                fetchPost("/api/av/setDatabaseBlockView", {id: e.dataset.nodeId, viewID});
+                fetchPost("/api/av/setDatabaseBlockView", {id: e.dataset.nodeId, viewID, avID: e.dataset.avId,});
                 e.setAttribute(Constants.CUSTOM_SY_AV_VIEW, newViewID);
             }
             let searchInputElement = e.querySelector('[data-type="av-search"]') as HTMLInputElement;
@@ -207,8 +217,8 @@ ${cell.color ? `color:${cell.color};` : ""}">${renderCell(cell.value, rowIndex)}
                 let tabHTML = "";
                 let viewData: IAVView;
                 response.data.views.forEach((item: IAVView) => {
-                    tabHTML += `<div data-position="north" data-id="${item.id}" data-page="${item.pageSize}" data-desc="${escapeAriaLabel(item.desc || "")}" class="ariaLabel item${item.id === response.data.viewID ? " item--focus" : ""}">
-    ${item.icon ? unicode2Emoji(item.icon, "item__graphic", true) : '<svg class="item__graphic"><use xlink:href="#iconTable"></use></svg>'}
+                    tabHTML += `<div data-position="north" data-av-type="${item.type}" data-id="${item.id}" data-page="${item.pageSize}" data-desc="${escapeAriaLabel(item.desc || "")}" class="ariaLabel item${item.id === response.data.viewID ? " item--focus" : ""}">
+    ${item.icon ? unicode2Emoji(item.icon, "item__graphic", true) : `<svg class="item__graphic"><use xlink:href="#${getViewIcon(item.type)}"></use></svg>`}
     <span class="item__text">${escapeHtml(item.name)}</span>
 </div>`;
                     if (item.id === response.data.viewID) {
@@ -362,7 +372,7 @@ ${cell.color ? `color:${cell.color};` : ""}">${renderCell(cell.value, rowIndex)}
                 }
                 e.querySelector(".layout-tab-bar").scrollLeft = (e.querySelector(".layout-tab-bar .item--focus") as HTMLElement).offsetLeft;
                 if (cb) {
-                    cb();
+                    cb(response.data);
                 }
                 if (!renderAll) {
                     return;
@@ -429,7 +439,7 @@ ${cell.color ? `color:${cell.color};` : ""}">${renderCell(cell.value, rowIndex)}
 
 let searchTimeout: number;
 
-const updateSearch = (e: HTMLElement, protyle: IProtyle) => {
+export const updateSearch = (e: HTMLElement, protyle: IProtyle) => {
     clearTimeout(searchTimeout);
     searchTimeout = window.setTimeout(() => {
         e.removeAttribute("data-render");
@@ -477,7 +487,20 @@ export const refreshAV = (protyle: IProtyle, operation: IOperation) => {
                     });
                     addDragFill(item.querySelector(".av__cell--select"));
                 }
-                avRender(item, protyle, () => {
+                if (operation.action === "removeAttrViewView") {
+                    item.setAttribute("data-av-type", operation.retData);
+                }
+                if (operation.action === "changeAttrViewLayout") {
+                    item.setAttribute("data-av-type", operation.layout);
+                }
+                avRender(item, protyle, (data) => {
+                    if (operation.action === "changeAttrViewLayout") {
+                        const menuElement = document.querySelector(".av__panel").lastElementChild as HTMLElement;
+                        menuElement.innerHTML = getLayoutHTML(data);
+                        const tabRect = item.querySelector(".av__views").getBoundingClientRect();
+                        setPosition(menuElement, tabRect.right - menuElement.clientWidth, tabRect.bottom, tabRect.height);
+                        bindLayoutEvent({protyle: protyle, data, menuElement, blockElement: item});
+                    }
                     const attrElement = document.querySelector(`.b3-dialog--open[data-key="${Constants.DIALOG_ATTR}"] div[data-av-id="${avID}"]`) as HTMLElement;
                     if (attrElement) {
                         // 更新属性面板

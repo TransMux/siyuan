@@ -43,10 +43,10 @@ type AttributeView struct {
 	Views     []*View      `json:"views"`     // 视图
 }
 
-// KeyValues 描述了属性视图属性列值的结构。
+// KeyValues 描述了属性视图属性键值列表的结构。
 type KeyValues struct {
-	Key    *Key     `json:"key"`              // 属性视图属性列
-	Values []*Value `json:"values,omitempty"` // 属性视图属性列值
+	Key    *Key     `json:"key"`              // 属性视图属性键
+	Values []*Value `json:"values,omitempty"` // 属性视图属性值列表
 }
 
 func (kValues *KeyValues) GetValue(blockID string) (ret *Value) {
@@ -184,52 +184,57 @@ type View struct {
 	HideAttrViewName bool   `json:"hideAttrViewName"` // 是否隐藏属性视图名称
 	Desc             string `json:"desc"`             // 视图描述
 
-	LayoutType LayoutType   `json:"type"`            // 当前布局类型
-	Table      *LayoutTable `json:"table,omitempty"` // 表格布局
+	LayoutType LayoutType     `json:"type"`              // 当前布局类型
+	Table      *LayoutTable   `json:"table,omitempty"`   // 表格布局
+	Gallery    *LayoutGallery `json:"gallery,omitempty"` // 画廊布局
 }
 
-// LayoutType 描述了视图布局的类型。
+// LayoutType 描述了视图布局类型。
 type LayoutType string
 
 const (
-	LayoutTypeTable LayoutType = "table" // 属性视图类型 - 表格
+	LayoutTypeTable   LayoutType = "table"   // 属性视图类型 - 表格
+	LayoutTypeGallery LayoutType = "gallery" // 属性视图类型 - 画廊
+)
+
+const (
+	TableViewDefaultPageSize   = 50 // 表格视图默认分页大小
+	GalleryViewDefaultPageSize = 50 // 画廊视图默认分页大小
 )
 
 func NewTableView() (ret *View) {
 	ret = &View{
 		ID:         ast.NewNodeID(),
-		Name:       getI18nName("table"),
+		Name:       GetAttributeViewI18n("table"),
 		LayoutType: LayoutTypeTable,
-		Table: &LayoutTable{
-			Spec:     0,
-			ID:       ast.NewNodeID(),
-			Filters:  []*ViewFilter{},
-			Sorts:    []*ViewSort{},
-			PageSize: 50,
-		},
+		Table:      NewLayoutTable(),
 	}
 	return
 }
 
 func NewTableViewWithBlockKey(blockKeyID string) (view *View, blockKey, selectKey *Key) {
-	name := getI18nName("table")
+	name := GetAttributeViewI18n("table")
 	view = &View{
 		ID:         ast.NewNodeID(),
 		Name:       name,
 		LayoutType: LayoutTypeTable,
-		Table: &LayoutTable{
-			Spec:     0,
-			ID:       ast.NewNodeID(),
-			Filters:  []*ViewFilter{},
-			Sorts:    []*ViewSort{},
-			PageSize: 50,
-		},
+		Table:      NewLayoutTable(),
 	}
-	blockKey = NewKey(blockKeyID, getI18nName("key"), "", KeyTypeBlock)
+	blockKey = NewKey(blockKeyID, GetAttributeViewI18n("key"), "", KeyTypeBlock)
 	view.Table.Columns = []*ViewTableColumn{{ID: blockKeyID}}
 
-	selectKey = NewKey(ast.NewNodeID(), getI18nName("select"), "", KeyTypeSelect)
+	selectKey = NewKey(ast.NewNodeID(), GetAttributeViewI18n("select"), "", KeyTypeSelect)
 	view.Table.Columns = append(view.Table.Columns, &ViewTableColumn{ID: selectKey.ID})
+	return
+}
+
+func NewGalleryView() (ret *View) {
+	ret = &View{
+		ID:         ast.NewNodeID(),
+		Name:       GetAttributeViewI18n("gallery"),
+		LayoutType: LayoutTypeGallery,
+		Gallery:    NewLayoutGallery(),
+	}
 	return
 }
 
@@ -393,7 +398,7 @@ func SaveAttributeView(av *AttributeView) (err error) {
 			view.Table.RowIDs = gulu.Str.RemoveDuplicatedElem(view.Table.RowIDs)
 			// 分页大小
 			if 1 > view.Table.PageSize {
-				view.Table.PageSize = 50
+				view.Table.PageSize = TableViewDefaultPageSize
 			}
 		}
 	}
@@ -522,7 +527,7 @@ func (av *AttributeView) GetBlockKey() (ret *Key) {
 	return
 }
 
-func (av *AttributeView) ShallowClone() (ret *AttributeView) {
+func (av *AttributeView) Clone() (ret *AttributeView) {
 	ret = &AttributeView{}
 	data, err := gulu.JSON.MarshalJSON(av)
 	if err != nil {
@@ -596,13 +601,14 @@ func GetAttributeViewDataPath(avID string) (ret string) {
 	return
 }
 
-func getI18nName(name string) string {
-	return util.AttrViewLangs[util.Lang][name].(string)
+func GetAttributeViewI18n(key string) string {
+	return util.AttrViewLangs[util.Lang][key].(string)
 }
 
 var (
-	ErrViewNotFound = errors.New("view not found")
-	ErrKeyNotFound  = errors.New("key not found")
+	ErrViewNotFound    = errors.New("view not found")
+	ErrKeyNotFound     = errors.New("key not found")
+	ErrWrongLayoutType = errors.New("wrong layout type")
 )
 
 const (
