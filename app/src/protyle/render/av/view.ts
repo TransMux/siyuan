@@ -172,6 +172,8 @@ export const getViewHTML = (data: IAV) => {
         fields = (view as IAVTable).columns;
     } else if (data.viewType === "gallery") {
         fields = (view as IAVGallery).fields;
+    } else if (data.viewType === "calendar") {
+        fields = (view as IAVCalendar).fields;
     }
     return `<div class="b3-menu__items">
 <button class="b3-menu__item" data-type="nobg">
@@ -358,6 +360,27 @@ export const addView = (protyle: IProtyle, blockElement: Element) => {
             blockElement.setAttribute("data-av-type", "gallery");
         }
     });
+    addMenu.addItem({
+        icon: "iconCalendar",
+        label: window.siyuan.languages.calendar,
+        click() {
+            transaction(protyle, [{
+                action: "addAttrViewView",
+                avID,
+                layout: "calendar",
+                id,
+                blockID: blockElement.getAttribute("data-node-id")
+            }], [{
+                action: "removeAttrViewView",
+                layout: "calendar",
+                avID,
+                id,
+                blockID: blockElement.getAttribute("data-node-id")
+            }]);
+            blockElement.setAttribute(Constants.CUSTOM_SY_AV_VIEW, id);
+            blockElement.setAttribute("data-av-type", "calendar");
+        }
+    });
     viewElement.classList.add("av__views--show");
     const addRect = viewElement.querySelector('.block__icon[data-type="av-add"]')?.getBoundingClientRect();
     addMenu.open({
@@ -372,6 +395,8 @@ export const getViewIcon = (type: string) => {
             return "iconTable";
         case "gallery":
             return "iconGallery";
+        case "calendar":
+            return "iconCalendar";
     }
 };
 
@@ -381,9 +406,18 @@ export const getViewName = (type: string) => {
             return window.siyuan.languages.table;
         case "gallery":
             return window.siyuan.languages.gallery;
+        case "calendar":
+            return window.siyuan.languages.calendar;
     }
 };
 
 export const getFieldsByData = (data: IAV) => {
-    return data.viewType === "table" ? (data.view as IAVTable).columns : (data.view as IAVGallery).fields;
+    switch (data.viewType) {
+        case "table":
+            return (data.view as IAVTable).columns;
+        case "gallery":
+            return (data.view as IAVGallery).fields;
+        case "calendar":
+            return (data.view as IAVCalendar).fields;
+    }
 }

@@ -9,6 +9,7 @@ import {electronUndo} from "../../../undo";
 import {addClearButton} from "../../../../util/addClearButton";
 import {updateSearch} from "../render";
 import {getViewIcon} from "../view";
+import {renderAVViewsBar} from "../header";
 
 export const renderGallery = (options: {
     blockElement: HTMLElement,
@@ -114,50 +115,32 @@ ${cell.color ? `color:${cell.color};` : ""}">${renderCell(cell.value, rowIndex)}
             }
         });
         if (options.renderAll) {
+            // ---------- Reuse common header bar ----------
+            const extraIconsHTML = `
+                <div class="fn__space"></div>
+                <span data-type="av-more" class="block__icon">
+                    <svg><use xlink:href="#iconMore"></use></svg>
+                </span>
+                <div class="fn__space"></div>
+                <span data-type="av-add-more" class="block__icon ariaLabel" data-position="8south" aria-label="${window.siyuan.languages.newRow}">
+                    <svg><use xlink:href="#iconAdd"></use></svg>
+                </span>
+                <div class="fn__space"></div>
+                ${response.data.isMirror ? ` <span data-av-id="${response.data.id}" data-popover-url="/api/av/getMirrorDatabaseBlocks" class="popover__block block__icon block__icon--show ariaLabel" data-position="8south" aria-label="${window.siyuan.languages.mirrorTip}">
+    <svg><use xlink:href="#iconSplitLR"></use></svg></span><div class="fn__space"></div>` : ""}`;
+
+            const viewsBarHTML = renderAVViewsBar({
+                tabHTML,
+                viewsCount: response.data.views.length,
+                isSearching: !!isSearching,
+                query,
+                filtersActive: view.filters.length > 0,
+                sortsActive: view.sorts.length > 0,
+                extraHTML: extraIconsHTML,
+            });
             options.blockElement.firstElementChild.outerHTML = `<div class="av__container fn__block">
     <div class="av__header">
-        <div class="fn__flex av__views${isSearching || query ? " av__views--show" : ""}">
-            <div class="layout-tab-bar fn__flex">
-                ${tabHTML}
-            </div>
-            <div class="fn__space"></div>
-            <span data-type="av-add" class="block__icon ariaLabel" data-position="8south" aria-label="${window.siyuan.languages.newView}">
-                <svg><use xlink:href="#iconAdd"></use></svg>
-            </span>
-            <div class="fn__flex-1"></div>
-            <div class="fn__space"></div>
-            <span data-type="av-switcher" class="block__icon${response.data.views.length > 0 ? "" : " fn__none"}">
-                <svg><use xlink:href="#iconDown"></use></svg>
-                <span class="fn__space"></span>
-                <small>${response.data.views.length}</small>
-            </span>
-            <div class="fn__space"></div>
-            <span data-type="av-filter" class="block__icon${view.filters.length > 0 ? " block__icon--active" : ""}">
-                <svg><use xlink:href="#iconFilter"></use></svg>
-            </span>
-            <div class="fn__space"></div>
-            <span data-type="av-sort" class="block__icon${view.sorts.length > 0 ? " block__icon--active" : ""}">
-                <svg><use xlink:href="#iconSort"></use></svg>
-            </span>
-            <div class="fn__space"></div>
-            <button data-type="av-search-icon" class="block__icon">
-                <svg><use xlink:href="#iconSearch"></use></svg>
-            </button>
-            <div style="position: relative" class="fn__flex">
-                <input style="${isSearching || query ? "width:128px" : "width:0;padding-left: 0;padding-right: 0;"}" data-type="av-search" class="b3-text-field b3-text-field--text" placeholder="${window.siyuan.languages.search}">
-            </div>
-            <div class="fn__space"></div>
-            <span data-type="av-more" class="block__icon">
-                <svg><use xlink:href="#iconMore"></use></svg>
-            </span>
-            <div class="fn__space"></div>
-            <span data-type="av-add-more" class="block__icon ariaLabel" data-position="8south" aria-label="${window.siyuan.languages.newRow}">
-                <svg><use xlink:href="#iconAdd"></use></svg>
-            </span>
-            <div class="fn__space"></div>
-            ${response.data.isMirror ? ` <span data-av-id="${response.data.id}" data-popover-url="/api/av/getMirrorDatabaseBlocks" class="popover__block block__icon block__icon--show ariaLabel" data-position="8south" aria-label="${window.siyuan.languages.mirrorTip}">
-    <svg><use xlink:href="#iconSplitLR"></use></svg></span><div class="fn__space"></div>` : ""}
-        </div>
+        ${viewsBarHTML}
         <div contenteditable="${options.protyle.disabled || hasClosestByAttribute(options.blockElement, "data-type", "NodeBlockQueryEmbed") ? "false" : "true"}" spellcheck="${window.siyuan.config.editor.spellcheck.toString()}" class="av__title${viewData.hideAttrViewName ? " fn__none" : ""}" data-title="${response.data.name || ""}" data-tip="${window.siyuan.languages.title}">${response.data.name || ""}</div>
         <div class="av__counter fn__none"></div>
     </div>

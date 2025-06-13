@@ -117,20 +117,6 @@ type TAVFilterOperator =
 
 declare module "blueimp-md5"
 
-declare class Highlight {
-    constructor(...range: Range[]);
-
-    add(range: Range): void
-
-    clear(): void
-
-    forEach(callbackfn: (value: Range, key: number) => void): void;
-}
-
-declare namespace CSS {
-    const highlights: Map<string, Highlight>;
-}
-
 interface CSSStyleDeclarationElectron extends CSSStyleDeclaration {
     WebkitAppRegion: string;
 }
@@ -822,9 +808,9 @@ interface IBazaarItem {
 interface IAV {
     id: string;
     name: string;
-    view: IAVTable | IAVGallery;
+    view: IAVTable | IAVGallery | IAVCalendar;
     viewID: string;
-    viewType: "table" | "gallery";
+    viewType: "table" | "gallery" | "calendar";
     views: IAVView[];
 }
 
@@ -859,6 +845,29 @@ interface IAVGallery extends IAVView {
     filters: IAVFilter[],
     sorts: IAVSort[],
     cardCount: number,
+}
+
+interface IAVCalendar extends IAVView {
+    dateFieldId: string;     // 日期字段ID，用于显示在日历上
+    viewType: number;        // 日历视图类型：0-月视图，1-周视图，2-日视图
+    startDate: number;       // 日历显示的开始日期（时间戳）
+    showWeekend: boolean;    // 是否显示周末
+    firstDayOfWeek: number;  // 一周的第一天 (0=Sunday, 1=Monday)
+    events: IAVCalendarEvent[],
+    desc: string
+    fields: IAVColumn[]
+    filters: IAVFilter[],
+    sorts: IAVSort[],
+    eventCount: number,
+}
+
+interface IAVCalendarEvent {
+    id: string;
+    title: string;
+    startTime: number;
+    endTime: number;
+    allDay: boolean;
+    values: IAVCell[];
 }
 
 interface IAVFilter {

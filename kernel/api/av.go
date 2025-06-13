@@ -578,6 +578,8 @@ func renderAttributeView(c *gin.Context) {
 			pSize = v.Table.PageSize
 		case av.LayoutTypeGallery:
 			pSize = v.Gallery.PageSize
+		case av.LayoutTypeCalendar:
+			pSize = v.Calendar.PageSize
 		}
 
 		view := map[string]interface{}{
@@ -674,4 +676,149 @@ func setAttributeViewBlockAttr(c *gin.Context) {
 	}
 
 	model.ReloadAttrView(avID)
+}
+
+// Calendar API endpoints
+
+func createCalendarEvent(c *gin.Context) {
+	ret := gulu.Ret.NewResult()
+	defer c.JSON(http.StatusOK, ret)
+
+	arg, ok := util.JsonArg(c, ret)
+	if !ok {
+		return
+	}
+
+	avID := arg["avID"].(string)
+	event := arg["event"].(map[string]interface{})
+
+	err := model.CreateCalendarEvent(avID, event)
+	if err != nil {
+		ret.Code = -1
+		ret.Msg = err.Error()
+		return
+	}
+}
+
+func updateCalendarEvent(c *gin.Context) {
+	ret := gulu.Ret.NewResult()
+	defer c.JSON(http.StatusOK, ret)
+
+	arg, ok := util.JsonArg(c, ret)
+	if !ok {
+		return
+	}
+
+	avID := arg["avID"].(string)
+	event := arg["event"].(map[string]interface{})
+
+	err := model.UpdateCalendarEvent(avID, event)
+	if err != nil {
+		ret.Code = -1
+		ret.Msg = err.Error()
+		return
+	}
+}
+
+func deleteCalendarEvent(c *gin.Context) {
+	ret := gulu.Ret.NewResult()
+	defer c.JSON(http.StatusOK, ret)
+
+	arg, ok := util.JsonArg(c, ret)
+	if !ok {
+		return
+	}
+
+	avID := arg["avID"].(string)
+	eventId := arg["eventId"].(string)
+
+	err := model.DeleteCalendarEvent(avID, eventId)
+	if err != nil {
+		ret.Code = -1
+		ret.Msg = err.Error()
+		return
+	}
+}
+
+func moveCalendarEvent(c *gin.Context) {
+	ret := gulu.Ret.NewResult()
+	defer c.JSON(http.StatusOK, ret)
+
+	arg, ok := util.JsonArg(c, ret)
+	if !ok {
+		return
+	}
+
+	avID := arg["avID"].(string)
+	eventId := arg["eventId"].(string)
+	newDate := arg["newDate"].(string)
+
+	err := model.MoveCalendarEvent(avID, eventId, newDate)
+	if err != nil {
+		ret.Code = -1
+		ret.Msg = err.Error()
+		return
+	}
+}
+
+func navigateCalendarPeriod(c *gin.Context) {
+	ret := gulu.Ret.NewResult()
+	defer c.JSON(http.StatusOK, ret)
+
+	arg, ok := util.JsonArg(c, ret)
+	if !ok {
+		return
+	}
+
+	avID := arg["avID"].(string)
+	viewID := arg["viewID"].(string)
+	direction := int(arg["direction"].(float64))
+
+	err := model.NavigateCalendarPeriod(avID, viewID, direction)
+	if err != nil {
+		ret.Code = -1
+		ret.Msg = err.Error()
+		return
+	}
+}
+
+func navigateCalendarToToday(c *gin.Context) {
+	ret := gulu.Ret.NewResult()
+	defer c.JSON(http.StatusOK, ret)
+
+	arg, ok := util.JsonArg(c, ret)
+	if !ok {
+		return
+	}
+
+	avID := arg["avID"].(string)
+	viewID := arg["viewID"].(string)
+
+	err := model.NavigateCalendarToToday(avID, viewID)
+	if err != nil {
+		ret.Code = -1
+		ret.Msg = err.Error()
+		return
+	}
+}
+
+func switchCalendarView(c *gin.Context) {
+	ret := gulu.Ret.NewResult()
+	defer c.JSON(http.StatusOK, ret)
+
+	arg, ok := util.JsonArg(c, ret)
+	if !ok {
+		return
+	}
+
+	avID := arg["avID"].(string)
+	viewID := arg["viewID"].(string)
+	viewType := int(arg["viewType"].(float64))
+
+	err := model.SwitchCalendarView(avID, viewID, viewType)
+	if err != nil {
+		ret.Code = -1
+		ret.Msg = err.Error()
+		return
+	}
 }

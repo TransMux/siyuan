@@ -457,6 +457,15 @@ func ServeAPI(ginServer *gin.Engine) {
 	ginServer.Handle("POST", "/api/av/appendAttributeViewDetachedBlocksWithValues", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, appendAttributeViewDetachedBlocksWithValues)
 	ginServer.Handle("POST", "/api/av/getCurrentAttrViewImages", model.CheckAuth, getCurrentAttrViewImages)
 
+	// Calendar API endpoints
+	ginServer.Handle("POST", "/api/av/createCalendarEvent", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, createCalendarEvent)
+	ginServer.Handle("POST", "/api/av/updateCalendarEvent", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, updateCalendarEvent)
+	ginServer.Handle("POST", "/api/av/deleteCalendarEvent", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, deleteCalendarEvent)
+	ginServer.Handle("POST", "/api/av/moveCalendarEvent", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, moveCalendarEvent)
+	ginServer.Handle("POST", "/api/av/navigateCalendarPeriod", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, navigateCalendarPeriod)
+	ginServer.Handle("POST", "/api/av/navigateCalendarToToday", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, navigateCalendarToToday)
+	ginServer.Handle("POST", "/api/av/switchCalendarView", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, switchCalendarView)
+
 	ginServer.Handle("POST", "/api/ai/chatGPT", model.CheckAuth, model.CheckAdminRole, chatGPT)
 	ginServer.Handle("POST", "/api/ai/chatGPTWithAction", model.CheckAuth, model.CheckAdminRole, chatGPTWithAction)
 

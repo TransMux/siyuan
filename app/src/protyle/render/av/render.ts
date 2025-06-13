@@ -18,6 +18,7 @@ import {renderGallery} from "./gallery/render";
 import {getViewIcon} from "./view";
 import {bindLayoutEvent, getLayoutHTML} from "./layout";
 import {setPosition} from "../../../util/setPosition";
+import {renderCalendar} from "./calendar/render";
 
 export const avRender = (element: Element, protyle: IProtyle, cb?: (data: IAV) => void, viewID?: string, renderAll = true) => {
     let avElements: Element[] = [];
@@ -39,7 +40,17 @@ export const avRender = (element: Element, protyle: IProtyle, cb?: (data: IAV) =
                 e.classList.add("av--touch");
             }
 
-            if (e.getAttribute("data-av-type") === "gallery") {
+            const avType = e.getAttribute("data-av-type");
+            if (avType === "calendar") {
+                renderCalendar({
+                    blockElement: e,
+                    protyle,
+                    cb,
+                    viewID,
+                    renderAll: true
+                });
+                return;
+            } else if (avType === "gallery") {
                 renderGallery({blockElement: e, protyle, cb, viewID, renderAll});
                 return;
             }

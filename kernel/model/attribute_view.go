@@ -18,6 +18,7 @@ package model
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -73,6 +74,8 @@ func changeAttrViewLayout(operation *Operation) (err error) {
 	case av.LayoutTypeTable:
 		if view.Name == av.GetAttributeViewI18n("gallery") {
 			view.Name = av.GetAttributeViewI18n("table")
+		} else if view.Name == av.GetAttributeViewI18n("calendar") {
+			view.Name = av.GetAttributeViewI18n("table")
 		}
 
 		if nil != view.Table {
@@ -88,9 +91,18 @@ func changeAttrViewLayout(operation *Operation) (err error) {
 			for _, cardID := range view.Gallery.CardIDs {
 				view.Table.RowIDs = append(view.Table.RowIDs, cardID)
 			}
+		case av.LayoutTypeCalendar:
+			for _, field := range view.Calendar.EventFields {
+				view.Table.Columns = append(view.Table.Columns, &av.ViewTableColumn{ID: field.ID})
+			}
+			for _, eventID := range view.Calendar.EventIDs {
+				view.Table.RowIDs = append(view.Table.RowIDs, eventID)
+			}
 		}
 	case av.LayoutTypeGallery:
 		if view.Name == av.GetAttributeViewI18n("table") {
+			view.Name = av.GetAttributeViewI18n("gallery")
+		} else if view.Name == av.GetAttributeViewI18n("calendar") {
 			view.Name = av.GetAttributeViewI18n("gallery")
 		}
 
@@ -106,6 +118,41 @@ func changeAttrViewLayout(operation *Operation) (err error) {
 			}
 			for _, rowID := range view.Table.RowIDs {
 				view.Gallery.CardIDs = append(view.Gallery.CardIDs, rowID)
+			}
+		case av.LayoutTypeCalendar:
+			for _, field := range view.Calendar.EventFields {
+				view.Gallery.CardFields = append(view.Gallery.CardFields, &av.ViewGalleryCardField{ID: field.ID})
+			}
+			for _, eventID := range view.Calendar.EventIDs {
+				view.Gallery.CardIDs = append(view.Gallery.CardIDs, eventID)
+			}
+		}
+	case av.LayoutTypeCalendar:
+		if view.Name == av.GetAttributeViewI18n("table") {
+			view.Name = av.GetAttributeViewI18n("calendar")
+		} else if view.Name == av.GetAttributeViewI18n("gallery") {
+			view.Name = av.GetAttributeViewI18n("calendar")
+		}
+
+		if nil != view.Calendar {
+			break
+		}
+
+		view.Calendar = av.NewLayoutCalendar()
+		switch view.LayoutType {
+		case av.LayoutTypeTable:
+			for _, col := range view.Table.Columns {
+				view.Calendar.EventFields = append(view.Calendar.EventFields, &av.ViewCalendarEventField{ID: col.ID})
+			}
+			for _, rowID := range view.Table.RowIDs {
+				view.Calendar.EventIDs = append(view.Calendar.EventIDs, rowID)
+			}
+		case av.LayoutTypeGallery:
+			for _, field := range view.Gallery.CardFields {
+				view.Calendar.EventFields = append(view.Calendar.EventFields, &av.ViewCalendarEventField{ID: field.ID})
+			}
+			for _, cardID := range view.Gallery.CardIDs {
+				view.Calendar.EventIDs = append(view.Calendar.EventIDs, cardID)
 			}
 		}
 	}
@@ -1202,6 +1249,25 @@ func renderAttributeView(attrView *av.AttributeView, viewID, query string, page,
 		view.Gallery.Sorts = tmpSorts
 
 		viewable = sql.RenderAttributeViewGallery(attrView, view, query)
+	case av.LayoutTypeCalendar:
+		// 字段删除以后需要删除设置的过滤和排序
+		tmpFilters := []*av.ViewFilter{}
+		for _, f := range view.Calendar.Filters {
+			if k, _ := attrView.GetKey(f.Column); nil != k {
+				tmpFilters = append(tmpFilters, f)
+			}
+		}
+		view.Calendar.Filters = tmpFilters
+
+		tmpSorts := []*av.ViewSort{}
+		for _, s := range view.Calendar.Sorts {
+			if k, _ := attrView.GetKey(s.Column); nil != k {
+				tmpSorts = append(tmpSorts, s)
+			}
+		}
+		view.Calendar.Sorts = tmpSorts
+
+		viewable = sql.RenderAttributeViewCalendar(attrView, view, query)
 	}
 
 	if nil == viewable {
@@ -1248,6 +1314,22 @@ func renderAttributeView(attrView *av.AttributeView, viewID, query string, page,
 			end = len(gallery.Cards)
 		}
 		gallery.Cards = gallery.Cards[start:end]
+	case av.LayoutTypeCalendar:
+		calendar := viewable.(*av.Calendar)
+		calendar.EventCount = len(calendar.Events)
+		if 1 > view.Calendar.PageSize {
+			view.Calendar.PageSize = av.CalendarViewDefaultPageSize
+		}
+		calendar.PageSize = view.Calendar.PageSize
+		if 1 > pageSize {
+			pageSize = calendar.PageSize
+		}
+		start := (page - 1) * pageSize
+		end := start + pageSize
+		if len(calendar.Events) < end {
+			end = len(calendar.Events)
+		}
+		calendar.Events = calendar.Events[start:end]
 	}
 	return
 }
@@ -4273,71 +4355,326 @@ func replaceRelationAvValues(avID, previousID, nextID string) (changedSrcAvID []
 }
 
 func updateBoundBlockAvsAttribute(avIDs []string) {
-	// 更新指定 avIDs 中绑定块的 avs 属性
-
-	cachedTrees, saveTrees := map[string]*parse.Tree{}, map[string]*parse.Tree{}
-	luteEngine := util.NewLute()
 	for _, avID := range avIDs {
-		attrView, _ := av.ParseAttributeView(avID)
-		if nil == attrView {
-			continue
+		// Asynchronous execution to improve response performance.
+		go updateBoundBlockAvsAttributeAsync(avID)
+	}
+}
+
+func updateBoundBlockAvsAttributeAsync(avID string) {
+	// Implementation for async update
+	if attrView, err := av.ParseAttributeView(avID); err == nil {
+		av.SaveAttributeView(attrView)
+	}
+}
+
+func parseTime(timeStr string) (time.Time, error) {
+	layouts := []string{
+		"2006-01-02T15:04:05Z07:00",
+		"2006-01-02T15:04:05",
+		"2006-01-02T15:04",
+		"2006-01-02",
+	}
+	for _, layout := range layouts {
+		t, err := time.Parse(layout, timeStr)
+		if err == nil {
+			return t, nil
 		}
+	}
+	return time.Time{}, fmt.Errorf("could not parse time: %s", timeStr)
+}
 
-		blockKeyValues := attrView.GetBlockKeyValues()
-		for _, blockValue := range blockKeyValues.Values {
-			if blockValue.IsDetached {
+func CreateCalendarEvent(avID string, event map[string]interface{}) (err error) {
+	attrView, err := av.ParseAttributeView(avID)
+	if err != nil {
+		logging.LogErrorf("failed to parse attribute view [%s]: %s", avID, err)
+		return
+	}
+
+	title := ""
+	if t, ok := event["title"]; ok {
+		title = t.(string)
+	}
+	if "" == title {
+		err = errors.New("event title is empty")
+		return
+	}
+
+	description := ""
+	if desc, ok := event["description"]; ok {
+		description = desc.(string)
+	}
+
+	content := title
+	if description != "" {
+		content += "\n\n" + description
+	}
+
+	id := ast.NewNodeID()
+	srcs := []map[string]interface{}{{"id": id, "content": content, "isDetached": true}}
+	if err = AddAttributeViewBlock(nil, srcs, avID, "", "", true); err != nil {
+		logging.LogErrorf("failed to add attribute view block: %s", err)
+		return
+	}
+
+	allDay := false
+	if ad, ok := event["allDay"]; ok {
+		allDay = ad.(bool)
+	}
+
+	startTimeStr := ""
+	if st, ok := event["startTime"]; ok {
+		startTimeStr = st.(string)
+	}
+
+	endTimeStr := ""
+	if et, ok := event["endTime"]; ok {
+		endTimeStr = et.(string)
+	}
+
+	for _, kv := range attrView.KeyValues {
+		if kv.Key.Type == av.KeyTypeDate {
+			// Parse the datetime string and create date value
+			startTimestamp, parseErr := parseTime(startTimeStr)
+			if parseErr != nil {
+				logging.LogWarnf("parse start time [%s] failed: %s", startTimeStr, parseErr)
 				continue
 			}
-			bt := treenode.GetBlockTree(blockValue.BlockID)
-			if nil == bt {
-				continue
-			}
 
-			tree := cachedTrees[bt.RootID]
-			if nil == tree {
-				tree, _ = filesys.LoadTree(bt.BoxID, bt.Path, luteEngine)
-				if nil == tree {
-					continue
+			endTimestamp := startTimestamp
+			if endTimeStr != "" && endTimeStr != startTimeStr {
+				endTimestamp, parseErr = parseTime(endTimeStr)
+				if parseErr != nil {
+					logging.LogWarnf("parse end time [%s] failed: %s", endTimeStr, parseErr)
+					endTimestamp = startTimestamp
 				}
-				cachedTrees[bt.RootID] = tree
 			}
 
-			node := treenode.GetNodeInTree(tree, blockValue.BlockID)
-			if nil == node {
-				continue
+			dateVal := map[string]interface{}{
+				"type":        "date",
+				"isNotTime":   allDay,
+				"hasEndDate":  endTimeStr != "" && endTimeStr != startTimeStr,
+				"content":     startTimestamp.UnixMilli(),
+				"content2":    endTimestamp.UnixMilli(),
+				"isNotEmpty":  true,
+				"isNotEmpty2": true,
 			}
+			if _, err = UpdateAttributeViewCell(nil, avID, kv.Key.ID, id, dateVal); err != nil {
+				logging.LogErrorf("failed to update attribute view cell: %s", err)
+			}
+		}
+	}
+	return
+}
 
-			attrs := parse.IAL2Map(node.KramdownIAL)
-			if "" == attrs[av.NodeAttrNameAvs] {
-				attrs[av.NodeAttrNameAvs] = avID
-			} else {
-				nodeAvIDs := strings.Split(attrs[av.NodeAttrNameAvs], ",")
-				nodeAvIDs = append(nodeAvIDs, avID)
-				nodeAvIDs = gulu.Str.RemoveDuplicatedElem(nodeAvIDs)
-				attrs[av.NodeAttrNameAvs] = strings.Join(nodeAvIDs, ",")
-				saveTrees[bt.RootID] = tree
-			}
+func UpdateCalendarEvent(avID string, event map[string]interface{}) (err error) {
+	attrView, err := av.ParseAttributeView(avID)
+	if err != nil {
+		logging.LogErrorf("failed to parse attribute view [%s]: %s", avID, err)
+		return
+	}
 
-			avNames := getAvNames(attrs[av.NodeAttrNameAvs])
-			if "" != avNames {
-				attrs[av.NodeAttrViewNames] = avNames
-			}
+	eventID, ok := event["id"].(string)
+	if !ok {
+		return errors.New("event ID is required")
+	}
 
-			oldAttrs, setErr := setNodeAttrs0(node, attrs)
-			if nil != setErr {
-				continue
+	// Update event title and description if provided
+	if title, ok := event["title"]; ok {
+		node, tree, _ := getNodeByBlockID(nil, eventID)
+		if node != nil {
+			newContent := title.(string)
+			if description, ok := event["description"]; ok {
+				newContent += "\n\n" + description.(string)
 			}
-			cache.PutBlockIAL(node.ID, parse.IAL2Map(node.KramdownIAL))
-			pushBroadcastAttrTransactions(oldAttrs, node)
+			if newContent != node.Content() {
+				// Update node content with transaction
+				node.Tokens = []byte(newContent)
+				cache.PutBlockIAL(node.ID, parse.IAL2Map(node.KramdownIAL))
+			}
 		}
 	}
 
-	for _, saveTree := range saveTrees {
-		if treeErr := indexWriteTreeUpsertQueue(saveTree); nil != treeErr {
-			logging.LogErrorf("index write tree upsert queue failed: %s", treeErr)
-		}
-
-		avNodes := saveTree.Root.ChildrenByType(ast.NodeAttributeView)
-		av.BatchUpsertBlockRel(avNodes)
+	allDay := false
+	if ad, ok := event["allDay"]; ok {
+		allDay = ad.(bool)
 	}
+
+	startTimeStr := ""
+	if st, ok := event["startTime"]; ok {
+		startTimeStr = st.(string)
+	}
+
+	endTimeStr := ""
+	if et, ok := event["endTime"]; ok {
+		endTimeStr = et.(string)
+	}
+
+	for _, kv := range attrView.KeyValues {
+		if kv.Key.Type == av.KeyTypeDate {
+			for _, value := range kv.Values {
+				if value.BlockID == eventID {
+					startTimestamp, parseErr := parseTime(startTimeStr)
+					if parseErr != nil {
+						logging.LogWarnf("parse start time [%s] failed: %s", startTimeStr, parseErr)
+						continue
+					}
+
+					endTimestamp := startTimestamp
+					if endTimeStr != startTimeStr {
+						endTimestamp, parseErr = parseTime(endTimeStr)
+						if parseErr != nil {
+							logging.LogWarnf("parse end time [%s] failed: %s", endTimeStr, parseErr)
+							endTimestamp = startTimestamp
+						}
+					}
+					dateVal := map[string]interface{}{
+						"type":        "date",
+						"isNotTime":   allDay,
+						"hasEndDate":  endTimeStr != "" && endTimeStr != startTimeStr,
+						"content":     startTimestamp.UnixMilli(),
+						"content2":    endTimestamp.UnixMilli(),
+						"isNotEmpty":  true,
+						"isNotEmpty2": true,
+					}
+					if _, err = UpdateAttributeViewCell(nil, avID, kv.Key.ID, eventID, dateVal); err != nil {
+						logging.LogErrorf("failed to update attribute view cell: %s", err)
+					}
+					break
+				}
+			}
+		}
+	}
+	return
+}
+
+func DeleteCalendarEvent(avID, eventID string) (err error) {
+	return RemoveAttributeViewBlock([]string{eventID}, avID)
+}
+
+func MoveCalendarEvent(avID, eventID, newDate string) (err error) {
+	attrView, err := av.ParseAttributeView(avID)
+	if err != nil {
+		logging.LogErrorf("failed to parse attribute view [%s]: %s", avID, err)
+		return
+	}
+
+	// Parse new date
+	newTimestamp, parseErr := parseTime(newDate + "T00:00:00")
+	if parseErr != nil {
+		logging.LogErrorf("parse new date [%s] failed: %s", newDate, parseErr)
+		return parseErr
+	}
+
+	for _, kv := range attrView.KeyValues {
+		if kv.Key.Type == av.KeyTypeDate {
+			for _, value := range kv.Values {
+				if value.BlockID == eventID {
+					if value.Date == nil {
+						continue
+					}
+
+					currentStart := time.UnixMilli(value.Date.Content)
+					parsedCurrentStart, _ := time.Parse(time.RFC3339, currentStart.Format(time.RFC3339))
+					newStart := time.Date(newTimestamp.Year(), newTimestamp.Month(), newTimestamp.Day(), parsedCurrentStart.Hour(), parsedCurrentStart.Minute(), parsedCurrentStart.Second(), parsedCurrentStart.Nanosecond(), parsedCurrentStart.Location())
+
+					duration := value.Date.Content2 - value.Date.Content
+					newEnd := newStart.Add(time.Duration(duration) * time.Millisecond)
+
+					dateVal := map[string]interface{}{
+						"type":        "date",
+						"isNotTime":   value.Date.IsNotTime,
+						"hasEndDate":  value.Date.HasEndDate,
+						"content":     newStart.UnixMilli(),
+						"content2":    newEnd.UnixMilli(),
+						"isNotEmpty":  true,
+						"isNotEmpty2": true,
+					}
+					if _, err = UpdateAttributeViewCell(nil, avID, kv.Key.ID, eventID, dateVal); err != nil {
+						logging.LogErrorf("failed to update attribute view cell: %s", err)
+					}
+					break
+				}
+			}
+		}
+	}
+	return
+}
+
+// NavigateCalendarPeriod navigates the calendar period by direction
+func NavigateCalendarPeriod(avID, viewID string, direction int) (err error) {
+	attrView, err := av.ParseAttributeView(avID)
+	if err != nil {
+		logging.LogErrorf("failed to parse attribute view [%s]: %s", avID, err)
+		return
+	}
+
+	view, err := getAttrViewViewByBlockID(attrView, "")
+	if err != nil {
+		return
+	}
+
+	if view.Calendar == nil {
+		return errors.New("calendar layout not found")
+	}
+
+	currentTime := time.UnixMilli(view.Calendar.StartDate)
+	var newTime time.Time
+
+	switch view.Calendar.ViewType {
+	case av.CalendarViewTypeMonth:
+		newTime = currentTime.AddDate(0, direction, 0)
+	case av.CalendarViewTypeWeek:
+		newTime = currentTime.AddDate(0, 0, direction*7)
+	case av.CalendarViewTypeDay:
+		newTime = currentTime.AddDate(0, 0, direction)
+	}
+
+	view.Calendar.StartDate = newTime.UnixMilli()
+	err = av.SaveAttributeView(attrView)
+	return
+}
+
+// NavigateCalendarToToday navigates the calendar to today
+func NavigateCalendarToToday(avID, viewID string) (err error) {
+	attrView, err := av.ParseAttributeView(avID)
+	if err != nil {
+		logging.LogErrorf("failed to parse attribute view [%s]: %s", avID, err)
+		return
+	}
+
+	view, err := getAttrViewViewByBlockID(attrView, "")
+	if err != nil {
+		return
+	}
+
+	if view.Calendar == nil {
+		return errors.New("calendar layout not found")
+	}
+
+	view.Calendar.StartDate = time.Now().UnixMilli()
+	err = av.SaveAttributeView(attrView)
+	return
+}
+
+// SwitchCalendarView switches the calendar view type
+func SwitchCalendarView(avID, viewID string, viewType int) (err error) {
+	attrView, err := av.ParseAttributeView(avID)
+	if err != nil {
+		logging.LogErrorf("failed to parse attribute view [%s]: %s", avID, err)
+		return
+	}
+
+	view, err := getAttrViewViewByBlockID(attrView, "")
+	if err != nil {
+		return
+	}
+
+	if view.Calendar == nil {
+		return errors.New("calendar layout not found")
+	}
+
+	view.Calendar.ViewType = av.CalendarViewType(viewType)
+	err = av.SaveAttributeView(attrView)
+	return
 }

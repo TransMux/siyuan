@@ -184,22 +184,25 @@ type View struct {
 	HideAttrViewName bool   `json:"hideAttrViewName"` // 是否隐藏属性视图名称
 	Desc             string `json:"desc"`             // 视图描述
 
-	LayoutType LayoutType     `json:"type"`              // 当前布局类型
-	Table      *LayoutTable   `json:"table,omitempty"`   // 表格布局
-	Gallery    *LayoutGallery `json:"gallery,omitempty"` // 画廊布局
+	LayoutType LayoutType      `json:"type"`               // 当前布局类型
+	Table      *LayoutTable    `json:"table,omitempty"`    // 表格布局
+	Gallery    *LayoutGallery  `json:"gallery,omitempty"`  // 画廊布局
+	Calendar   *LayoutCalendar `json:"calendar,omitempty"` // 日历布局
 }
 
 // LayoutType 描述了视图布局类型。
 type LayoutType string
 
 const (
-	LayoutTypeTable   LayoutType = "table"   // 属性视图类型 - 表格
-	LayoutTypeGallery LayoutType = "gallery" // 属性视图类型 - 画廊
+	LayoutTypeTable    LayoutType = "table"    // 属性视图类型 - 表格
+	LayoutTypeGallery  LayoutType = "gallery"  // 属性视图类型 - 画廊
+	LayoutTypeCalendar LayoutType = "calendar" // 属性视图类型 - 日历
 )
 
 const (
-	TableViewDefaultPageSize   = 50 // 表格视图默认分页大小
-	GalleryViewDefaultPageSize = 50 // 画廊视图默认分页大小
+	TableViewDefaultPageSize    = 50  // 表格视图默认分页大小
+	GalleryViewDefaultPageSize  = 50  // 画廊视图默认分页大小
+	CalendarViewDefaultPageSize = 100 // 日历视图默认分页大小
 )
 
 func NewTableView() (ret *View) {
@@ -234,6 +237,16 @@ func NewGalleryView() (ret *View) {
 		Name:       GetAttributeViewI18n("gallery"),
 		LayoutType: LayoutTypeGallery,
 		Gallery:    NewLayoutGallery(),
+	}
+	return
+}
+
+func NewCalendarView() (ret *View) {
+	ret = &View{
+		ID:         ast.NewNodeID(),
+		Name:       GetAttributeViewI18n("calendar"),
+		LayoutType: LayoutTypeCalendar,
+		Calendar:   NewLayoutCalendar(),
 	}
 	return
 }
