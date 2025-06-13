@@ -1347,6 +1347,7 @@
   "_attrView": {
     "table": "Table",
     "gallery": "Gallery",
+    "calendar": "Calendar",
     "key": "Primary Key",
     "select": "Select"
   },

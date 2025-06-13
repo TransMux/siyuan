@@ -222,7 +222,7 @@ const generateMonthView = (year: number, month: number, view: any): string => {
     // 空白天数（上个月）
     for (let i = 0; i < firstDayOfWeek; i++) {
         const prevDate = new Date(year, month, 1 - firstDayOfWeek + i);
-        html += `<div class="av__calendar-day av__calendar-day--other-month" data-date="${prevDate.toISOString().split('T')[0]}">
+                    html += `<div class="av__calendar-day av__calendar-day--other-month" data-date="${formatDateString(prevDate)}">
             <div class="av__calendar-day-number">${prevDate.getDate()}</div>
         </div>`;
     }
@@ -233,7 +233,7 @@ const generateMonthView = (year: number, month: number, view: any): string => {
         const isToday = isDateToday(currentDay);
         const dayEvents = getDayEvents(currentDay, view.events);
         
-        html += `<div class="av__calendar-day${isToday ? ' av__calendar-day--today' : ''}" data-date="${currentDay.toISOString().split('T')[0]}">
+                    html += `<div class="av__calendar-day${isToday ? ' av__calendar-day--today' : ''}" data-date="${formatDateString(currentDay)}">
             <div class="av__calendar-day-number">${day}</div>
             <div class="av__calendar-day-events">`;
         
@@ -251,7 +251,7 @@ const generateMonthView = (year: number, month: number, view: any): string => {
     const remainingCells = totalCells - (firstDayOfWeek + lastDay.getDate());
     for (let i = 1; i <= remainingCells; i++) {
         const nextDate = new Date(year, month + 1, i);
-        html += `<div class="av__calendar-day av__calendar-day--other-month" data-date="${nextDate.toISOString().split('T')[0]}">
+                    html += `<div class="av__calendar-day av__calendar-day--other-month" data-date="${formatDateString(nextDate)}">
             <div class="av__calendar-day-number">${i}</div>
         </div>`;
     }
@@ -295,7 +295,7 @@ const generateWeekView = (currentDate: Date, view: any): string => {
                 <div class="av__calendar-week-day-name">${orderedNames[i]}</div>
                 <div class="av__calendar-week-day-number">${dayDate.getDate()}</div>
             </div>
-            <div class="av__calendar-week-day-events" data-date="${dayDate.toISOString().split('T')[0]}">`;
+                <div class="av__calendar-week-day-events" data-date="${formatDateString(dayDate)}">`;
 
         dayEvents.forEach(event => {
             const startTime = new Date(event.startTime);
@@ -349,7 +349,7 @@ const generateDayView = (currentDate: Date, view: any): string => {
         
         html += `<div class="av__calendar-day-hour" data-hour="${hour}">
             <div class="av__calendar-day-hour-label">${hour.toString().padStart(2, '0')}:00</div>
-            <div class="av__calendar-day-hour-content" data-date="${currentDate.toISOString().split('T')[0]}" data-hour="${hour}">`;
+                    <div class="av__calendar-day-hour-content" data-date="${formatDateString(currentDate)}" data-hour="${hour}">`;
         
         hourEvents.forEach(event => {
             const startTime = new Date(event.startTime);
@@ -406,18 +406,15 @@ const generateEventsList = (view: any): string => {
     return html;
 };
 
-const isDateToday = (date: Date): boolean => {
-    const today = new Date();
-    return date.toDateString() === today.toDateString();
-};
+
 
 const getDayEvents = (date: Date, events: any[]): any[] => {
     if (!events || !Array.isArray(events)) return [];
     
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDateString(date);
     return events.filter(event => {
         if (!event.startTime) return false;
-        const eventDate = new Date(event.startTime).toISOString().split('T')[0];
+        const eventDate = formatDateString(new Date(event.startTime));
         return eventDate === dateStr;
     });
 };
@@ -430,7 +427,7 @@ const getDateString = (date: Date): string => {
     const cached = dateStringCache.get(timestamp.toString());
     if (cached) return cached;
     
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDateString(date);
     dateStringCache.set(timestamp.toString(), dateStr);
     
     // Clean cache if it gets too large
@@ -456,4 +453,35 @@ const getOptimizedDayEvents = (date: Date, events: any[]): any[] => {
         const eventDate = getDateString(new Date(event.startTime));
         return eventDate === dateStr;
     });
+};
+
+/**
+ * Format date to YYYY-MM-DD string without timezone issues
+ */
+const formatDateString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+/**
+ * Check if a date is today (local timezone)
+ */
+const isDateToday = (date: Date): boolean => {
+    const today = new Date();
+    return date.getFullYear() === today.getFullYear() &&
+           date.getMonth() === today.getMonth() &&
+           date.getDate() === today.getDate();
+};
+
+/**
+ * Get the start of week based on firstDayOfWeek setting
+ */
+const getWeekStart = (date: Date, firstDayOfWeek: number): Date => {
+    const result = new Date(date);
+    const day = result.getDay();
+    const diff = (day - firstDayOfWeek + 7) % 7;
+    result.setDate(result.getDate() - diff);
+    return result;
 }; 

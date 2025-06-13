@@ -41,7 +41,7 @@ func RenderAttributeViewCalendar(attrView *av.AttributeView, view *av.View, quer
 		key, getErr := attrView.GetKey(field.ID)
 		if nil != getErr {
 			// 找不到字段则在视图中删除
-			removeMissingField(attrView, view, field.ID)
+			removeMissingCalendarField(attrView, view, field.ID)
 			continue
 		}
 
@@ -67,19 +67,22 @@ func RenderAttributeViewCalendar(attrView *av.AttributeView, view *av.View, quer
 	filterNotFoundAttrViewItems(&eventsValues)      // 过滤掉不存在的事件
 
 	// 生成事件字段值
-	for _, event := range eventsValues {
-		if !event.Exist {
+	for blockID, keyValues := range eventsValues {
+		// Check if block exists
+		blockValue := getBlockValue(keyValues)
+		if nil == blockValue {
 			continue
 		}
 
 		calendarEvent := &av.CalendarEvent{
-			ID:     event.ID,
+			ID:     blockID,
 			Values: []*av.CalendarFieldValue{},
 		}
 
 		// Find date field to extract event time
-		for _, value := range event.Values {
-			if value.KeyID == ret.DateFieldID && value.Date != nil {
+		for _, kv := range keyValues {
+			if kv.Key.ID == ret.DateFieldID && len(kv.Values) > 0 && kv.Values[0].Date != nil {
+				value := kv.Values[0]
 				calendarEvent.StartTime = value.Date.Content
 				if value.Date.HasEndDate {
 					calendarEvent.EndTime = value.Date.Content2
@@ -94,38 +97,18 @@ func RenderAttributeViewCalendar(attrView *av.AttributeView, view *av.View, quer
 		for _, field := range ret.Fields {
 			fieldValue := &av.CalendarFieldValue{
 				BaseValue: &av.BaseValue{
-					ID:    ast.NewNodeID(),
-					KeyID: field.ID,
-					Type:  field.Type,
+					ID:        ast.NewNodeID(),
+					ValueType: field.Type,
+					Value:     nil,
 				},
 			}
 
-			for _, value := range event.Values {
-				if value.KeyID == field.ID {
-					fieldValue.BaseValue = &av.BaseValue{
-						ID:         value.ID,
-						KeyID:      value.KeyID,
-						BlockID:    value.BlockID,
-						Type:       value.Type,
-						Text:       value.Text,
-						Number:     value.Number,
-						MSelect:    value.MSelect,
-						MAsset:     value.MAsset,
-						Block:      value.Block,
-						URL:        value.URL,
-						Phone:      value.Phone,
-						Email:      value.Email,
-						Template:   value.Template,
-						Checkbox:   value.Checkbox,
-						Relation:   value.Relation,
-						Rollup:     value.Rollup,
-						Date:       value.Date,
-						Created:    value.Created,
-						Updated:    value.Updated,
-						IsDetached: value.IsDetached,
-						CreatedAt:  value.CreatedAt,
-						UpdatedAt:  value.UpdatedAt,
-					}
+			for _, kv := range keyValues {
+				if kv.Key.ID == field.ID && len(kv.Values) > 0 {
+					value := kv.Values[0]
+					fieldValue.BaseValue.ID = value.ID
+					fieldValue.BaseValue.ValueType = value.Type
+					fieldValue.BaseValue.Value = value
 
 					// Extract title from first text field
 					if field.Type == av.KeyTypeText && calendarEvent.Title == "" && value.Text != nil {
@@ -149,7 +132,7 @@ func RenderAttributeViewCalendar(attrView *av.AttributeView, view *av.View, quer
 	return
 }
 
-func removeMissingField(attrView *av.AttributeView, view *av.View, fieldID string) {
+func removeMissingCalendarField(attrView *av.AttributeView, view *av.View, fieldID string) {
 	for i, field := range view.Calendar.EventFields {
 		if field.ID == fieldID {
 			view.Calendar.EventFields = append(view.Calendar.EventFields[:i], view.Calendar.EventFields[i+1:]...)

@@ -154,6 +154,13 @@ func changeAttrViewLayout(operation *Operation) (err error) {
 			for _, cardID := range view.Gallery.CardIDs {
 				view.Calendar.EventIDs = append(view.Calendar.EventIDs, cardID)
 			}
+		case av.LayoutTypeCalendar:
+			for _, field := range view.Calendar.EventFields {
+				view.Calendar.EventFields = append(view.Calendar.EventFields, &av.ViewCalendarEventField{ID: field.ID})
+			}
+			for _, eventID := range view.Calendar.EventIDs {
+				view.Calendar.EventIDs = append(view.Calendar.EventIDs, eventID)
+			}
 		}
 	}
 
@@ -2050,6 +2057,31 @@ func (tx *Transaction) doAddAttrViewView(operation *Operation) (ret *TxErr) {
 			}
 			for _, cardID := range firstView.Gallery.CardIDs {
 				view.Gallery.CardIDs = append(view.Gallery.CardIDs, cardID)
+			}
+		}
+	case av.LayoutTypeCalendar:
+		view = av.NewCalendarView()
+		switch firstView.LayoutType {
+		case av.LayoutTypeTable:
+			for _, col := range firstView.Table.Columns {
+				view.Calendar.EventFields = append(view.Calendar.EventFields, &av.ViewCalendarEventField{ID: col.ID})
+			}
+			for _, rowID := range firstView.Table.RowIDs {
+				view.Calendar.EventIDs = append(view.Calendar.EventIDs, rowID)
+			}
+		case av.LayoutTypeGallery:
+			for _, field := range firstView.Gallery.CardFields {
+				view.Calendar.EventFields = append(view.Calendar.EventFields, &av.ViewCalendarEventField{ID: field.ID})
+			}
+			for _, cardID := range firstView.Gallery.CardIDs {
+				view.Calendar.EventIDs = append(view.Calendar.EventIDs, cardID)
+			}
+		case av.LayoutTypeCalendar:
+			for _, field := range firstView.Calendar.EventFields {
+				view.Calendar.EventFields = append(view.Calendar.EventFields, &av.ViewCalendarEventField{ID: field.ID})
+			}
+			for _, eventID := range firstView.Calendar.EventIDs {
+				view.Calendar.EventIDs = append(view.Calendar.EventIDs, eventID)
 			}
 		}
 	default:
@@ -4481,7 +4513,7 @@ func UpdateCalendarEvent(avID string, event map[string]interface{}) (err error) 
 
 	// Update event title and description if provided
 	if title, ok := event["title"]; ok {
-		node, tree, _ := getNodeByBlockID(nil, eventID)
+		node, _, _ := getNodeByBlockID(nil, eventID)
 		if node != nil {
 			newContent := title.(string)
 			if description, ok := event["description"]; ok {
