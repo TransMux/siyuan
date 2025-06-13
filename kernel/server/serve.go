@@ -38,6 +38,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 	"github.com/mssola/useragent"
 	"github.com/olahol/melody"
 	"github.com/siyuan-note/logging"
@@ -546,6 +547,7 @@ func serveWebSocket(ginServer *gin.Engine) {
 		//logging.LogInfof("ws check auth for [%s]", s.Request.RequestURI)
 		authOk := true
 
+		// 1. 首先检查Cookie认证（如果设置了访问授权码）
 		if "" != model.Conf.AccessAuthCode {
 			session, err := sessionStore.Get(s.Request, "siyuan")
 			if err != nil {
@@ -569,6 +571,7 @@ func serveWebSocket(ginServer *gin.Engine) {
 			}
 		}
 
+		// 2. 如果Cookie认证失败，尝试JWT认证
 		// REF: https://github.com/siyuan-note/siyuan/issues/11364
 		if !authOk {
 			if token := model.ParseXAuthToken(s.Request); token != nil {
@@ -580,8 +583,29 @@ func serveWebSocket(ginServer *gin.Engine) {
 			}
 		}
 
+		// 3. 如果JWT认证失败，尝试API Token认证
 		if !authOk {
-			// 用于授权页保持连接，避免非常驻内存内核自动退出 https://github.com/siyuan-note/insider/issues/1099
+			if authHeader := s.Request.Header.Get("Authorization"); "" != authHeader {
+				var token string
+				if strings.HasPrefix(authHeader, "Token ") {
+					token = strings.TrimPrefix(authHeader, "Token ")
+				} else if strings.HasPrefix(authHeader, "token ") {
+					token = strings.TrimPrefix(authHeader, "token ")
+				} else if strings.HasPrefix(authHeader, "Bearer ") {
+					token = strings.TrimPrefix(authHeader, "Bearer ")
+				} else if strings.HasPrefix(authHeader, "bearer ") {
+					token = strings.TrimPrefix(authHeader, "bearer ")
+				}
+
+				if "" != token && model.Conf.Api.Token == token {
+					authOk = true
+					logging.LogInfof("WebSocket authenticated with API token")
+				}
+			}
+		}
+
+		// 4. 特殊例外：授权页面连接
+		if !authOk {
 			authOk = strings.Contains(s.Request.RequestURI, "/ws?app=siyuan&id=auth")
 		}
 
@@ -800,6 +824,12 @@ func corsMiddleware() gin.HandlerFunc {
 	allowCardDavMethods := strings.Join(CardDavMethods, ", ")
 
 	return func(c *gin.Context) {
+		// Skip CORS headers for WebSocket upgrade requests
+		if websocket.IsWebSocketUpgrade(c.Request) {
+			c.Next()
+			return
+		}
+
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Credentials", "true")
 		c.Header("Access-Control-Allow-Headers", "origin, Content-Length, Content-Type, Authorization")
