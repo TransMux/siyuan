@@ -221,6 +221,11 @@ func GetBootProgress() int32 {
 	return bootProgress.Load()
 }
 
+// GetUptime 获取内核运行时长
+func GetUptime() time.Duration {
+	return time.Since(bootStartTime)
+}
+
 func SetBooted() {
 	setBootDetails("Finishing boot...")
 	bootProgress.Store(100)

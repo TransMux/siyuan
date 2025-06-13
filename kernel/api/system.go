@@ -24,10 +24,13 @@ import (
 	"strings"
 	"time"
 
+	"runtime"
+
 	"github.com/88250/gulu"
 	"github.com/88250/lute"
 	"github.com/gin-gonic/gin"
 	"github.com/siyuan-note/logging"
+	"github.com/siyuan-note/siyuan/kernel/cache"
 	"github.com/siyuan-note/siyuan/kernel/conf"
 	"github.com/siyuan-note/siyuan/kernel/model"
 	"github.com/siyuan-note/siyuan/kernel/util"
@@ -604,6 +607,54 @@ func version(c *gin.Context) {
 	defer c.JSON(http.StatusOK, ret)
 
 	ret.Data = util.Ver
+}
+
+func kernelStatus(c *gin.Context) {
+	ret := gulu.Ret.NewResult()
+	defer c.JSON(http.StatusOK, ret)
+
+	// 获取运行时长
+	uptime := util.GetUptime()
+
+	// 获取WebSocket连接数
+	wsConnections := util.CountSessions()
+
+	// 获取缓存信息
+	assets := cache.GetAssets()
+	cacheInfo := map[string]interface{}{
+		"assetsCount": len(assets),
+		"assets":      assets,
+	}
+
+	// 获取系统资源信息
+	var memStats runtime.MemStats
+	runtime.ReadMemStats(&memStats)
+
+	resourceInfo := map[string]interface{}{
+		"memoryUsage": map[string]interface{}{
+			"alloc":      memStats.Alloc,      // 当前分配的内存
+			"totalAlloc": memStats.TotalAlloc, // 总分配的内存
+			"sys":        memStats.Sys,        // 系统内存
+			"numGC":      memStats.NumGC,      // GC次数
+		},
+		"goroutines": runtime.NumGoroutine(), // 当前Goroutine数量
+	}
+
+	// 构建响应数据
+	ret.Data = map[string]interface{}{
+		"version":              util.Ver,
+		"uptime":               uptime.String(),
+		"uptimeSeconds":        int64(uptime.Seconds()),
+		"websocketConnections": wsConnections,
+		"cache":                cacheInfo,
+		"resources":            resourceInfo,
+		"isBooted":             util.IsBooted(),
+		"workspaceDir":         util.WorkspaceDir,
+		"container":            util.Container,
+		"readOnly":             util.ReadOnly,
+		"os":                   runtime.GOOS,
+		"arch":                 runtime.GOARCH,
+	}
 }
 
 func currentTime(c *gin.Context) {

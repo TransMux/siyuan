@@ -29,6 +29,7 @@ func ServeAPI(ginServer *gin.Engine) {
 	ginServer.Handle("POST", "/api/system/bootProgress", bootProgress)
 	ginServer.Handle("GET", "/api/system/version", version)
 	ginServer.Handle("POST", "/api/system/version", version)
+	ginServer.Handle("GET", "/api/system/kernelStatus", kernelStatus)
 	ginServer.Handle("POST", "/api/system/currentTime", currentTime)
 	ginServer.Handle("POST", "/api/system/uiproc", addUIProcess)
 	ginServer.Handle("POST", "/api/system/loginAuth", model.LoginAuth)
