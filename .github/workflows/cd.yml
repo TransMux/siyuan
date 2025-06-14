@@ -4,12 +4,11 @@ on:
   push:
     tags:
       - '*-dev*'  # 当推送的标签匹配*-dev*时触发，例如 v3.1.10-dev6
-  workflow_dispatch:  # 手动触发
-  push:
     branches:
       - '**'  # 监听所有分支的推送
     paths-ignore:
       - '**.md'  # 忽略markdown文件的变更
+  workflow_dispatch:  # 手动触发
 
 # ref https://docs.github.com/zh/actions/learn-github-actions/variables
 env:
