@@ -5,6 +5,11 @@ on:
     tags:
       - '*-dev*'  # 当推送的标签匹配*-dev*时触发，例如 v3.1.10-dev6
   workflow_dispatch:  # 手动触发
+  push:
+    branches:
+      - '**'  # 监听所有分支的推送
+    paths-ignore:
+      - '**.md'  # 忽略markdown文件的变更
 
 # ref https://docs.github.com/zh/actions/learn-github-actions/variables
 env:
@@ -13,7 +18,23 @@ env:
   package_json: "app/package.json"  # package.json文件路径
 
 jobs:
+  check-commit:
+    runs-on: ubuntu-latest
+    outputs:
+      should-build: ${{ steps.check.outputs.should-build }}
+    steps:
+      - name: Check commit message
+        id: check
+        run: |
+          if [[ "${{ github.event.head_commit.message }}" == *"build"* ]]; then
+            echo "should-build=true" >> $GITHUB_OUTPUT
+          else
+            echo "should-build=false" >> $GITHUB_OUTPUT
+          fi
+
   build:
+    needs: check-commit
+    if: needs.check-commit.outputs.should-build == 'true' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
     runs-on: ${{ matrix.config.os }}  # 在矩阵配置的操作系统上运行
     name: ${{ matrix.config.name }}  # 矩阵配置的名称
     strategy:
