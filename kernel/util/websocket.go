@@ -291,6 +291,15 @@ func PushReloadEmojiConf() {
 	BroadcastByType("main", "reloadEmojiConf", 0, "", nil)
 }
 
+func PushUpdateAttributeViewCell(avID, keyID, rowID string, valueData interface{}) {
+	BroadcastByType("protyle", "updateAttributeViewCell", 0, "", map[string]interface{}{
+		"avID":      avID,
+		"keyID":     keyID,
+		"rowID":     rowID,
+		"valueData": valueData,
+	})
+}
+
 func PushDownloadProgress(id string, percent float32) {
 	evt := NewCmdResult("downloadProgress", 0, PushModeBroadcast)
 	evt.Data = map[string]interface{}{

@@ -3843,6 +3843,9 @@ func UpdateAttributeViewCell(tx *Transaction, avID, keyID, rowID string, valueDa
 	if err = av.SaveAttributeView(attrView); err != nil {
 		return
 	}
+
+	// 推送精细化的单元格更新消息
+	util.PushUpdateAttributeViewCell(avID, keyID, rowID, valueData)
 	return
 }
 
