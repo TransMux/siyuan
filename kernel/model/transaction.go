@@ -671,7 +671,9 @@ func (tx *Transaction) doAppendInsert(operation *Operation) (ret *TxErr) {
 	}
 
 	operation.ID = insertedNode.ID
-	operation.ParentID = insertedNode.Parent.ID
+	if insertedNode.Parent != nil && insertedNode.Parent.ID != "" {
+		operation.ParentID = insertedNode.Parent.ID
+	}
 
 	// 将 appendInsert 转换为 insert 推送
 	operation.Action = "insert"
