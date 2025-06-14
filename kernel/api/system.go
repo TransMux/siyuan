@@ -613,9 +613,6 @@ func kernelStatus(c *gin.Context) {
 	ret := gulu.Ret.NewResult()
 	defer c.JSON(http.StatusOK, ret)
 
-	// 获取运行时长
-	uptime := util.GetUptime()
-
 	// 获取WebSocket连接数
 	wsConnections := util.CountSessions()
 
@@ -643,8 +640,6 @@ func kernelStatus(c *gin.Context) {
 	// 构建响应数据
 	ret.Data = map[string]interface{}{
 		"version":              util.Ver,
-		"uptime":               uptime.String(),
-		"uptimeSeconds":        int64(uptime.Seconds()),
 		"websocketConnections": wsConnections,
 		"cache":                cacheInfo,
 		"resources":            resourceInfo,
