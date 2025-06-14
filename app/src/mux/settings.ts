@@ -67,57 +67,8 @@ export const SETTING_ITEMS: { [key: string]: Setting } = {
         section: "function",
         display: "toggle"
     },
-    知识单元avID: {
-        label: "知识单元avID",
-        type: "string",
-        value: "",
-        section: "document",
-        display: "input"
-    },
-    知识单元目录: {
-        label: "知识单元目录",
-        type: "string",
-        value: "",
-        section: "document",
-        display: "input"
-    },
-    关系笔记avID: {
-        label: "关系笔记avID",
-        type: "string",
-        value: "",
-        section: "document",
-        display: "input"
-    },
-    关系笔记目录: {
-        label: "关系笔记目录",
-        type: "string",
-        value: "",
-        section: "document",
-        display: "input"
-    },
     标签之树avID: {
         label: "标签之树avID",
-        type: "string",
-        value: "",
-        section: "document",
-        display: "input"
-    },
-    标签之树目录: {
-        label: "标签之树目录",
-        type: "string",
-        value: "",
-        section: "document",
-        display: "input"
-    },
-    外部输入avID: {
-        label: "外部输入avID",
-        type: "string",
-        value: "",
-        section: "document",
-        display: "input"
-    },
-    外部输入目录: {
-        label: "外部输入目录",
         type: "string",
         value: "",
         section: "document",

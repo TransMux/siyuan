@@ -3,7 +3,6 @@ import {transaction} from "../../wysiwyg/transaction";
 import {focusByRange} from "../../util/selection";
 import {hasClosestBlock} from "../../util/hasClosest";
 import * as dayjs from "dayjs";
-import { afterAddedFileToDatabase } from "../../../mux/attributeView";
 
 export const addFilesToDatabase = (fileLiElements: Element[]) => {
     const srcs: IOperationSrcs[] = [];
@@ -30,7 +29,6 @@ export const addFilesToDatabase = (fileLiElements: Element[]) => {
                 id: listItemElement.dataset.blockId,
                 data: dayjs().format("YYYYMMDDHHmmss"),
             }]);
-            afterAddedFileToDatabase(srcs.map(item => item.id), avID);
         });
     }
 };
@@ -59,7 +57,6 @@ export const addEditorToDatabase = (protyle: IProtyle, range: Range, type?: stri
                 avID,
             }]);
             focusByRange(range);
-            afterAddedFileToDatabase([protyle.block.rootID], avID);
         });
     } else {
         let targetElement: HTMLElement;
