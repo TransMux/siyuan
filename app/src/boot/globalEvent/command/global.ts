@@ -41,6 +41,9 @@ import {openCard} from "../../../card/openCard";
 import {syncGuide} from "../../../sync/syncGuide";
 import {Wnd} from "../../../layout/Wnd";
 import {unsplitWnd} from "../../../menus/tab";
+import {fetchPost} from "../../../util/fetch";
+import {openNewWindowById} from "../../../window/openNewWindow";
+import {showMessage} from "../../../dialog/message";
 
 const selectOpenTab = () => {
     /// #if MOBILE
@@ -361,6 +364,27 @@ export const globalCommand = (command: string, app: App) => {
     /// #endif
 
     switch (command) {
+        case "quickAppend":
+            const notebookId = window.siyuan.storage[Constants.LOCAL_DAILYNOTEID];
+            fetchPost("/api/block/appendDailyNoteBlock", {
+                notebook: notebookId,
+                dataType: "markdown",
+                data: "- [ ]"
+            }, (response: any) => {
+                if (typeof response !== "string") {
+                    if (response.code !== 0) {
+                        showMessage(response.msg);
+                        return;
+                    }
+                    const transactions: any[] = response.data;
+                    const op = transactions[0]?.doOperations?.[0];
+                    const newBlockId = op?.id;
+                    if (newBlockId) {
+                        openNewWindowById(newBlockId);
+                    }
+                }
+            });
+            return true;
         case "dailyNote":
             newDailyNote(app);
             return true;

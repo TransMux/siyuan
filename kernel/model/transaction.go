@@ -670,10 +670,16 @@ func (tx *Transaction) doAppendInsert(operation *Operation) (ret *TxErr) {
 		return &TxErr{code: TxErrCodeWriteTree, msg: err.Error(), id: block.ID}
 	}
 
-	operation.ID = insertedNode.ID
-	if insertedNode.Parent != nil && insertedNode.Parent.ID != "" {
-		operation.ParentID = insertedNode.Parent.ID
+	// Determine the actual inserted block ID: for list insertions, use the first list item
+	var actualID string
+	if insertedNode.Type == ast.NodeList && insertedNode.FirstChild != nil {
+		actualID = insertedNode.FirstChild.ID
+	} else {
+		actualID = insertedNode.ID
 	}
+	operation.ID = actualID
+	// Use the container block ID for parentID (node refers to insertion target in original tree)
+	operation.ParentID = node.ID
 
 	// 将 appendInsert 转换为 insert 推送
 	operation.Action = "insert"

@@ -1415,6 +1415,12 @@ export const windowKeyDown = (app: App, event: KeyboardEvent) => {
         event.preventDefault();
         return;
     }
+    if (!isTabWindow && matchHotKey(window.siyuan.config.keymap.general.quickAppend.custom, event)) {
+        globalCommand("quickAppend", app);
+        event.stopPropagation();
+        event.preventDefault();
+        return;
+    }
     if (matchHotKey(window.siyuan.config.keymap.general.newFile.custom, event)) {
         newFile({
             app,
