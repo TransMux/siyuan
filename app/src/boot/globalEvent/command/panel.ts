@@ -136,6 +136,11 @@ export const commandPanel = (app: App) => {
 </li>`;
     }
 
+    // Quick Append
+    commandHtml += `<li class="b3-list-item" data-command="quickAppend">
+    <span class="b3-list-item__text">快速添加到 Daily Note (quick append)</span>
+</li>`;
+
     // 重载当前窗口，特别是在分屏需要更新主窗口修改的时候
     commandHtml += `<li class="b3-list-item" data-command="reload">
     <span class="b3-list-item__text">重新加载当前窗口 (reload current window)</span>
