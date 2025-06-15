@@ -579,8 +579,27 @@ func (tx *Transaction) doPrependInsert(operation *Operation) (ret *TxErr) {
 		return &TxErr{code: TxErrCodeWriteTree, msg: err.Error(), id: block.ID}
 	}
 
-	operation.ID = insertedNode.ID
-	operation.ParentID = insertedNode.Parent.ID
+	// 需要跟踪实际插入的最外层块ID
+	var actualInsertedID string
+	if isContainer {
+		if ast.NodeList == node.Type {
+			if ast.NodeList != insertedNode.Type {
+				// 当创建新列表项时，返回新列表项的ID
+				actualInsertedID = insertedNode.ID
+			}
+		}
+	}
+	// 如果没有特殊处理，使用原逻辑
+	if actualInsertedID == "" {
+		if insertedNode.Type == ast.NodeList && insertedNode.FirstChild != nil {
+			actualInsertedID = insertedNode.FirstChild.ID
+		} else {
+			actualInsertedID = insertedNode.ID
+		}
+	}
+	operation.ID = actualInsertedID
+	// Use the container block ID for parentID (node refers to insertion target in original tree)
+	operation.ParentID = node.ID
 
 	// 将 prependInsert 转换为 insert 推送
 	operation.Action = "insert"
@@ -668,14 +687,25 @@ func (tx *Transaction) doAppendInsert(operation *Operation) (ret *TxErr) {
 		return &TxErr{code: TxErrCodeWriteTree, msg: err.Error(), id: block.ID}
 	}
 
-	// Determine the actual inserted block ID: for list insertions, use the first list item
-	var actualID string
-	if insertedNode.Type == ast.NodeList && insertedNode.FirstChild != nil {
-		actualID = insertedNode.FirstChild.ID
-	} else {
-		actualID = insertedNode.ID
+	// 需要跟踪实际插入的最外层块ID
+	var actualInsertedID string
+	if isContainer {
+		if ast.NodeList == node.Type {
+			if ast.NodeList != insertedNode.Type {
+				// 当创建新列表项时，返回新列表项的ID
+				actualInsertedID = insertedNode.ID
+			}
+		}
 	}
-	operation.ID = actualID
+	// 如果没有特殊处理，使用原逻辑
+	if actualInsertedID == "" {
+		if insertedNode.Type == ast.NodeList && insertedNode.FirstChild != nil {
+			actualInsertedID = insertedNode.FirstChild.ID
+		} else {
+			actualInsertedID = insertedNode.ID
+		}
+	}
+	operation.ID = actualInsertedID
 	// Use the container block ID for parentID (node refers to insertion target in original tree)
 	operation.ParentID = node.ID
 
