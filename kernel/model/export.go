@@ -80,7 +80,7 @@ func ExportAv2CSV(avID, blockID string) (zipPath string, err error) {
 	}
 
 	name := util.FilterFileName(getAttrViewName(attrView))
-	table := getAttrViewTable(attrView, view)
+	table := getAttrViewTable(attrView, view, "")
 
 	// 遵循视图过滤和排序规则 Use filtering and sorting of current view settings when exporting database blocks https://github.com/siyuan-note/siyuan/issues/10474
 	table.Filter(attrView)
@@ -272,7 +272,7 @@ func Export2Liandi(id string) (err error) {
 		".md", 3, 1, 1,
 		"#", "#",
 		"", "",
-		false, false, nil, true, &map[string]*parse.Tree{})
+		false, false, nil, true, false, &map[string]*parse.Tree{})
 	result := gulu.Ret.NewResult()
 	request := httpclient.NewCloudRequest30s()
 	request = request.
@@ -1491,7 +1491,7 @@ func ExportStdMarkdown(id string, assetsDestSpace2Underscore bool) string {
 		".md", Conf.Export.BlockRefMode, Conf.Export.BlockEmbedMode, Conf.Export.FileAnnotationRefMode,
 		Conf.Export.TagOpenMarker, Conf.Export.TagCloseMarker,
 		Conf.Export.BlockRefTextLeft, Conf.Export.BlockRefTextRight,
-		Conf.Export.AddTitle, Conf.Export.InlineMemo, defBlockIDs, true, &map[string]*parse.Tree{})
+		Conf.Export.AddTitle, Conf.Export.InlineMemo, defBlockIDs, true, false, &map[string]*parse.Tree{})
 }
 
 func ExportPandocConvertZip(ids []string, pandocTo, ext string) (name, zipPath string) {
@@ -1973,7 +1973,7 @@ func walkRelationAvs(avID string, exportAvIDs *hashset.Set) {
 	}
 }
 
-func ExportMarkdownContent(id string, refMode, embedMode int, addYfm bool) (hPath, exportedMd string) {
+func ExportMarkdownContent(id string, refMode, embedMode int, addYfm, fillCSSVar bool) (hPath, exportedMd string) {
 	bt := treenode.GetBlockTree(id)
 	if nil == bt {
 		return
@@ -1985,7 +1985,7 @@ func ExportMarkdownContent(id string, refMode, embedMode int, addYfm bool) (hPat
 		".md", refMode, embedMode, Conf.Export.FileAnnotationRefMode,
 		Conf.Export.TagOpenMarker, Conf.Export.TagCloseMarker,
 		Conf.Export.BlockRefTextLeft, Conf.Export.BlockRefTextRight,
-		Conf.Export.AddTitle, Conf.Export.InlineMemo, nil, true, &map[string]*parse.Tree{})
+		Conf.Export.AddTitle, Conf.Export.InlineMemo, nil, true, fillCSSVar, &map[string]*parse.Tree{})
 	docIAL := parse.IAL2Map(tree.Root.KramdownIAL)
 	if addYfm {
 		exportedMd = yfm(docIAL) + exportedMd
@@ -2004,7 +2004,7 @@ func exportMarkdownContent(id, ext string, exportRefMode int, defBlockIDs []stri
 		ext, exportRefMode, Conf.Export.BlockEmbedMode, Conf.Export.FileAnnotationRefMode,
 		Conf.Export.TagOpenMarker, Conf.Export.TagCloseMarker,
 		Conf.Export.BlockRefTextLeft, Conf.Export.BlockRefTextRight,
-		Conf.Export.AddTitle, Conf.Export.InlineMemo, defBlockIDs, singleFile, treeCache)
+		Conf.Export.AddTitle, Conf.Export.InlineMemo, defBlockIDs, singleFile, true, treeCache)
 	docIAL := parse.IAL2Map(tree.Root.KramdownIAL)
 	if Conf.Export.MarkdownYFM {
 		// 导出 Markdown 时在文档头添加 YFM 开关 https://github.com/siyuan-note/siyuan/issues/7727
@@ -2016,7 +2016,7 @@ func exportMarkdownContent(id, ext string, exportRefMode int, defBlockIDs []stri
 func exportMarkdownContent0(tree *parse.Tree, cloudAssetsBase string, assetsDestSpace2Underscore bool,
 	ext string, blockRefMode, blockEmbedMode, fileAnnotationRefMode int,
 	tagOpenMarker, tagCloseMarker string, blockRefTextLeft, blockRefTextRight string,
-	addTitle, inlineMemo bool, defBlockIDs []string, singleFile bool, treeCache *map[string]*parse.Tree) (ret string) {
+	addTitle, inlineMemo bool, defBlockIDs []string, singleFile, fillCSSVar bool, treeCache *map[string]*parse.Tree) (ret string) {
 	tree = exportTree(tree, false, false, false,
 		blockRefMode, blockEmbedMode, fileAnnotationRefMode,
 		tagOpenMarker, tagCloseMarker,
@@ -2121,6 +2121,10 @@ func exportMarkdownContent0(tree *parse.Tree, cloudAssetsBase string, assetsDest
 	})
 	for _, unlink := range unlinks {
 		unlink.Unlink()
+	}
+
+	if fillCSSVar {
+		fillThemeStyleVar(tree)
 	}
 
 	luteEngine.SetUnorderedListMarker("-")
@@ -2492,7 +2496,7 @@ func exportTree(tree *parse.Tree, wysiwyg, keepFold, avHiddenCol bool,
 			return ast.WalkContinue
 		}
 
-		table := getAttrViewTable(attrView, view)
+		table := getAttrViewTable(attrView, view, "")
 
 		// 遵循视图过滤和排序规则 Use filtering and sorting of current view settings when exporting database blocks https://github.com/siyuan-note/siyuan/issues/10474
 		table.Filter(attrView)
@@ -3394,7 +3398,7 @@ func loadTreeWithCache(id string, treeCache *map[string]*parse.Tree) (tree *pars
 	return
 }
 
-func getAttrViewTable(attrView *av.AttributeView, view *av.View) (ret *av.Table) {
+func getAttrViewTable(attrView *av.AttributeView, view *av.View, query string) (ret *av.Table) {
 	switch view.LayoutType {
 	case av.LayoutTypeGallery:
 		view.Table = av.NewLayoutTable()
@@ -3405,6 +3409,6 @@ func getAttrViewTable(attrView *av.AttributeView, view *av.View) (ret *av.Table)
 			view.Table.RowIDs = append(view.Table.RowIDs, cardID)
 		}
 	}
-	ret = sql.RenderAttributeViewTable(attrView, view, "")
+	ret = sql.RenderAttributeViewTable(attrView, view, query)
 	return
 }

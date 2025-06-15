@@ -29,7 +29,7 @@ export const insertGalleryItemAnimation = (options: {
     options.srcIDs.forEach((id) => {
         html += `<div class="av__gallery-item"${needUpdate} data-type="ghost" data-id="${id}">
     <div class="av__gallery-cover"><span style="width: 100%;height: 100%;border-radius: var(--b3-border-radius) var(--b3-border-radius) 0 0;" class="av__pulse"></span></div>
-    <div class="av__gallery-fields"><span style="margin: 8px;" class="av__pulse"></span></div>
+    <div class="av__gallery-fields"><span class="av__pulse"></span></div>
 </div>`;
     });
     if (options.previousId) {
@@ -120,7 +120,9 @@ export const insertGalleryItemAnimation = (options: {
                 const sideItemCellElement = sideItemElement.querySelector(`.av__cell[data-field-id="${item.column}"]`) as HTMLElement;
                 const cellElement = currentItemElement.querySelector(`.av__cell[data-field-id="${item.column}"]`);
                 const cellValue = genCellValueByElement(getTypeByCellElement(sideItemCellElement), sideItemCellElement);
-                cellElement.innerHTML = renderCell(cellValue);
+                const iconElement = cellElement.querySelector(".b3-menu__avemoji");
+                cellElement.innerHTML = renderCell(cellValue, undefined,
+                    iconElement ? !iconElement.classList.contains("fn__none") : false, "gallery");
                 renderCellAttr(cellElement, cellValue);
             }
         });

@@ -1,7 +1,7 @@
 import {hasClosestBlock, hasClosestByAttribute, hasClosestByClassName} from "../../../util/hasClosest";
 import {Constants} from "../../../../constants";
 import {fetchPost} from "../../../../util/fetch";
-import {escapeAriaLabel, escapeHtml} from "../../../../util/escape";
+import {escapeAriaLabel, escapeAttr, escapeHtml} from "../../../../util/escape";
 import {unicode2Emoji} from "../../../../emoji";
 import {renderCell} from "../cell";
 import {focusBlock} from "../../../util/selection";
@@ -13,11 +13,12 @@ import {getViewIcon} from "../view";
 export const renderGallery = (options: {
     blockElement: HTMLElement,
     protyle: IProtyle,
-    cb?: (data:IAV) => void,
+    cb?: (data: IAV) => void,
     viewID?: string,
     renderAll: boolean
 }) => {
     const alignSelf = options.blockElement.style.alignSelf;
+    let oldOffset: number;
     if (options.blockElement.firstElementChild.innerHTML === "") {
         options.blockElement.style.alignSelf = "";
         options.blockElement.firstElementChild.outerHTML = `<div class="av__gallery">
@@ -25,6 +26,8 @@ export const renderGallery = (options: {
     <span style="width: 100%;height: 178px;" class="av__pulse"></span>
     <span style="width: 100%;height: 178px;" class="av__pulse"></span>
 </div>`;
+    } else {
+        oldOffset = options.protyle.contentElement.scrollTop;
     }
 
     const selectItemIds: string[] = [];
@@ -83,7 +86,7 @@ export const renderGallery = (options: {
                 }
             }
 
-            galleryHTML += '<div class="av__gallery-fields">';
+            galleryHTML += `<div class="av__gallery-fields${view.wrapField ? " av__gallery-fields--wrap" : ""}">`;
             item.values.forEach((cell, fieldsIndex) => {
                 if (view.fields[fieldsIndex].hidden) {
                     return;
@@ -92,16 +95,25 @@ export const renderGallery = (options: {
                 if (cell.valueType === "checkbox") {
                     checkClass = cell.value?.checkbox?.checked ? " av__cell-check" : " av__cell-uncheck";
                 }
-                galleryHTML += `<div class="av__cell${checkClass}" data-id="${cell.id}" data-field-id="${view.fields[fieldsIndex].id}"
+                galleryHTML += `<div class="av__cell${checkClass} ariaLabel" 
+aria-label="${escapeAttr(view.fields[fieldsIndex].name)}" 
+data-position="5west"
+data-id="${cell.id}" 
+data-field-id="${view.fields[fieldsIndex].id}"
 ${cell.valueType === "block" ? 'data-block-id="' + (cell.value.block.id || "") + '"' : ""} 
 data-dtype="${cell.valueType}" 
 ${cell.value?.isDetached ? ' data-detached="true"' : ""} 
 style="${cell.bgColor ? `background-color:${cell.bgColor};` : ""}
-${cell.color ? `color:${cell.color};` : ""}">${renderCell(cell.value, rowIndex)}</div>`;
+${cell.color ? `color:${cell.color};` : ""}">${renderCell(cell.value, rowIndex, view.showIcon, "gallery")}</div>`;
             });
-            galleryHTML += "</div></div>";
+            galleryHTML += `</div>
+    <div class="av__gallery-actions">
+        <span class="protyle-icon protyle-icon--first" data-type="av-gallery-edit"><svg><use xlink:href="#iconEdit"></use></svg></span>
+        <span class="protyle-icon protyle-icon--last" data-type="av-gallery-more"><svg><use xlink:href="#iconMore"></use></svg></span>
+    </div>
+</div>`;
         });
-        galleryHTML += `<div class="av__gallery-add" data-type="av-add-bottom"><svg class="svg"><use xlink:href="#iconAdd"></use></svg><span class="fn__space"></span>${window.siyuan.languages.newCol}</div>`;
+        galleryHTML += `<div class="av__gallery-add" data-type="av-add-bottom"><svg class="svg"><use xlink:href="#iconAdd"></use></svg><span class="fn__space"></span>${window.siyuan.languages.addCard}</div>`;
         let tabHTML = "";
         let viewData: IAVView;
         response.data.views.forEach((item: IAVView) => {
@@ -165,8 +177,8 @@ ${cell.color ? `color:${cell.color};` : ""}">${renderCell(cell.value, rowIndex)}
 ${view.hideAttrViewName ? " av__gallery--top" : ""}">
         ${galleryHTML}
     </div>
-    <div class="av__row--util av__readonly--show">
-        <button class="b3-button${view.cardCount > view.cards.length ? "" : " fn__none"}" data-type="av-load-more">
+    <div class="av__gallery-load${view.cardCount > view.cards.length ? "" : " fn__none"}">
+        <button class="b3-button av__button" data-type="av-load-more">
             <svg><use xlink:href="#iconArrowDown"></use></svg>
             <span>${window.siyuan.languages.loadMore}</span>
             <svg data-type="set-page-size" data-size="${view.pageSize}"><use xlink:href="#iconMore"></use></svg>
@@ -182,6 +194,9 @@ ${view.hideAttrViewName ? " av__gallery--top" : ""}">
             } else {
                 galleryElement.classList.remove("av__gallery--top");
             }
+        }
+        if (typeof oldOffset === "number") {
+            options.protyle.contentElement.scrollTop = oldOffset;
         }
         options.blockElement.setAttribute("data-render", "true");
         if (alignSelf) {

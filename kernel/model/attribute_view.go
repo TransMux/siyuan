@@ -1181,8 +1181,6 @@ func renderAttributeView(attrView *av.AttributeView, viewID, query string, page,
 			}
 		}
 		view.Table.Sorts = tmpSorts
-
-		viewable = sql.RenderAttributeViewTable(attrView, view, query)
 	case av.LayoutTypeGallery:
 		// 字段删除以后需要删除设置的过滤和排序
 		tmpFilters := []*av.ViewFilter{}
@@ -1200,10 +1198,9 @@ func renderAttributeView(attrView *av.AttributeView, viewID, query string, page,
 			}
 		}
 		view.Gallery.Sorts = tmpSorts
-
-		viewable = sql.RenderAttributeViewGallery(attrView, view, query)
 	}
 
+	viewable = sql.RenderView(view, attrView, query)
 	if nil == viewable {
 		err = av.ErrViewNotFound
 		logging.LogErrorf("render attribute view [%s] failed", attrView.ID)
@@ -1267,7 +1264,7 @@ func GetCurrentAttributeViewImages(avID, viewID, query string) (ret []string, er
 		view = attrView.GetView(attrView.ViewID)
 	}
 
-	table := sql.RenderAttributeViewTable(attrView, view, query)
+	table := getAttrViewTable(attrView, view, query)
 	table.Filter(attrView)
 	table.Sort(attrView)
 
@@ -2419,34 +2416,43 @@ func addAttributeViewBlock(now int64, avID, blockID, previousBlockID, addingBloc
 
 	// 如果存在过滤条件，则将过滤条件应用到新添加的块上
 	view, _ := getAttrViewViewByBlockID(attrView, blockID)
-	if nil != view && 0 < len(view.Table.Filters) && !ignoreFillFilter {
-		viewable := sql.RenderAttributeViewTable(attrView, view, "")
+	var filters []*av.ViewFilter
+	if nil != view {
+		filters = view.GetFilters()
+	}
+
+	if nil != view && 0 < len(filters) && !ignoreFillFilter {
+		viewable := sql.RenderView(view, attrView, "")
 		viewable.Filter(attrView)
 		viewable.Sort(attrView)
 
-		var nearRow *av.TableRow
-		if 0 < len(viewable.Rows) {
+		collection := viewable.(av.Collection)
+		items := collection.GetItems()
+
+		var nearItem av.Item
+		if 0 < len(items) {
 			if "" != previousBlockID {
-				for _, row := range viewable.Rows {
-					if row.ID == previousBlockID {
-						nearRow = row
+				for _, row := range items {
+					if row.GetID() == previousBlockID {
+						nearItem = row
 						break
 					}
 				}
 			} else {
-				if 0 < len(viewable.Rows) {
-					nearRow = viewable.Rows[0]
+				if 0 < len(items) {
+					nearItem = items[0]
 				}
 			}
 		}
 
 		sameKeyFilterSort := false // 是否在同一个字段上同时存在过滤和排序
-		if 0 < len(viewable.Sorts) {
+		sorts := view.GetSorts()
+		if 0 < len(sorts) {
 			filterKeys, sortKeys := map[string]bool{}, map[string]bool{}
-			for _, f := range view.Table.Filters {
+			for _, f := range filters {
 				filterKeys[f.Column] = true
 			}
-			for _, s := range view.Table.Sorts {
+			for _, s := range sorts {
 				sortKeys[s.Column] = true
 			}
 
@@ -2460,12 +2466,12 @@ func addAttributeViewBlock(now int64, avID, blockID, previousBlockID, addingBloc
 
 		if !sameKeyFilterSort {
 			// 如果在同一个字段上仅存在过滤条件，则将过滤条件应用到新添加的块上
-			for _, filter := range view.Table.Filters {
+			for _, filter := range filters {
 				for _, keyValues := range attrView.KeyValues {
 					if keyValues.Key.ID == filter.Column {
 						var defaultVal *av.Value
-						if nil != nearRow {
-							defaultVal = nearRow.GetValue(filter.Column)
+						if nil != nearItem {
+							defaultVal = nearItem.GetValue(filter.Column)
 						}
 
 						newValue := filter.GetAffectValue(keyValues.Key, defaultVal)
@@ -2609,7 +2615,12 @@ func removeAttributeViewBlock(srcIDs []string, avID string, tx *Transaction) (er
 
 	for _, view := range attrView.Views {
 		for _, blockID := range srcIDs {
-			view.Table.RowIDs = gulu.Str.RemoveElem(view.Table.RowIDs, blockID)
+			switch view.LayoutType {
+			case av.LayoutTypeTable:
+				view.Table.RowIDs = gulu.Str.RemoveElem(view.Table.RowIDs, blockID)
+			case av.LayoutTypeGallery:
+				view.Gallery.CardIDs = gulu.Str.RemoveElem(view.Gallery.CardIDs, blockID)
+			}
 		}
 	}
 

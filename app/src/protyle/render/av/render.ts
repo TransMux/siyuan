@@ -229,12 +229,12 @@ ${cell.color ? `color:${cell.color};` : ""}">${renderCell(cell.value, rowIndex)}
     ${tableHTML}
     <div class="av__row--util${data.rowCount > data.rows.length ? " av__readonly--show" : ""}">
         <div class="av__colsticky">
-            <button class="b3-button" data-type="av-add-bottom">
+            <button class="b3-button av__button" data-type="av-add-bottom">
                 <svg><use xlink:href="#iconAdd"></use></svg>
                 <span>${window.siyuan.languages.newRow}</span>
             </button>
             <span class="fn__space"></span>
-            <button class="b3-button${data.rowCount > data.rows.length ? "" : " fn__none"}" data-type="av-load-more">
+            <button class="b3-button av__button${data.rowCount > data.rows.length ? "" : " fn__none"}" data-type="av-load-more">
                 <svg><use xlink:href="#iconArrowDown"></use></svg>
                 <span>${window.siyuan.languages.loadMore}</span>
                 <svg data-type="set-page-size" data-size="${data.pageSize}"><use xlink:href="#iconMore"></use></svg>
@@ -479,7 +479,7 @@ export const refreshAV = (protyle: IProtyle, operation: IOperation) => {
             const avID = operation.action === "setAttrViewName" ? operation.id : operation.avID;
             Array.from(protyle.wysiwyg.element.querySelectorAll(`[data-av-id="${avID}"]`)).forEach((item: HTMLElement) => {
                 item.removeAttribute("data-render");
-                const updateRow = item.querySelector('.av__row[data-need-update="true"]');
+                const updateRow = item.querySelector('[data-need-update="true"]');
                 if (operation.action === "sortAttrViewCol" || operation.action === "sortAttrViewRow") {
                     item.querySelectorAll(".av__cell--active").forEach((item: HTMLElement) => {
                         item.classList.remove("av__cell--active");
@@ -506,7 +506,8 @@ export const refreshAV = (protyle: IProtyle, operation: IOperation) => {
                         // 更新属性面板
                         renderAVAttribute(attrElement.parentElement, attrElement.dataset.nodeId, protyle);
                     } else {
-                        if (operation.action === "insertAttrViewBlock" && updateRow && !item.querySelector(`.av__row[data-id="${updateRow.getAttribute("data-id")}"]`)) {
+                        if (operation.action === "insertAttrViewBlock" && updateRow &&
+                            !item.querySelector(`[data-id="${updateRow.getAttribute("data-id")}"]`)) {
                             showMessage(window.siyuan.languages.insertRowTip);
                             document.querySelector(".av__mask")?.remove();
                         }
