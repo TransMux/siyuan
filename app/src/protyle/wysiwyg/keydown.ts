@@ -1488,34 +1488,128 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                     ? (commonAncestorContainer as HTMLElement)
                     : (commonAncestorContainer.parentElement as HTMLElement);
 
-                let computedColor = containerElement.style.color;
+                let computedColor = "";
+                
+                // 获取当前选中区域的颜色信息，需要考虑多种情况
+                const getColorFromElement = (element: HTMLElement) => {
+                    if (!element) return "";
+                    
+                    // 如果有style1类型的样式（同时有背景色和前景色）
+                    if (element.style.backgroundColor && element.style.color) {
+                        return `${element.style.backgroundColor}${Constants.ZWSP}${element.style.color}`;
+                    }
+                    
+                    // 如果只有前景色
+                    if (element.style.color) {
+                        return element.style.color;
+                    }
+                    
+                    // 如果只有背景色
+                    if (element.style.backgroundColor) {
+                        return element.style.backgroundColor;
+                    }
+                    
+                    return "";
+                };
+                
+                // 首先尝试从容器元素获取颜色
+                computedColor = getColorFromElement(containerElement);
 
-                // 如果选中的部分包含其他inline元素，这时候dom结构会选择到最上层的div contenteditable="true"，此时判断第一个元素和最后一个元素是否相同color
-                if (!computedColor && containerElement.children.length > 0) {
-                    const firstElement = containerElement.children[0] as HTMLElement;
-                    const lastElement = containerElement.children[containerElement.children.length - 1] as HTMLElement;
-                    if (firstElement.style.color === lastElement.style.color) {
-                        computedColor = firstElement.style.color;
+                // 如果容器元素没有颜色，尝试从选中区域内的元素获取
+                if (!computedColor) {
+                    const rangeContents = range.cloneContents();
+                    const textElements = rangeContents.querySelectorAll('[data-type~="text"]');
+                    
+                    if (textElements.length > 0) {
+                        // 如果有text元素，从第一个text元素获取颜色
+                        computedColor = getColorFromElement(textElements[0] as HTMLElement);
+                    } else {
+                        // 检查range内的所有元素，找到第一个有颜色样式的元素
+                        const walker = document.createTreeWalker(
+                            rangeContents,
+                            NodeFilter.SHOW_ELEMENT
+                        );
+                        
+                        let node = walker.nextNode();
+                        while (node && !computedColor) {
+                            const element = node as HTMLElement;
+                            if (element.style) {
+                                computedColor = getColorFromElement(element);
+                            }
+                            node = walker.nextNode();
+                        }
+                    }
+                }
+                
+                // 如果还是没有找到颜色，检查选中区域的起始和结束节点
+                if (!computedColor) {
+                    const startContainer = range.startContainer;
+                    const endContainer = range.endContainer;
+                    
+                    // 检查起始节点的父元素
+                    let startElement = startContainer.nodeType === Node.ELEMENT_NODE 
+                        ? startContainer as HTMLElement 
+                        : startContainer.parentElement as HTMLElement;
+                    
+                    while (startElement && !computedColor) {
+                        computedColor = getColorFromElement(startElement);
+                        if (!computedColor && startElement.hasAttribute('data-type')) {
+                            break; // 已经到了块级元素，停止向上查找
+                        }
+                        startElement = startElement.parentElement;
+                    }
+                    
+                    // 如果起始节点没有颜色，检查结束节点
+                    if (!computedColor && startContainer !== endContainer) {
+                        let endElement = endContainer.nodeType === Node.ELEMENT_NODE 
+                            ? endContainer as HTMLElement 
+                            : endContainer.parentElement as HTMLElement;
+                        
+                        while (endElement && !computedColor) {
+                            computedColor = getColorFromElement(endElement);
+                            if (!computedColor && endElement.hasAttribute('data-type')) {
+                                break;
+                            }
+                            endElement = endElement.parentElement;
+                        }
                     }
                 }
 
-
                 const altx上色顺序Keys = get<string[]>("altx上色顺序Keys");
                 const altx上色顺序Values = get<any[]>("altx上色顺序Values");
+                
                 // 2. 匹配 altx上色顺序，应用匹配到的下一个颜色
-                // First load the colors asynchronously
-                const matchColorIndex = altx上色顺序Keys.findIndex(key => computedColor.includes(key));
+                let matchColorIndex = -1;
+                
+                // 改进颜色匹配逻辑，更精确地匹配颜色
+                if (computedColor) {
+                    // 精确匹配：检查computedColor是否与配置中的某个颜色完全匹配
+                    matchColorIndex = altx上色顺序Keys.findIndex(key => {
+                        if (key === "clear") {
+                            return !computedColor; // clear匹配空颜色
+                        }
+                        
+                        // 对于style1类型，需要检查是否包含对应的前景色
+                        // computedColor可能是 "backgroundColor⟿foregroundColor" 格式
+                        if (computedColor.includes(Constants.ZWSP)) {
+                            const colorParts = computedColor.split(Constants.ZWSP);
+                            return colorParts.some(part => part === key);
+                        } else {
+                            // 单一颜色直接比较
+                            return computedColor === key;
+                        }
+                    });
+                }
+                
                 if (matchColorIndex !== -1) {
                     const nextColor = altx上色顺序Values[matchColorIndex + 1];
                     if (nextColor.type === "clear") {
                         protyle.toolbar.setInlineMark(protyle, "clear", "range", { type: "text" });
                     } else {
-                        // 在有背景的情况下进行设置，会导致背景颜色和字体颜色同时存在
-                        // protyle.toolbar.setInlineMark(protyle, "clear", "range", { type: "text" });
                         protyle.toolbar.setInlineMark(protyle, "text", "range", nextColor);
                     }
                 } else {
-                    // 如果匹配不到，则应用最弱的颜色
+                    // 如果匹配不到，则应用最弱的颜色（第一个颜色）
                     const nextColor = altx上色顺序Values[0];
                     protyle.toolbar.setInlineMark(protyle, "text", "range", nextColor);
                 }
