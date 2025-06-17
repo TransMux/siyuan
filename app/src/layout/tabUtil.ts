@@ -204,28 +204,8 @@ export const newCenterEmptyTab = (app: App) => {
         <svg class="b3-list-item__graphic"><use xlink:href="#iconOpen"></use></svg>
         <span>打开未读文章</span>
     </div>
-    <div class="mux-database-list"></div>
 </div>`,
         callback(tab: Tab) {
-            // 生成数据库选择
-            const databasesElement = tab.panelElement.querySelector(".mux-database-list");
-            fetchPost("/api/av/searchAttributeView", {
-                keyword: "",
-            }, (response) => {
-                let html = "";
-                response.data.results.forEach((item: {
-                    avID: string
-                    avName: string
-                    blockID: string
-                }) => {
-                    html += `<div class="b3-list-item" data-av-id="${item.avID}" data-block-id="${item.blockID}" id="database-link">
-            <svg class="b3-list-item__graphic"><use xlink:href="#iconDatabase"></use></svg>
-            <span>${item.avName}</span>
-            </div>`;
-                });
-                databasesElement.innerHTML = html;
-            });
-
             tab.panelElement.addEventListener("click", (event) => {
                 let target = event.target as HTMLElement;
                 while (target && !target.isEqualNode(tab.panelElement)) {
