@@ -816,6 +816,50 @@ func linkExists(links []*GraphLink, newLink *GraphLink) bool {
 	return false
 }
 
+// blockAllowedLocal checks whether a block should be included when expanding graph depth
+// for local graphs. It applies both type filters and daily-note exclusion rules.
+func blockAllowedLocal(b *Block) bool {
+	if b == nil {
+		return false
+	}
+
+	// Daily note filter: exclude if DailyNote disabled and path falls under daily-note directory.
+	dailyPaths := dailyNotePaths(true)
+	if len(dailyPaths) > 0 {
+		for _, p := range dailyPaths {
+			if strings.HasPrefix(b.HPath, p) {
+				return false
+			}
+		}
+	}
+
+	// Type filter according to current configuration
+	switch b.Type {
+	case "NodeParagraph":
+		return Conf.Graph.Local.Paragraph
+	case "NodeHeading":
+		return Conf.Graph.Local.Heading
+	case "NodeMathBlock":
+		return Conf.Graph.Local.Math
+	case "NodeCodeBlock":
+		return Conf.Graph.Local.Code
+	case "NodeTable":
+		return Conf.Graph.Local.Table
+	case "NodeList":
+		return Conf.Graph.Local.List
+	case "NodeListItem":
+		return Conf.Graph.Local.ListItem
+	case "NodeBlockquote":
+		return Conf.Graph.Local.Blockquote
+	case "NodeSuperBlock":
+		return Conf.Graph.Local.Super
+	case "NodeDocument":
+		return true // always include documents
+	default:
+		return false
+	}
+}
+
 // findRelatedNodes 查找与指定节点相关的节点
 func findRelatedNodes(nodeID string) []*GraphNode {
 	var relatedNodes []*GraphNode
@@ -825,6 +869,9 @@ func findRelatedNodes(nodeID string) []*GraphNode {
 	for _, refBlocksList := range refBlocks {
 		refBlocks := fromSQLBlocks(&refBlocksList, "", 0)
 		for _, refBlock := range refBlocks {
+			if !blockAllowedLocal(refBlock) {
+				continue
+			}
 			node := &GraphNode{
 				ID:   refBlock.ID,
 				Box:  refBlock.Box,
@@ -841,6 +888,9 @@ func findRelatedNodes(nodeID string) []*GraphNode {
 	sqlDefBlocks := sql.QueryDefRootBlocksByRefRootID(nodeID)
 	defBlocks := fromSQLBlocks(&sqlDefBlocks, "", 0)
 	for _, defBlock := range defBlocks {
+		if !blockAllowedLocal(defBlock) {
+			continue
+		}
 		node := &GraphNode{
 			ID:   defBlock.ID,
 			Box:  defBlock.Box,
@@ -864,6 +914,9 @@ func findRelatedLinks(nodeID string) []*GraphLink {
 	for _, refBlocksList := range refBlocks {
 		convertedRefBlocks := fromSQLBlocks(&refBlocksList, "", 0)
 		for _, refBlock := range convertedRefBlocks {
+			if !blockAllowedLocal(refBlock) {
+				continue
+			}
 			link := &GraphLink{
 				From: refBlock.ID,
 				To:   nodeID,
@@ -880,6 +933,9 @@ func findRelatedLinks(nodeID string) []*GraphLink {
 	sqlDefBlocks := sql.QueryDefRootBlocksByRefRootID(nodeID)
 	defBlocks := fromSQLBlocks(&sqlDefBlocks, "", 0)
 	for _, defBlock := range defBlocks {
+		if !blockAllowedLocal(defBlock) {
+			continue
+		}
 		link := &GraphLink{
 			From: nodeID,
 			To:   defBlock.ID,
