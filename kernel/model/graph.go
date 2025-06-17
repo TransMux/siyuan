@@ -319,6 +319,10 @@ func growLinkedNodes(forwardlinks, backlinks *[]*Block, nodes, all *[]*GraphNode
 					}
 
 					for _, refDef := range defs {
+						// apply local graph filters to depth-expanded nodes
+						if !blockAllowedLocal(refDef) {
+							continue
+						}
 						defNode := &GraphNode{
 							ID:   refDef.ID,
 							Box:  refDef.Box,
@@ -344,6 +348,10 @@ func growLinkedNodes(forwardlinks, backlinks *[]*Block, nodes, all *[]*GraphNode
 							continue
 						}
 
+						// apply local graph filters to depth-expanded nodes
+						if !blockAllowedLocal(ref) {
+							continue
+						}
 						refNode := &GraphNode{
 							ID:   ref.ID,
 							Box:  ref.Box,
