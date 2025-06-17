@@ -44,8 +44,6 @@ import {unsplitWnd} from "../../../menus/tab";
 import {fetchPost} from "../../../util/fetch";
 import {openNewWindowById} from "../../../window/openNewWindow";
 import {showMessage} from "../../../dialog/message";
-import {Dialog} from "../../../dialog";
-import {Protyle} from "../../../protyle";
 
 const selectOpenTab = () => {
     /// #if MOBILE
@@ -382,7 +380,10 @@ export const globalCommand = (command: string, app: App) => {
                     const op = transactions[0]?.doOperations?.[0];
                     const newBlockId = op?.id;
                     if (newBlockId) {
-                        openQuickAppendDialog(app, newBlockId);
+                        openNewWindowById(newBlockId, {
+                            width: 750,
+                            height: 500
+                        });
                     }
                 }
             });
@@ -419,50 +420,4 @@ export const globalCommand = (command: string, app: App) => {
     return false;
 };
 
-const openQuickAppendDialog = (app: App, blockId: string) => {
-    const dialog = new Dialog({
-        title: "Quick Append",
-        content: `<div class="b3-dialog__content" style="padding: 0;">
-            <div id="quickAppendProtyle" style="height: 100%; min-height: 400px;"></div>
-        </div>`,
-        width: "750px",
-        height: "500px",
-        destroyCallback() {
-            // Cleanup when dialog is destroyed
-            if (protyleInstance) {
-                protyleInstance.destroy();
-            }
-        }
-    });
 
-    const protyleContainer = dialog.element.querySelector("#quickAppendProtyle") as HTMLElement;
-    let protyleInstance: Protyle;
-
-    // Initialize Protyle with the inserted block ID
-    protyleInstance = new Protyle(app, protyleContainer, {
-        blockId: blockId,
-        action: [Constants.CB_GET_FOCUS, Constants.CB_GET_ALL],
-        render: {
-            title: false,
-            background: false,
-            scroll: true,
-            gutter: true,
-            breadcrumb: false,
-            breadcrumbDocName: false,
-        },
-        typewriterMode: false,
-    });
-
-    // Add Ctrl+W keybinding to close the dialog
-    dialog.element.addEventListener("keydown", (event: KeyboardEvent) => {
-        if ((event.ctrlKey || event.metaKey) && event.key === "w") {
-            event.preventDefault();
-            event.stopPropagation();
-            dialog.destroy();
-        }
-    });
-
-    // Ensure the dialog can receive keyboard focus
-    dialog.element.setAttribute("tabindex", "-1");
-    dialog.element.focus();
-};

@@ -29,7 +29,10 @@ export class QuickAppend extends ToolbarItem {
                 const op = transactions[0]?.doOperations?.[0];
                 const newBlockId = op?.id;
                 if (newBlockId) {
-                    openNewWindowById(newBlockId);
+                    openNewWindowById(newBlockId, {
+                        width: 750,
+                        height: 500
+                    });
                 }
             } catch (err) {
                 console.error(err);
