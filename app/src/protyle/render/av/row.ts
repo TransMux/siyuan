@@ -17,6 +17,7 @@ import {Constants} from "../../../constants";
 import {insertGalleryItemAnimation} from "./gallery/item";
 
 export const getFieldIdByCellElement = (cellElement: Element, viewType: TAVView): string => {
+    if (!viewType) viewType = "table"; // 否则无法更改属性视图的属性，临时补丁
     return (hasClosestByClassName(cellElement, viewType === "table" ? "av__row" : "av__gallery-item") as HTMLElement).dataset.id;
 };
 
