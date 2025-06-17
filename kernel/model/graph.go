@@ -158,6 +158,10 @@ func BuildTreeGraph(id, query string) (boxID string, nodes []*GraphNode, links [
 		p := sqlBlock.Path
 		linkTagBlocks(&blocks, &nodes, &links, p)
 	}
+
+	// 图谱深度增强 - 递归发现更深层次的关联
+	enhanceGraphDepth(&nodes, &links, rootID, 3) // 最大深度3层
+
 	markLinkedNodes(&nodes, &links, true)
 	nodes = removeDuplicatedUnescape(nodes)
 	return
@@ -700,4 +704,230 @@ func query2Stmt(queryStr string) (ret string) {
 	}
 	ret = buf.String()
 	return
+}
+
+// enhanceGraphDepth 增强图谱深度，递归发现更深层次的关联
+func enhanceGraphDepth(nodes *[]*GraphNode, links *[]*GraphLink, rootID string, maxDepth int) {
+	if maxDepth <= 0 {
+		return
+	}
+
+	// 统计当前的引用计数
+	referenceCount := make(map[string]*ReferenceStats)
+	for _, node := range *nodes {
+		referenceCount[node.ID] = &ReferenceStats{Refs: 0, Defs: 0}
+	}
+
+	// 计算初始引用数
+	for _, link := range *links {
+		if stats, exists := referenceCount[link.From]; exists {
+			stats.Refs++
+		}
+		if stats, exists := referenceCount[link.To]; exists {
+			stats.Defs++
+		}
+	}
+
+	// 收集当前层的节点
+	currentLayerNodes := []string{}
+	for _, node := range *nodes {
+		currentLayerNodes = append(currentLayerNodes, node.ID)
+	}
+
+	// 逐层扩展关联节点，最多处理maxDepth层
+	processedNodes := make(map[string]bool)
+	for depth := 0; depth < maxDepth && len(currentLayerNodes) > 0; depth++ {
+		nextLayerNodes := []string{}
+
+		// 为当前层的每个节点查找关联
+		for _, nodeID := range currentLayerNodes {
+			if processedNodes[nodeID] {
+				continue
+			}
+			processedNodes[nodeID] = true
+
+			// 查找该节点的引用关系
+			relatedNodes := findRelatedNodes(nodeID)
+			for _, relatedNode := range relatedNodes {
+				// 检查是否已经存在
+				if !nodeExists(*nodes, relatedNode.ID) {
+					*nodes = append(*nodes, relatedNode)
+					nextLayerNodes = append(nextLayerNodes, relatedNode.ID)
+
+					// 初始化引用计数
+					if _, exists := referenceCount[relatedNode.ID]; !exists {
+						referenceCount[relatedNode.ID] = &ReferenceStats{Refs: 0, Defs: 0}
+					}
+				}
+			}
+
+			// 查找相关的连线
+			relatedLinks := findRelatedLinks(nodeID)
+			for _, link := range relatedLinks {
+				if !linkExists(*links, link) {
+					*links = append(*links, link)
+
+					// 更新引用计数
+					if stats, exists := referenceCount[link.From]; exists {
+						stats.Refs++
+					}
+					if stats, exists := referenceCount[link.To]; exists {
+						stats.Defs++
+					}
+				}
+			}
+		}
+
+		currentLayerNodes = nextLayerNodes
+
+		// 限制每层处理的节点数量，避免过度扩展
+		if len(currentLayerNodes) > 50 {
+			currentLayerNodes = currentLayerNodes[:50]
+		}
+	}
+
+	// 根据引用计数调整节点大小
+	enhanceNodeSizes(nodes, referenceCount)
+}
+
+// ReferenceStats 引用统计结构
+type ReferenceStats struct {
+	Refs int `json:"refs"` // 引用其他节点的次数
+	Defs int `json:"defs"` // 被其他节点引用的次数
+}
+
+// nodeExists 检查节点是否已存在
+func nodeExists(nodes []*GraphNode, id string) bool {
+	for _, node := range nodes {
+		if node.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
+// linkExists 检查连线是否已存在
+func linkExists(links []*GraphLink, newLink *GraphLink) bool {
+	for _, link := range links {
+		if link.From == newLink.From && link.To == newLink.To {
+			return true
+		}
+	}
+	return false
+}
+
+// findRelatedNodes 查找与指定节点相关的节点
+func findRelatedNodes(nodeID string) []*GraphNode {
+	var relatedNodes []*GraphNode
+
+	// 查找引用该节点的其他节点
+	refBlocks := sql.QueryRefRootBlocksByDefRootIDs([]string{nodeID})
+	for _, refBlocksList := range refBlocks {
+		refBlocks := fromSQLBlocks(&refBlocksList, "", 0)
+		for _, refBlock := range refBlocks {
+			node := &GraphNode{
+				ID:   refBlock.ID,
+				Box:  refBlock.Box,
+				Path: refBlock.Path,
+				Type: refBlock.Type,
+				Size: Conf.Graph.Local.NodeSize,
+			}
+			nodeTitleLabel(node, nodeContentByBlock(refBlock))
+			relatedNodes = append(relatedNodes, node)
+		}
+	}
+
+	// 查找该节点引用的其他节点
+	sqlDefBlocks := sql.QueryDefRootBlocksByRefRootID(nodeID)
+	defBlocks := fromSQLBlocks(&sqlDefBlocks, "", 0)
+	for _, defBlock := range defBlocks {
+		node := &GraphNode{
+			ID:   defBlock.ID,
+			Box:  defBlock.Box,
+			Path: defBlock.Path,
+			Type: defBlock.Type,
+			Size: Conf.Graph.Local.NodeSize,
+		}
+		nodeTitleLabel(node, nodeContentByBlock(defBlock))
+		relatedNodes = append(relatedNodes, node)
+	}
+
+	return relatedNodes
+}
+
+// findRelatedLinks 查找与指定节点相关的连线
+func findRelatedLinks(nodeID string) []*GraphLink {
+	var relatedLinks []*GraphLink
+
+	// 查找该节点的引用连线
+	refBlocks := sql.QueryRefRootBlocksByDefRootIDs([]string{nodeID})
+	for _, refBlocksList := range refBlocks {
+		convertedRefBlocks := fromSQLBlocks(&refBlocksList, "", 0)
+		for _, refBlock := range convertedRefBlocks {
+			link := &GraphLink{
+				From: refBlock.ID,
+				To:   nodeID,
+				Ref:  true,
+			}
+			if Conf.Graph.Local.Arrow {
+				link.Arrows = &GraphArrows{To: &GraphArrowsTo{Enabled: true}}
+			}
+			relatedLinks = append(relatedLinks, link)
+		}
+	}
+
+	// 查找该节点引用其他节点的连线
+	sqlDefBlocks := sql.QueryDefRootBlocksByRefRootID(nodeID)
+	defBlocks := fromSQLBlocks(&sqlDefBlocks, "", 0)
+	for _, defBlock := range defBlocks {
+		link := &GraphLink{
+			From: nodeID,
+			To:   defBlock.ID,
+			Ref:  true,
+		}
+		if Conf.Graph.Local.Arrow {
+			link.Arrows = &GraphArrows{To: &GraphArrowsTo{Enabled: true}}
+		}
+		relatedLinks = append(relatedLinks, link)
+	}
+
+	return relatedLinks
+}
+
+// enhanceNodeSizes 根据引用计数增强节点大小
+func enhanceNodeSizes(nodes *[]*GraphNode, referenceCount map[string]*ReferenceStats) {
+	// 找出最大的引用数和被引用数，用于归一化
+	maxRefs, maxDefs := 1, 1
+	for _, stats := range referenceCount {
+		if stats.Refs > maxRefs {
+			maxRefs = stats.Refs
+		}
+		if stats.Defs > maxDefs {
+			maxDefs = stats.Defs
+		}
+	}
+
+	defaultSize := Conf.Graph.Local.NodeSize
+
+	for _, node := range *nodes {
+		if stats, exists := referenceCount[node.ID]; exists {
+			// 计算权重得分
+			refsScore := float64(stats.Refs) / float64(maxRefs) * 1.0 // 引用权重
+			defsScore := float64(stats.Defs) / float64(maxDefs) * 1.2 // 被引用权重（略高）
+			totalScore := refsScore + defsScore
+
+			// 应用大小增长系数
+			sizeMultiplier := 1.0 + totalScore*0.8
+			if sizeMultiplier > 3.0 {
+				sizeMultiplier = 3.0 // 限制最大尺寸
+			}
+
+			// 应用新尺寸
+			node.Size = defaultSize * sizeMultiplier
+
+			// 更新引用统计信息
+			node.Refs = stats.Refs
+			node.Defs = stats.Defs
+		}
+	}
 }
