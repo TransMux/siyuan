@@ -3,9 +3,7 @@ import {unicode2Emoji} from "../../../emoji";
 import {transaction} from "../../wysiwyg/transaction";
 import {openMenuPanel} from "./openMenuPanel";
 import {focusBlock} from "../../util/selection";
-import {Constants} from "../../../constants";
 import {upDownHint} from "../../../util/upDownHint";
-import {avRender} from "./render";
 import {escapeAriaLabel, escapeAttr, escapeHtml} from "../../../util/escape";
 
 export const openViewMenu = (options: { protyle: IProtyle, blockElement: HTMLElement, element: HTMLElement }) => {
@@ -65,7 +63,6 @@ export const openViewMenu = (options: { protyle: IProtyle, blockElement: HTMLEle
                 id,
                 blockID: options.blockElement.dataset.nodeId
             }]);
-            options.blockElement.setAttribute(Constants.CUSTOM_SY_AV_VIEW, id);
         }
     });
     if (options.blockElement.querySelectorAll(".layout-tab-bar .item").length > 1) {
@@ -245,8 +242,12 @@ export const bindSwitcherEvent = (options: { protyle: IProtyle, menuElement: Ele
         if (event.key === "Enter") {
             const currentElement = options.menuElement.querySelector(".b3-menu__item--current") as HTMLElement;
             if (currentElement) {
-                options.blockElement.removeAttribute("data-render");
-                avRender(options.blockElement, options.protyle, undefined, currentElement.dataset.id);
+                transaction(options.protyle, [{
+                    action: "setAttrViewBlockView",
+                    blockID: options.blockElement.getAttribute("data-node-id"),
+                    id: currentElement.dataset.id,
+                    avID: options.blockElement.getAttribute("data-av-id"),
+                }]);
                 options.menuElement.remove();
                 focusBlock(options.blockElement);
             }
@@ -333,8 +334,6 @@ export const addView = (protyle: IProtyle, blockElement: Element) => {
                 id,
                 blockID: blockElement.getAttribute("data-node-id")
             }]);
-            blockElement.setAttribute(Constants.CUSTOM_SY_AV_VIEW, id);
-            blockElement.setAttribute("data-av-type", "table");
         }
     });
     addMenu.addItem({
@@ -354,8 +353,6 @@ export const addView = (protyle: IProtyle, blockElement: Element) => {
                 id,
                 blockID: blockElement.getAttribute("data-node-id")
             }]);
-            blockElement.setAttribute(Constants.CUSTOM_SY_AV_VIEW, id);
-            blockElement.setAttribute("data-av-type", "gallery");
         }
     });
     viewElement.classList.add("av__views--show");
@@ -386,4 +383,4 @@ export const getViewName = (type: string) => {
 
 export const getFieldsByData = (data: IAV) => {
     return data.viewType === "table" ? (data.view as IAVTable).columns : (data.view as IAVGallery).fields;
-}
+};

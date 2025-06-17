@@ -45,26 +45,34 @@ import (
 	"github.com/xrash/smetrics"
 )
 
-func (tx *Transaction) doChangeAttrViewLayout(operation *Operation) (ret *TxErr) {
-	err := changeAttrViewLayout(operation)
+func (tx *Transaction) doSetAttrViewBlockView(operation *Operation) (ret *TxErr) {
+	err := SetDatabaseBlockView(operation.BlockID, operation.AvID, operation.ID)
 	if err != nil {
 		return &TxErr{code: TxErrWriteAttributeView, id: operation.AvID, msg: err.Error()}
 	}
 	return
 }
 
-func changeAttrViewLayout(operation *Operation) (err error) {
-	attrView, err := av.ParseAttributeView(operation.AvID)
+func (tx *Transaction) doChangeAttrViewLayout(operation *Operation) (ret *TxErr) {
+	err := ChangeAttrViewLayout(operation.BlockID, operation.AvID, operation.Layout)
+	if err != nil {
+		return &TxErr{code: TxErrWriteAttributeView, id: operation.AvID, msg: err.Error()}
+	}
+	return
+}
+
+func ChangeAttrViewLayout(blockID, avID string, layout av.LayoutType) (err error) {
+	attrView, err := av.ParseAttributeView(avID)
 	if err != nil {
 		return
 	}
 
-	view, err := getAttrViewViewByBlockID(attrView, operation.BlockID)
+	view, err := getAttrViewViewByBlockID(attrView, blockID)
 	if err != nil {
 		return
 	}
 
-	newLayout := operation.Layout
+	newLayout := layout
 	if newLayout == view.LayoutType {
 		return
 	}
@@ -112,6 +120,22 @@ func changeAttrViewLayout(operation *Operation) (err error) {
 
 	view.LayoutType = newLayout
 	err = av.SaveAttributeView(attrView)
+
+	node, tree, err := getNodeByBlockID(nil, blockID)
+	if err != nil {
+		return
+	}
+
+	node.AttributeViewType = string(view.LayoutType)
+	attrs := parse.IAL2Map(node.KramdownIAL)
+	attrs[av.NodeAttrView] = view.ID
+	err = setNodeAttrs(node, tree, attrs)
+	if err != nil {
+		logging.LogWarnf("set node [%s] attrs failed: %s", blockID, err)
+		return
+	}
+
+	ReloadAttrView(avID)
 	return
 }
 
@@ -462,7 +486,6 @@ func SetDatabaseBlockView(blockID, avID, viewID string) (err error) {
 	}
 
 	node.AttributeViewType = string(view.LayoutType)
-
 	attrs := parse.IAL2Map(node.KramdownIAL)
 	attrs[av.NodeAttrView] = viewID
 	err = setNodeAttrs(node, tree, attrs)
@@ -1804,6 +1827,7 @@ func (tx *Transaction) doDuplicateAttrViewView(operation *Operation) (ret *TxErr
 
 	attrs := parse.IAL2Map(node.KramdownIAL)
 	attrs[av.NodeAttrView] = operation.ID
+	node.AttributeViewType = string(masterView.LayoutType)
 	err = setNodeAttrs(node, tree, attrs)
 	if err != nil {
 		logging.LogWarnf("set node [%s] attrs failed: %s", operation.BlockID, err)

@@ -3,7 +3,7 @@ import {Constants} from "../../../../constants";
 import {fetchPost} from "../../../../util/fetch";
 import {escapeAriaLabel, escapeAttr, escapeHtml} from "../../../../util/escape";
 import {unicode2Emoji} from "../../../../emoji";
-import {renderCell} from "../cell";
+import {cellValueIsEmpty, renderCell} from "../cell";
 import {focusBlock} from "../../../util/selection";
 import {electronUndo} from "../../../undo";
 import {addClearButton} from "../../../../util/addClearButton";
@@ -14,7 +14,6 @@ export const renderGallery = (options: {
     blockElement: HTMLElement,
     protyle: IProtyle,
     cb?: (data: IAV) => void,
-    viewID?: string,
     renderAll: boolean
 }) => {
     const alignSelf = options.blockElement.style.alignSelf;
@@ -29,7 +28,10 @@ export const renderGallery = (options: {
     } else {
         oldOffset = options.protyle.contentElement.scrollTop;
     }
-
+    const editIds: string[] = [];
+    options.blockElement.querySelectorAll(".av__gallery-fields--edit").forEach(item => {
+        editIds.push(item.parentElement.getAttribute("data-id"));
+    });
     const selectItemIds: string[] = [];
     options.blockElement.querySelectorAll(".av__gallery-item--select").forEach(rowItem => {
         const rowId = rowItem.getAttribute("data-id");
@@ -39,20 +41,6 @@ export const renderGallery = (options: {
     });
     const created = options.protyle.options.history?.created;
     const snapshot = options.protyle.options.history?.snapshot;
-    let newViewID = options.blockElement.getAttribute(Constants.CUSTOM_SY_AV_VIEW) || "";
-    if (typeof options.viewID === "string") {
-        const viewTabElement = options.blockElement.querySelector(`.av__views > .layout-tab-bar > .item[data-id="${options.viewID}"]`) as HTMLElement;
-        if (viewTabElement) {
-            options.blockElement.dataset.pageSize = viewTabElement.dataset.page;
-        }
-        newViewID = options.viewID;
-        fetchPost("/api/av/setDatabaseBlockView", {
-            id: options.blockElement.dataset.nodeId,
-            avID: options.blockElement.dataset.avId,
-            viewID: options.viewID
-        });
-        options.blockElement.setAttribute(Constants.CUSTOM_SY_AV_VIEW, newViewID);
-    }
     let searchInputElement = options.blockElement.querySelector('[data-type="av-search"]') as HTMLInputElement;
     const isSearching = searchInputElement && document.activeElement.isSameNode(searchInputElement);
     const query = searchInputElement?.value || "";
@@ -61,7 +49,7 @@ export const renderGallery = (options: {
         created,
         snapshot,
         pageSize: parseInt(options.blockElement.dataset.pageSize) || undefined,
-        viewID: newViewID,
+        viewID: options.blockElement.getAttribute(Constants.CUSTOM_SY_AV_VIEW) || "",
         query: query.trim()
     }, (response) => {
         const view: IAVGallery = response.data.view;
@@ -85,8 +73,7 @@ export const renderGallery = (options: {
                     galleryHTML += '<div class="av__gallery-cover"></div>';
                 }
             }
-
-            galleryHTML += `<div class="av__gallery-fields${view.wrapField ? " av__gallery-fields--wrap" : ""}">`;
+            galleryHTML += `<div class="av__gallery-fields${editIds.includes(item.id) ? " av__gallery-fields--edit" : ""}${view.wrapField ? " av__gallery-fields--wrap" : ""}">`;
             item.values.forEach((cell, fieldsIndex) => {
                 if (view.fields[fieldsIndex].hidden) {
                     return;
@@ -95,8 +82,10 @@ export const renderGallery = (options: {
                 if (cell.valueType === "checkbox") {
                     checkClass = cell.value?.checkbox?.checked ? " av__cell-check" : " av__cell-uncheck";
                 }
+                const isEmpty = cellValueIsEmpty(cell.value);
                 galleryHTML += `<div class="av__cell${checkClass} ariaLabel" 
-aria-label="${escapeAttr(view.fields[fieldsIndex].name)}" 
+data-empty="${isEmpty}" 
+aria-label="${isEmpty ? window.siyuan.languages.edit + " " : ""}${escapeAttr(view.fields[fieldsIndex].name)}" 
 data-position="5west"
 data-id="${cell.id}" 
 data-field-id="${view.fields[fieldsIndex].id}"

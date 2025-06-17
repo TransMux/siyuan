@@ -287,7 +287,7 @@
       }
 
       &--select {
-
+        background-color: var(--b3-theme-primary-lightest);
       }
     }
 
@@ -304,11 +304,12 @@
 
     &-img {
       height: 100%;
+      background-position: center center;
+      background-repeat: no-repeat;
+      background-size: cover;
 
       &--fit {
-        background-size: cover;
-        background-position: center center;
-        background-repeat: no-repeat;
+        background-size: contain;
       }
     }
 
@@ -351,6 +352,18 @@
       &--wrap {
         word-break: break-all;
         white-space: pre-wrap;
+      }
+
+      &--edit {
+        .av__cell {
+          min-height: 1.625em;
+
+          &[data-empty="true"]:after {
+            content: attr(aria-label);
+            position: absolute;
+            color: var(--b3-theme-on-surface-light);
+          }
+        }
       }
     }
 
