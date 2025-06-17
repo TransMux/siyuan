@@ -99,6 +99,10 @@ func BuildTreeGraph(id, query string) (boxID string, nodes []*GraphNode, links [
 			rootDefBlocks := fromSQLBlocks(&sqlRootDefs, "", 0)
 			var rootIDs []string
 			for _, rootDef := range rootDefBlocks {
+				// Skip diary documents or filtered types
+				if !blockAllowedLocal(rootDef) {
+					continue
+				}
 				blocks = append(blocks, rootDef)
 				rootIDs = append(rootIDs, rootDef.ID)
 			}
