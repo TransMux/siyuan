@@ -33,7 +33,7 @@ import {webUtils} from "electron";
 /// #endif
 import {addDragFill} from "../render/av/cell";
 import {processClonePHElement} from "../render/util";
-import { get } from "../../mux/settings";
+import {get} from "../../mux/settings";
 import {insertGalleryItemAnimation} from "../render/av/gallery/item";
 
 const moveToNew = (protyle: IProtyle, sourceElements: Element[], targetElement: Element, newSourceElement: Element,
