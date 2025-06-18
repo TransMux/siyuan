@@ -45,6 +45,38 @@ import (
 	"github.com/xrash/smetrics"
 )
 
+func (tx *Transaction) doSetAttrViewCardAspectRatio(operation *Operation) (ret *TxErr) {
+	err := setAttrViewCardAspectRatio(operation)
+	if err != nil {
+		return &TxErr{code: TxErrWriteAttributeView, id: operation.AvID, msg: err.Error()}
+	}
+	return
+}
+
+func setAttrViewCardAspectRatio(operation *Operation) (err error) {
+	attrView, err := av.ParseAttributeView(operation.AvID)
+	if err != nil {
+		return
+	}
+
+	view, err := getAttrViewViewByBlockID(attrView, operation.BlockID)
+	if err != nil {
+		return
+	}
+
+	switch view.LayoutType {
+	case av.LayoutTypeTable:
+		return
+	case av.LayoutTypeGallery:
+		view.Gallery.CardAspectRatio = av.CardAspectRatio(operation.Data.(float64))
+	}
+
+	err = av.SaveAttributeView(attrView)
+
+	ReloadAttrView(operation.AvID)
+	return
+}
+
 func (tx *Transaction) doSetAttrViewBlockView(operation *Operation) (ret *TxErr) {
 	err := SetDatabaseBlockView(operation.BlockID, operation.AvID, operation.ID)
 	if err != nil {
@@ -3016,23 +3048,23 @@ func sortAttributeViewRow(operation *Operation) (err error) {
 		return
 	}
 
-	var rowID string
+	var itemID string
 	var idx, previousIndex int
-	for i, r := range view.Table.RowIDs {
-		if r == operation.ID {
-			rowID = r
-			idx = i
-			break
-		}
-	}
-	if "" == rowID {
-		rowID = operation.ID
-		view.Table.RowIDs = append(view.Table.RowIDs, rowID)
-		idx = len(view.Table.RowIDs) - 1
-	}
-
 	switch view.LayoutType {
 	case av.LayoutTypeTable:
+		for i, r := range view.Table.RowIDs {
+			if r == operation.ID {
+				itemID = r
+				idx = i
+				break
+			}
+		}
+		if "" == itemID {
+			itemID = operation.ID
+			view.Table.RowIDs = append(view.Table.RowIDs, itemID)
+			idx = len(view.Table.RowIDs) - 1
+		}
+
 		view.Table.RowIDs = append(view.Table.RowIDs[:idx], view.Table.RowIDs[idx+1:]...)
 		for i, r := range view.Table.RowIDs {
 			if r == operation.PreviousID {
@@ -3040,8 +3072,20 @@ func sortAttributeViewRow(operation *Operation) (err error) {
 				break
 			}
 		}
-		view.Table.RowIDs = util.InsertElem(view.Table.RowIDs, previousIndex, rowID)
+		view.Table.RowIDs = util.InsertElem(view.Table.RowIDs, previousIndex, itemID)
 	case av.LayoutTypeGallery:
+		for i, c := range view.Gallery.CardIDs {
+			if c == operation.ID {
+				itemID = c
+				idx = i
+				break
+			}
+		}
+		if "" == itemID {
+			itemID = operation.ID
+			view.Gallery.CardIDs = append(view.Gallery.CardIDs, itemID)
+			idx = len(view.Gallery.CardIDs) - 1
+		}
 		view.Gallery.CardIDs = append(view.Gallery.CardIDs[:idx], view.Gallery.CardIDs[idx+1:]...)
 		for i, c := range view.Gallery.CardIDs {
 			if c == operation.PreviousID {
@@ -3049,6 +3093,7 @@ func sortAttributeViewRow(operation *Operation) (err error) {
 				break
 			}
 		}
+		view.Gallery.CardIDs = util.InsertElem(view.Gallery.CardIDs, previousIndex, itemID)
 	}
 
 	err = av.SaveAttributeView(attrView)

@@ -882,7 +882,7 @@ export const onTransaction = (protyle: IProtyle, operation: IOperation, isUndo: 
         "removeAttrViewView", "setAttrViewViewName", "setAttrViewViewIcon", "duplicateAttrViewView", "sortAttrViewView",
         "updateAttrViewColRelation", "setAttrViewPageSize", "updateAttrViewColRollup", "sortAttrViewKey", "setAttrViewColDesc",
         "duplicateAttrViewKey", "setAttrViewViewDesc", "setAttrViewCoverFrom", "setAttrViewCoverFromAssetKeyID",
-        "setAttrViewBlockView"].includes(operation.action)) {
+        "setAttrViewBlockView", "setAttrViewCardSize", "setAttrViewCardAspectRatio"].includes(operation.action)) {
         if (!isUndo) {
             // 撤销 transaction 会进行推送，需使用推送来进行刷新最新数据 https://github.com/siyuan-note/siyuan/issues/13607
             refreshAV(protyle, operation);
@@ -1314,7 +1314,7 @@ export const transaction = (protyle: IProtyle, doOperations: IOperation[], undoO
     window.clearTimeout(transactionsTimeout);
     // 加速折叠 https://github.com/siyuan-note/siyuan/issues/11828
     if (doOperations.length === 1 && (
-        doOperations[0].action === "unfoldHeading" ||
+        doOperations[0].action === "unfoldHeading" || doOperations[0].action === "setAttrViewBlockView" ||
         (doOperations[0].action === "setAttrs" && doOperations[0].data.startsWith('{"fold":'))
     )) {
         // 防止 needDebounce 为 true

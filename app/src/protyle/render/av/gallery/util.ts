@@ -102,7 +102,6 @@ export const setGallerySize = (options: {
     const menu = new Menu();
     const avID = options.nodeElement.getAttribute("data-av-id");
     const blockID = options.nodeElement.getAttribute("data-node-id");
-    const galleryElement = options.nodeElement.querySelector(".av__gallery");
     const targetNameElement = options.target.querySelector(".b3-menu__accelerator");
     menu.addItem({
         iconHTML: "",
@@ -121,8 +120,6 @@ export const setGallerySize = (options: {
                 data: options.view.cardSize
             }]);
             options.view.cardSize = 0;
-            galleryElement.classList.add("av__gallery--small");
-            galleryElement.classList.remove("av__gallery--big");
             targetNameElement.textContent = window.siyuan.languages.small;
         }
     });
@@ -143,7 +140,6 @@ export const setGallerySize = (options: {
                 data: options.view.cardSize
             }]);
             options.view.cardSize = 1;
-            galleryElement.classList.remove("av__gallery--big", "av__gallery--small");
             targetNameElement.textContent = window.siyuan.languages.medium;
         }
     });
@@ -164,10 +160,64 @@ export const setGallerySize = (options: {
                 data: options.view.cardSize
             }]);
             options.view.cardSize = 2;
-            galleryElement.classList.remove("av__gallery--small");
-            galleryElement.classList.add("av__gallery--big");
             targetNameElement.textContent = window.siyuan.languages.large;
         }
+    });
+    const rect = options.target.getBoundingClientRect();
+    menu.open({x: rect.left, y: rect.bottom});
+};
+
+export const getCardAspectRatio = (ratio: number) => {
+    switch (ratio) {
+        case 0:
+            return "16:9";
+        case 1:
+            return "9:16";
+        case 2:
+            return "4:3";
+        case 3:
+            return "3:4";
+        case 4:
+            return "3:2";
+        case 5:
+            return "2:3";
+        case 6:
+            return "1:1";
+    }
+    return "16:9";
+};
+
+export const setGalleryRatio = (options: {
+    view: IAVGallery
+    nodeElement: Element,
+    protyle: IProtyle,
+    target: HTMLElement
+}) => {
+    const menu = new Menu();
+    const avID = options.nodeElement.getAttribute("data-av-id");
+    const blockID = options.nodeElement.getAttribute("data-node-id");
+    const targetNameElement = options.target.querySelector(".b3-menu__accelerator");
+    [0, 1, 2, 3, 4, 5, 6].forEach(ratio => {
+        menu.addItem({
+            iconHTML: "",
+            checked: options.view.cardAspectRatio === ratio,
+            label: getCardAspectRatio(ratio),
+            click() {
+                transaction(options.protyle, [{
+                    action: "setAttrViewCardAspectRatio",
+                    avID,
+                    blockID,
+                    data: ratio
+                }], [{
+                    action: "setAttrViewCardAspectRatio",
+                    avID,
+                    blockID,
+                    data: options.view.cardAspectRatio
+                }]);
+                options.view.cardAspectRatio = ratio;
+                targetNameElement.textContent = getCardAspectRatio(ratio);
+            }
+        });
     });
     const rect = options.target.getBoundingClientRect();
     menu.open({x: rect.left, y: rect.bottom});
