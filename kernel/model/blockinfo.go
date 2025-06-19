@@ -23,8 +23,6 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/emirpasic/gods/sets/hashset"
-
 	"github.com/88250/gulu"
 	"github.com/88250/lute/ast"
 	"github.com/88250/lute/editor"
