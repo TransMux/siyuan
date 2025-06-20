@@ -39,6 +39,7 @@ import {setLocalShorthandCount} from "./util/noRelyPCFunction";
 import {getDockByType} from "./layout/tabUtil";
 import {Tag} from "./layout/dock/Tag";
 import {updateControlAlt} from "./protyle/util/hotKey";
+import { QuickAppendPlugin } from "./plugin/builtin/QuickAppendPlugin";
 
 export class App {
     public plugins: import("./plugin").Plugin[] = [];
@@ -188,6 +189,15 @@ export class App {
             updateControlAlt();
             window.siyuan.isPublish = response.data.isPublish;
             await loadPlugins(this);
+            // 加载内置插件：Quick Append
+            const quickAppend = new QuickAppendPlugin({
+                app: this,
+                name: "quickAppend",
+                displayName: "Quick Append",
+                i18n: {}
+            });
+            this.plugins.push(quickAppend);
+            await quickAppend.onload?.();
             getLocalStorage(() => {
                 fetchGet(`/appearance/langs/${window.siyuan.config.appearance.lang}.json?v=${Constants.SIYUAN_VERSION}`, (lauguages: IObject) => {
                     window.siyuan.languages = lauguages;

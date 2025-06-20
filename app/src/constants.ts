@@ -366,7 +366,6 @@ export abstract class Constants {
             bookmark: {default: altNumber + "3", custom: altNumber + "3"},
             tag: {default: altNumber + "4", custom: altNumber + "4"},
             dailyNote: {default: altNumber + "5", custom: altNumber + "5"},
-            quickAppend: {default: "⌥⇧A", custom: "⌥⇧A"},
             inbox: {default: altNumber + "6", custom: altNumber + "6"},
             backlinks: {default: altNumber + "7", custom: altNumber + "7"},
             graphView: {default: altNumber + "8", custom: altNumber + "8"},

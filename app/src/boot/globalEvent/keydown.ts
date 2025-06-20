@@ -930,39 +930,6 @@ const fileTreeKeydown = (app: App, event: KeyboardEvent) => {
             event.preventDefault();
             return true;
         }
-        if (event.key === "ArrowUp") {
-            let previousElement = liElements[0];
-            while (previousElement) {
-                if (previousElement.previousElementSibling) {
-                    if (previousElement.previousElementSibling.tagName === "LI") {
-                        previousElement = previousElement.previousElementSibling;
-                    } else {
-                        const liElements = previousElement.previousElementSibling.querySelectorAll(".b3-list-item");
-                        previousElement = liElements[liElements.length - 1];
-                    }
-                    break;
-                } else {
-                    if (previousElement.parentElement.classList.contains("fn__flex-1")) {
-                        break;
-                    } else {
-                        previousElement = previousElement.parentElement;
-                    }
-                }
-            }
-            if (previousElement.classList.contains("b3-list-item")) {
-                liElements.forEach((item) => {
-                    item.classList.remove("b3-list-item--focus");
-                });
-                previousElement.classList.add("b3-list-item--focus");
-                const previousRect = previousElement.getBoundingClientRect();
-                const fileRect = files.element.getBoundingClientRect();
-                if (previousRect.top < fileRect.top || previousRect.bottom > fileRect.bottom) {
-                    previousElement.scrollIntoView(previousRect.top < fileRect.top);
-                }
-            }
-            event.preventDefault();
-            return true;
-        }
     }
     if (event.key === "Delete" || (event.key === "Backspace" && isMac())) {
         window.siyuan.menus.menu.remove();
@@ -1415,12 +1382,6 @@ export const windowKeyDown = (app: App, event: KeyboardEvent) => {
         event.preventDefault();
         return;
     }
-    if (!isTabWindow && matchHotKey(window.siyuan.config.keymap.general.quickAppend.custom, event)) {
-        globalCommand("quickAppend", app);
-        event.stopPropagation();
-        event.preventDefault();
-        return;
-    }
     if (matchHotKey(window.siyuan.config.keymap.general.newFile.custom, event)) {
         newFile({
             app,
@@ -1767,6 +1728,7 @@ export const windowKeyDown = (app: App, event: KeyboardEvent) => {
 
 export const sendGlobalShortcut = (app: App) => {
     /// #if !BROWSER
+    // Register global hotkeys: first one is reserved for window toggle, others will be forwarded to renderers.
     const hotkeys = [window.siyuan.config.keymap.general.toggleWin.custom];
     app.plugins.forEach(plugin => {
         plugin.commands.forEach(command => {

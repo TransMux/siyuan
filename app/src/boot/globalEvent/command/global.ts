@@ -364,30 +364,6 @@ export const globalCommand = (command: string, app: App) => {
     /// #endif
 
     switch (command) {
-        case "quickAppend":
-            const notebookId = window.siyuan.storage[Constants.LOCAL_DAILYNOTEID];
-            fetchPost("/api/block/appendDailyNoteBlock", {
-                notebook: notebookId,
-                dataType: "markdown",
-                data: "- [ ]"
-            }, (response: any) => {
-                if (typeof response !== "string") {
-                    if (response.code !== 0) {
-                        showMessage(response.msg);
-                        return;
-                    }
-                    const transactions: any[] = response.data;
-                    const op = transactions[0]?.doOperations?.[0];
-                    const newBlockId = op?.id;
-                    if (newBlockId) {
-                        openNewWindowById(newBlockId, {
-                            width: 750,
-                            height: 500
-                        });
-                    }
-                }
-            });
-            return true;
         case "dailyNote":
             newDailyNote(app);
             return true;
