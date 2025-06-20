@@ -46,14 +46,6 @@ export const SETTING_ITEMS: { [key: string]: Setting } = {
         section: "function",
         display: "toggle"
     },
-    "fetch-request-cache": {
-        label: "fetch请求缓存",
-        description: "缓存100ms内的重复请求，返回之前的结果，避免重复请求",
-        type: "boolean",
-        value: false,
-        section: "function",
-        display: "toggle"
-    },
     "引用时先取消选区内的反链": {
         label: "引用，如果选区内存在反链（block-ref 和 file-annotation-ref），先取消这些反链",
         type: "boolean",
@@ -156,7 +148,7 @@ BUILTIN_PLUGIN_INFOS.forEach(info => {
         SETTING_ITEMS[key] = {
             label: info.displayName,
             type: "boolean",
-            value: true,
+            value: false,
             section: "plugin",
             display: "toggle",
         } as Setting;
