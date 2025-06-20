@@ -24,25 +24,21 @@ export class SettingsDB {
             return;
         }
 
-        try {
-            // Create the settings table if it doesn't exist
-            await extraDBSQL({
-                stmt: `CREATE TABLE IF NOT EXISTS ${this.TABLE_NAME} (
-                    key TEXT PRIMARY KEY,
-                    label TEXT NOT NULL,
-                    description TEXT NOT NULL,
-                    type TEXT NOT NULL,
-                    value TEXT NOT NULL,
-                    section TEXT NOT NULL,
-                    display TEXT NOT NULL
-                )`
-            });
+        // Create the settings table if it doesn't exist
+        await extraDBSQL({
+            stmt: `CREATE TABLE IF NOT EXISTS ${this.TABLE_NAME} (
+                key TEXT PRIMARY KEY,
+                label TEXT NOT NULL,
+                description TEXT NOT NULL,
+                type TEXT NOT NULL,
+                value TEXT NOT NULL,
+                section TEXT NOT NULL,
+                display TEXT NOT NULL
+            )`
+        });
 
-            this.initialized = true;
-            console.log("Settings database initialized");
-        } catch (error) {
-            console.error("Failed to initialize settings database:", error);
-        }
+        this.initialized = true;
+        console.log("Settings database initialized");
     }
     /**
      * Save a setting to the database
