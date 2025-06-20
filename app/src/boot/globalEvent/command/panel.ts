@@ -176,11 +176,16 @@ export const commandPanel = (app: App) => {
         <span class="b3-list-item__text">选中范围：删除全部 inline 样式 (selected range: remove inline styles)</span>
     </li>`;
 
+    // 新增命令：移除当前 Protyle 内元素的所有引用
+    commandHtml += `<li class="b3-list-item" data-command="removeInternalRefs">
+        <span class="b3-list-item__text">移除当前文档内部引用 (remove internal refs)</span>
+    </li>`;
+
     // https://x.transmux.top/j/20241101223108-o9zjabn
     let recentDocsHtml = "";
     let index = 0;
     fetchPost("/api/storage/getRecentDocs", {}, (response) => {
-        const data: { rootID: string, icon: string, title: string }[] = response.data
+        const data: { rootID: string, icon: string, title: string }[] = (response as any).data;
         data.forEach((item) => {
             recentDocsHtml += `<li data-index="${index}" data-node-id="${item.rootID}" data-command="openDoc" class="b3-list-item${index === 0 ? " b3-list-item--focus" : ""}">
 ${unicode2Emoji(item.icon || window.siyuan.storage[Constants.LOCAL_IMAGES].file, "b3-list-item__graphic", true)}
@@ -717,6 +722,63 @@ export const execByCommand = async (options: {
                     undoOperations.push({ action: 'update', id: blockId, data: oldHTML });
                 });
                 // 3. 执行事务并隐藏选中样式
+                if (operations.length > 0) {
+                    transaction(protyle, operations, undoOperations);
+                    hideElements(['select'], protyle);
+                }
+            }
+            break;
+        case "removeInternalRefs":
+            if (!isFileFocus && protyle) {
+                // 1. 收集当前 Protyle 内全部块 id（含文档根 id）
+                const idSet = new Set<string>();
+                protyle.wysiwyg.element.querySelectorAll('[data-node-id]').forEach(el => {
+                    const nid = (el as HTMLElement).getAttribute('data-node-id');
+                    if (nid) idSet.add(nid);
+                });
+                if (protyle.block.rootID) {
+                    idSet.add(protyle.block.rootID);
+                }
+
+                // 2. 遍历所有 block-ref，若其 data-id 命中，则移除引用
+                const refSpans = protyle.wysiwyg.element.querySelectorAll('span[data-type="block-ref"][data-id]');
+                const blockMap: Map<string, { element: HTMLElement, oldHTML: string }> = new Map();
+
+                refSpans.forEach(span => {
+                    const refId = (span as HTMLElement).getAttribute('data-id');
+                    if (!refId || !idSet.has(refId)) return;
+
+                    const blockElement = hasClosestBlock(span) as HTMLElement;
+                    if (!blockElement) return;
+                    const blockId = blockElement.getAttribute('data-node-id');
+                    if (!blockId) return;
+
+                    // 保存首次出现时的旧 HTML 以便撤销
+                    if (!blockMap.has(blockId)) {
+                        blockMap.set(blockId, {
+                            element: blockElement,
+                            oldHTML: blockElement.outerHTML
+                        });
+                    }
+
+                    // 直接删除引用 span
+                    span.parentNode?.removeChild(span);
+                });
+
+                // 3. 组装事务操作
+                const operations: IOperation[] = [];
+                const undoOperations: IOperation[] = [];
+                blockMap.forEach(({ element, oldHTML }, bid) => {
+                    element.setAttribute('updated', dayjs().format('YYYYMMDDHHmmss'));
+                    operations.push({
+                        action: 'update',
+                        id: bid,
+                        data: element.outerHTML,
+                        parentID: element.parentElement?.getAttribute('data-node-id') || protyle.block.parentID
+                    });
+                    undoOperations.push({ action: 'update', id: bid, data: oldHTML });
+                });
+
                 if (operations.length > 0) {
                     transaction(protyle, operations, undoOperations);
                     hideElements(['select'], protyle);
