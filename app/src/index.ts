@@ -32,14 +32,14 @@ import {loadPlugins, reloadPlugin} from "./plugin/loader";
 import "./assets/scss/base.scss";
 import {reloadEmoji} from "./emoji";
 import {processIOSPurchaseResponse} from "./util/iOSPurchase";
-import {initSettings} from "./mux/settings";
 /// #if BROWSER
 import {setLocalShorthandCount} from "./util/noRelyPCFunction";
 /// #endif
 import {getDockByType} from "./layout/tabUtil";
 import {Tag} from "./layout/dock/Tag";
 import {updateControlAlt} from "./protyle/util/hotKey";
-import { QuickAppendPlugin } from "./plugin/builtin/QuickAppendPlugin";
+import { BUILTIN_PLUGIN_INFOS, loadBuiltinPlugin } from "./plugin/builtin/loadBuiltin";
+import { get } from "./mux/settings";
 
 export class App {
     public plugins: import("./plugin").Plugin[] = [];
@@ -189,15 +189,12 @@ export class App {
             updateControlAlt();
             window.siyuan.isPublish = response.data.isPublish;
             await loadPlugins(this);
-            // 加载内置插件：Quick Append
-            const quickAppend = new QuickAppendPlugin({
-                app: this,
-                name: "quickAppend",
-                displayName: "Quick Append",
-                i18n: {}
-            });
-            this.plugins.push(quickAppend);
-            await quickAppend.onload?.();
+            // 加载内置插件
+            for (const info of BUILTIN_PLUGIN_INFOS) {
+                if (get<boolean>(`builtin.${info.name}.enable`) !== false) {
+                    await loadBuiltinPlugin(this, info.name);
+                }
+            }
             getLocalStorage(() => {
                 fetchGet(`/appearance/langs/${window.siyuan.config.appearance.lang}.json?v=${Constants.SIYUAN_VERSION}`, (lauguages: IObject) => {
                     window.siyuan.languages = lauguages;

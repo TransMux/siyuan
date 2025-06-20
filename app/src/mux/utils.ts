@@ -1,7 +1,7 @@
 import { showMessage } from "../dialog/message";
 import { hintMoveBlock } from "../protyle/hint/extend";
 import { transaction } from "../protyle/wysiwyg/transaction";
-import { fetchPost, fetchSyncPost } from "../util/fetch";
+import { fetchSyncPost } from "../util/fetch";
 import { get } from "./settings";
 
 export async function getBlockInfoByIDSQL(block_id: string) {
@@ -47,7 +47,9 @@ export async function 自定义获取av主键的所有值(data: any, callback: a
         return;
     }
 
-    fetchPost("/api/av/getAttributeViewPrimaryKeyValues", data, cb);
+    import("../util/fetch").then(({ fetchPost }) => {
+        fetchPost("/api/av/getAttributeViewPrimaryKeyValues", data, cb);
+    });
 }
 
 export function 获取当前ISO周数() {
@@ -186,15 +188,17 @@ interface SQLResponse {
     data: any[];
 }
 
-
 export function extraDBSQL(request: SQLRequest): Promise<any[]> {
     return new Promise((resolve, reject) => {
-        fetchPost("/api/db/query", request, (response: SQLResponse) => {
-            if (response.code === 0) {
-                resolve(response.data || []);
-            } else {
-                reject(new Error(response.msg || "Unknown error"));
-            }
-        });
+        // 动态导入以避免 fetch ↔ utils 的循环依赖
+        import("../util/fetch").then(({ fetchPost }) => {
+            fetchPost("/api/db/query", request, (response: SQLResponse) => {
+                if (response.code === 0) {
+                    resolve(response.data || []);
+                } else {
+                    reject(new Error(response.msg || "Unknown error"));
+                }
+            });
+        }).catch(reject);
     });
 }

@@ -9,7 +9,6 @@ import {Constants} from "../constants";
 import * as path from "path";
 /// #endif
 import {getFrontend, isBrowser} from "../util/functions";
-import {setStorageVal} from "../protyle/util/compatibility";
 import {hasClosestByAttribute, hasClosestByClassName} from "../protyle/util/hasClosest";
 import {Plugin} from "../plugin";
 import {App} from "../index";
@@ -19,6 +18,8 @@ import {afterLoadPlugin, loadPlugin, loadPlugins, reloadPlugin} from "../plugin/
 import {loadAssets} from "../util/assets";
 import {addScript} from "../protyle/util/addScript";
 import {useShell} from "../util/pathName";
+import { BUILTIN_PLUGIN_INFOS, loadBuiltinPlugin } from "../plugin/builtin/loadBuiltin";
+import { get, update } from "../mux/settings";
 
 export const bazaar = {
     element: undefined as Element,
@@ -446,6 +447,49 @@ export const bazaar = {
                 });
             }
             bazaar._data.downloaded = response.data.packages;
+
+            // ===== Built-in plugins section =====
+            if (bazaarType === "plugins") {
+                let builtinHTML = "";
+                BUILTIN_PLUGIN_INFOS.forEach(info => {
+                    const enabled = get<boolean>(`builtin.${info.name}.enable`) !== false;
+                    let hasSetting = false;
+                    if (enabled) {
+                        app.plugins.find((item: Plugin) => {
+                            if (item.name === info.name) {
+                                // @ts-ignore
+                                hasSetting = item.setting || item.__proto__.hasOwnProperty("openSetting");
+                                return true;
+                            }
+                        });
+                    }
+                    const dataObj = {
+                        bazaarType: "plugins",
+                        name: info.name,
+                        builtin: true,
+                    };
+                    builtinHTML += `<div data-obj='${JSON.stringify(dataObj)}' class="b3-card">
+    <div class="b3-card__img"><img src="${info.iconURL || "/stage/images/icon.png"}" onerror="this.src='/stage/images/icon.png'"/></div>
+    <div class="fn__flex-1 fn__flex-column">
+        <div class="b3-card__info b3-card__info--left fn__flex-1">
+            ${info.displayName} <span class="ft__on-surface ft__smaller">${info.name}</span>
+            <div class="b3-card__desc">${info.description || ""}</div>
+        </div>
+    </div>
+    <div class="b3-card__actions b3-card__actions--right">
+        <span class="b3-tooltips b3-tooltips__nw block__icon block__icon--show${hasSetting ? "" : " fn__none"}" data-type="setting" aria-label="${window.siyuan.languages.config}">
+            <svg><use xlink:href="#iconSettings"></use></svg>
+        </span>
+        <span class="fn__space"></span>
+        <input class="b3-switch fn__flex-center" ${enabled ? "checked" : ""} data-type="plugin-enable" type="checkbox">
+    </div>
+</div>`;
+                });
+                if (builtinHTML) {
+                    html += `<div class="fn__hr"></div><div class="config-bazaar__title">${window.siyuan.languages?.builtinPlugins || "内置插件"}</div>${builtinHTML}`;
+                }
+            }
+
             const checkElement = contentElement.parentElement.querySelector(".b3-switch");
             if (bazaarType === "plugins") {
                 checkElement.classList.remove("fn__none");
@@ -939,26 +983,47 @@ export const bazaar = {
                     if (!target.getAttribute("disabled")) {
                         target.setAttribute("disabled", "disabled");
                         const enabled = (target as HTMLInputElement).checked;
-                        fetchPost("/api/petal/setPetalEnabled", {
-                            packageName: dataObj.name,
-                            enabled,
-                            frontend: getFrontend()
-                        }, (response) => {
-                            target.removeAttribute("disabled");
-                            if (enabled) {
-                                loadPlugin(app, response.data).then((plugin: Plugin) => {
+                        if (dataObj.builtin) {
+                            // Built-in plugin toggle via settings
+                            update(`builtin.${dataObj.name}.enable`, enabled).then(() => {
+                                if (enabled) {
+                                    loadBuiltinPlugin(app, dataObj.name);
+                                    // 检查是否存在设置面板
+                                    const pluginObj = app.plugins.find(p => p.name === dataObj.name);
                                     // @ts-ignore
-                                    if (plugin.setting || plugin.__proto__.hasOwnProperty("openSetting")) {
+                                    const hasSetting = pluginObj && (pluginObj.setting || pluginObj.__proto__.hasOwnProperty("openSetting"));
+                                    if (hasSetting) {
                                         target.parentElement.querySelector('[data-type="setting"]').classList.remove("fn__none");
-                                    } else {
-                                        target.parentElement.querySelector('[data-type="setting"]').classList.add("fn__none");
                                     }
-                                });
-                            } else {
-                                uninstall(app, dataObj.name);
-                                target.parentElement.querySelector('[data-type="setting"]').classList.add("fn__none");
-                            }
-                        });
+                                } else {
+                                    uninstall(app, dataObj.name);
+                                    target.parentElement.querySelector('[data-type="setting"]').classList.add("fn__none");
+                                }
+                                target.removeAttribute("disabled");
+                            });
+                        } else {
+                            // external plugin path remains
+                            fetchPost("/api/petal/setPetalEnabled", {
+                                packageName: dataObj.name,
+                                enabled,
+                                frontend: getFrontend()
+                            }, (response) => {
+                                target.removeAttribute("disabled");
+                                if (enabled) {
+                                    loadPlugin(app, response.data).then((plugin: Plugin) => {
+                                        // @ts-ignore
+                                        if (plugin.setting || plugin.__proto__.hasOwnProperty("openSetting")) {
+                                            target.parentElement.querySelector('[data-type="setting"]').classList.remove("fn__none");
+                                        } else {
+                                            target.parentElement.querySelector('[data-type="setting"]').classList.add("fn__none");
+                                        }
+                                    });
+                                } else {
+                                    uninstall(app, dataObj.name);
+                                    target.parentElement.querySelector('[data-type="setting"]').classList.add("fn__none");
+                                }
+                            });
+                        }
                     }
                     event.stopPropagation();
                     break;

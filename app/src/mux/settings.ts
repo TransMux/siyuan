@@ -1,5 +1,6 @@
 import { Constants } from "../constants";
 import { Setting, SettingsDB } from "./settingsDB";
+import { BUILTIN_PLUGIN_INFOS } from "../plugin/builtin/loadBuiltin";
 
 // Default values for settings
 export const SETTING_ITEMS: { [key: string]: Setting } = {
@@ -147,6 +148,20 @@ export const SETTING_ITEMS: { [key: string]: Setting } = {
         display: "textarea"
     }
 };
+
+// Dynamically add enable flags for built-in plugins
+BUILTIN_PLUGIN_INFOS.forEach(info => {
+    const key = `builtin.${info.name}.enable`;
+    if (!SETTING_ITEMS[key]) {
+        SETTING_ITEMS[key] = {
+            label: info.displayName,
+            type: "boolean",
+            value: true,
+            section: "plugin",
+            display: "toggle",
+        } as Setting;
+    }
+});
 
 // Global settings cache
 const SETTINGS_CACHE: { [key: string]: any } = {};
