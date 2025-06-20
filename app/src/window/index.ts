@@ -27,6 +27,8 @@ import {loadPlugins, reloadPlugin} from "../plugin/loader";
 import {hideAllElements} from "../protyle/ui/hideElements";
 import {reloadEmoji} from "../emoji";
 import {updateControlAlt} from "../protyle/util/hotKey";
+import { BUILTIN_PLUGIN_INFOS, loadBuiltinPlugin } from "../plugin/builtin/loadBuiltin";
+import { get } from "../mux/settings";
 
 class App {
     public plugins: import("../plugin").Plugin[] = [];
@@ -160,6 +162,12 @@ class App {
             updateControlAlt();
             window.siyuan.isPublish = response.data.isPublish;
             await loadPlugins(this);
+            // 加载内置插件（窗口页也需要，以支持自定义 Model 等功能）
+            for (const info of BUILTIN_PLUGIN_INFOS) {
+                if (get<boolean>(`builtin.${info.name}.enable`) !== false) {
+                    await loadBuiltinPlugin(this, info.name);
+                }
+            }
             getLocalStorage(() => {
                 fetchGet(`/appearance/langs/${window.siyuan.config.appearance.lang}.json?v=${Constants.SIYUAN_VERSION}`, (lauguages: IObject) => {
                     window.siyuan.languages = lauguages;
