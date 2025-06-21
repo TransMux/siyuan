@@ -740,6 +740,8 @@ export const newModelByInitData = (app: App, tab: Tab, json: any) => {
                     return true;
                 }
             });
+            // 无法匹配
+            throw new Error(`Unknown custom model type: ${json.customModelType}, Known is ${app.plugins.map(item => Object.keys(item.models)).join(", ")}`);
         }
     } else if (json.instance === "Editor") {
         model = new Editor({
