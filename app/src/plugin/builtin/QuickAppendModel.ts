@@ -50,6 +50,22 @@ export const newQuickAppendModel = (options: {
                 },
             });
             custom.editors.push(editor);
+
+            // Allow user to quickly close the Quick Append window by pressing ESC
+            const onKeydown = (ev: KeyboardEvent) => {
+                if (ev.key === "Escape" || ev.key === "Esc") {
+                    // Prevent interfering with other handlers inside editor
+                    ev.stopPropagation();
+                    ev.preventDefault();
+                    window.close();
+                }
+            };
+            window.addEventListener("keydown", onKeydown, { once: false });
+
+            // Cleanup listener when the model is destroyed
+            custom.beforeDestroy = () => {
+                window.removeEventListener("keydown", onKeydown);
+            };
         },
         destroy() {
             if (editor) {
