@@ -3,6 +3,7 @@ import { fetchPost, fetchSyncPost } from "../../util/fetch";
 import { Constants } from "../../constants";
 import { showMessage } from "../../dialog/message";
 import { newQuickAppendModel } from "./QuickAppendModel";
+import { isWindow } from "../../util/functions";
 /// #if !BROWSER
 import { ipcRenderer } from "electron";
 /// #endif
@@ -35,6 +36,11 @@ export class QuickAppendPlugin extends Plugin {
      * 追加空任务至 Daily Note 并在新窗口打开
      */
     private async quickAppend() {
+        // 若为弹出窗口环境，直接忽略以避免重复触发
+        if (isWindow()) {
+            return;
+        }
+
         const notebookId = window.siyuan.storage[Constants.LOCAL_DAILYNOTEID];
         fetchPost(
             "/api/block/appendDailyNoteBlock",
