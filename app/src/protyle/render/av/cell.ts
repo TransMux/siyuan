@@ -581,8 +581,10 @@ export const popTextCell = (protyle: IProtyle, cellElements: HTMLElement[], type
                     }
                     protyle.toolbar.range.selectNodeContents(cellElements[0].lastChild);
                     focusByRange(protyle.toolbar.range);
-                    cellElements[0].classList.add("av__cell--select");
-                    addDragFill(cellElements[0]);
+                    if (viewType === "table") {
+                        cellElements[0].classList.add("av__cell--select");
+                        addDragFill(cellElements[0]);
+                    }
                     let textPlain = inputElement.value;
                     if (isDynamicRef(textPlain)) {
                         textPlain = textPlain.substring(2, 22 + 2);
@@ -1196,7 +1198,7 @@ export const cellValueIsEmpty = (value: IAVCellValue) => {
         return !value[value.type as "text"]?.content;
     }
     if (["mSelect", "mAsset", "select"].includes(value.type)) {
-        if (value[value.type as "mSelect"]?.length > 0) {
+        if (value[(value.type === "select" ? "mSelect" : value.type) as "mSelect"]?.length > 0) {
             return false;
         }
         return true;

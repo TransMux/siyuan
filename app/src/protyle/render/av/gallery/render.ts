@@ -9,6 +9,7 @@ import {electronUndo} from "../../../undo";
 import {addClearButton} from "../../../../util/addClearButton";
 import {updateSearch} from "../render";
 import {getViewIcon} from "../view";
+import {processRender} from "../../../util/processCode";
 
 export const renderGallery = (options: {
     blockElement: HTMLElement,
@@ -61,7 +62,7 @@ export const renderGallery = (options: {
         view.cards.forEach((item: IAVGalleryItem, rowIndex: number) => {
             galleryHTML += `<div data-id="${item.id}" draggable="true" class="av__gallery-item${selectItemIds.includes(item.id) ? " av__gallery-item--select" : ""}">`;
             if (view.coverFrom !== 0) {
-                const coverClass= "av__gallery-cover av__gallery-cover--" + view.cardAspectRatio
+                const coverClass= "av__gallery-cover av__gallery-cover--" + view.cardAspectRatio;
                 if (item.coverURL) {
                     if (item.coverURL.startsWith("background")) {
                         galleryHTML += `<div class="${coverClass}"><div class="av__gallery-img${view.fitImage ? " av__gallery-img--fit" : ""}" style="${item.coverURL}"></div></div>`;
@@ -184,6 +185,9 @@ ${view.hideAttrViewName ? " av__gallery--top" : ""}">
             } else {
                 galleryElement.classList.remove("av__gallery--top");
             }
+        }
+        if (view.coverFrom === 1) {
+            processRender(options.blockElement);
         }
         if (typeof oldOffset === "number") {
             options.protyle.contentElement.scrollTop = oldOffset;

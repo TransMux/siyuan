@@ -20,6 +20,7 @@
   &__cursor {
     width: .1px;
     height: 0;
+    opacity: 0;
   }
 
   &__container {
@@ -290,8 +291,13 @@
         }
       }
 
-      &--select {
+      &--select:before {
+        content: "";
         background-color: var(--b3-theme-primary-lightest);
+        height: 100%;
+        width: 100%;
+        z-index: 1;
+        position: absolute;
       }
 
       &.dragover__left::after,
@@ -397,6 +403,11 @@
         &:hover .block__icon {
           opacity: 0;
         }
+
+        &:hover .b3-chip[data-type=block-more] {
+          top: 2px;
+          display: block;
+        }
       }
 
       &--wrap {
@@ -445,6 +456,7 @@
       display: flex;
       opacity: 0;
       transition: var(--b3-transition);
+      z-index: 2;
     }
   }
 

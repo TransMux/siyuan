@@ -509,8 +509,6 @@
   "backlinkExpandTip": "אם מוגדר כ<code class='fn__code'>0</code>",
   "backmentionExpand": "ברירת מחדל להרחבת אזכור",
   "backmentionExpandTip": "אם מוגדר כ<code class='fn__code'>0</code>, הוא לא יתרחב, אם מוגדר כ<code class='fn__code'>-1</code>, הפנל ייסגר",
-  "googleAnalytics": "Google Analytics",
-  "googleAnalyticsTip": "לאחר ההפעלת השירות, ישתמש ב<a href=\"https://analytics.google.com/\" target=\"_blank\">Google Analytics</a> לספור את מצב הפתיחה של היישום ולא יאסוף נתוני משתמש ופעולות",
   "floatWindowMode": "שיטת הפעלת חלון צף",
   "floatWindowModeTip": "בחר כיצד להפעיל את חלון הצף כאשר העכבר מרחף מעל אייקון הבלוק, אייקוןBreadcrumb וכדומה.",
   "floatWindowMode0": "מרחף",
@@ -1609,6 +1607,7 @@
     "254": "[Region ID] מזהה האזור שגוי, אנא עיין בתיעוד ספק שירותי S3 כדי להגדיר את מזהה האזור",
     "255": "האתר היעד הפעיל הגנה על קישורים חמים, ולכן לא ניתן להוריד [%d] משאבים",
     "256": "הנתיב שצוין [%s] מכיל נתיב מרחב עבודה אב [%s]",
-    "257": "זכור אותי למשך 30 יום"
+    "257": "זכור אותי למשך 30 יום",
+    "258": "הפעולה נכשלה, נסה שוב מאוחר יותר"
   }
 }

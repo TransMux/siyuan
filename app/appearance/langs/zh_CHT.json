@@ -509,8 +509,6 @@
   "backlinkExpandTip": "配置為 <code class='fn__code'>0</code> 則不展開",
   "backmentionExpand": "反向提及默認展開數",
   "backmentionExpandTip": "配置為 <code class='fn__code'>0</code> 則不展開，配置為 <code class='fn__code'>-1</code> 則收起面板",
-  "googleAnalytics": "Google Analytics",
-  "googleAnalyticsTip": "啟用後會通過 <a href=\"https://analytics.google.com/\" target=\"_blank\">Google Analytics</a> 統計應用打開狀態，不會收集用戶資料和操作",
   "floatWindowMode": "浮窗觸發方式",
   "floatWindowModeTip": "選擇滑鼠懸停塊引、麵包屑塊標等位置觸發浮窗的方式",
   "floatWindowMode0": "懸停",
@@ -1609,6 +1607,7 @@
     "254": "[Region ID] 不正確，請參考 S3 服務提供商的文檔配置地域 ID",
     "255": "目標站點啟用了防盜鏈，[%d] 個資源無法下載",
     "256": "指定的路徑 [%s] 父級存在工作空間路徑 [%s]",
-    "257": "記住我 30 天"
+    "257": "記住我 30 天",
+    "258": "操作失敗，請稍後再試"
   }
 }

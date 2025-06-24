@@ -176,7 +176,8 @@ func getEmojiConf(c *gin.Context) {
 
 				if !util.IsValidUploadFileName(html.UnescapeString(name)) {
 					emojiFullName := filepath.Join(customConfDir, name)
-					fullPathFilteredName := filepath.Join(customConfDir, util.FilterUploadFileName(name))
+					name = util.FilterUploadEmojiFileName(name)
+					fullPathFilteredName := filepath.Join(customConfDir, name)
 					// XSS through emoji name https://github.com/siyuan-note/siyuan/issues/15034
 					logging.LogWarnf("renaming invalid custom emoji file [%s] to [%s]", name, fullPathFilteredName)
 					if removeErr := filelock.Rename(emojiFullName, fullPathFilteredName); nil != removeErr {
@@ -197,22 +198,22 @@ func getEmojiConf(c *gin.Context) {
 							continue
 						}
 
-						name = subCustomEmoji.Name()
-						if strings.HasPrefix(name, ".") {
+						subName := subCustomEmoji.Name()
+						if strings.HasPrefix(subName, ".") {
 							continue
 						}
 
-						if !util.IsValidUploadFileName(html.UnescapeString(name)) {
-							emojiFullName := filepath.Join(customConfDir, name)
-							fullPathFilteredName := filepath.Join(customConfDir, util.FilterUploadFileName(name))
+						if !util.IsValidUploadFileName(html.UnescapeString(subName)) {
+							emojiFullName := filepath.Join(customConfDir, name, subName)
+							fullPathFilteredName := filepath.Join(customConfDir, name, util.FilterUploadEmojiFileName(subName))
 							// XSS through emoji name https://github.com/siyuan-note/siyuan/issues/15034
-							logging.LogWarnf("renaming invalid custom emoji file [%s] to [%s]", name, fullPathFilteredName)
+							logging.LogWarnf("renaming invalid custom emoji file [%s] to [%s]", subName, fullPathFilteredName)
 							if removeErr := filelock.Rename(emojiFullName, fullPathFilteredName); nil != removeErr {
 								logging.LogErrorf("renaming invalid custom emoji file to [%s] failed: %s", fullPathFilteredName, removeErr)
 							}
 						}
 
-						addCustomEmoji(customEmoji.Name()+"/"+name, &items)
+						addCustomEmoji(name+"/"+subName, &items)
 					}
 					continue
 				}
@@ -727,20 +728,6 @@ func setNetworkServe(c *gin.Context) {
 
 	util.PushMsg(model.Conf.Language(42), 1000*15)
 	time.Sleep(time.Second * 3)
-}
-
-func setGoogleAnalytics(c *gin.Context) {
-	ret := gulu.Ret.NewResult()
-	defer c.JSON(http.StatusOK, ret)
-
-	arg, ok := util.JsonArg(c, ret)
-	if !ok {
-		return
-	}
-
-	googleAnalytics := arg["googleAnalytics"].(bool)
-	model.Conf.System.DisableGoogleAnalytics = !googleAnalytics
-	model.Conf.Save()
 }
 
 func setAutoLaunch(c *gin.Context) {

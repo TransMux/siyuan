@@ -257,7 +257,7 @@ func fillAttributeViewBaseValue(baseValue *av.BaseValue, fieldID, itemID string,
 	if nil == baseValue.Value {
 		baseValue.Value = av.GetAttributeViewDefaultValue(baseValue.ID, fieldID, itemID, baseValue.ValueType)
 	} else {
-		fillAttributeViewNilValue(baseValue.Value, baseValue.ValueType)
+		FillAttributeViewNilValue(baseValue.Value, baseValue.ValueType)
 	}
 }
 
@@ -425,7 +425,7 @@ func fillAttributeViewTemplateValue(value *av.Value, item av.Item, attrView *av.
 	return
 }
 
-func fillAttributeViewNilValue(value *av.Value, typ av.KeyType) {
+func FillAttributeViewNilValue(value *av.Value, typ av.KeyType) {
 	value.Type = typ
 	switch typ {
 	case av.KeyTypeText:
@@ -547,8 +547,7 @@ func removeMissingField(attrView *av.AttributeView, view *av.View, missingKeyID 
 	logging.LogWarnf("key [%s] is missing", missingKeyID)
 
 	changed := false
-	switch view.LayoutType {
-	case av.LayoutTypeTable:
+	if nil != view.Table {
 		for i, column := range view.Table.Columns {
 			if column.ID == missingKeyID {
 				view.Table.Columns = append(view.Table.Columns[:i], view.Table.Columns[i+1:]...)
@@ -556,7 +555,9 @@ func removeMissingField(attrView *av.AttributeView, view *av.View, missingKeyID 
 				break
 			}
 		}
-	case av.LayoutTypeGallery:
+	}
+
+	if nil != view.Gallery {
 		for i, cardField := range view.Gallery.CardFields {
 			if cardField.ID == missingKeyID {
 				view.Gallery.CardFields = append(view.Gallery.CardFields[:i], view.Gallery.CardFields[i+1:]...)

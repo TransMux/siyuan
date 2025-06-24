@@ -44,30 +44,31 @@ import { getSearch, isMobile } from "../util/functions";
 import { removeFoldHeading } from "../protyle/util/heading";
 import { lineNumberRender } from "../protyle/render/highlightRender";
 import * as dayjs from "dayjs";
-import { blockRender } from "../protyle/render/blockRender";
-import { renameAsset } from "../editor/rename";
-import { electronUndo } from "../protyle/undo";
-import { pushBack } from "../mobile/util/MobileBackFoward";
-import { copyPNGByLink, exportAsset } from "./util";
-import { removeInlineType } from "../protyle/toolbar/util";
-import { alignImgCenter, alignImgLeft } from "../protyle/wysiwyg/commonHotkey";
-import { checkFold, renameTag } from "../util/noRelyPCFunction";
-import { hideElements } from "../protyle/ui/hideElements";
-import { emitOpenMenu } from "../plugin/EventBus";
-import { openMobileFileById } from "../mobile/editor";
-import { openBacklink, openGraph } from "../layout/dock/util";
-import { updateHeader } from "../protyle/render/av/row";
-import { renderAssetsPreview } from "../asset/renderAssets";
-import { upDownHint } from "../util/upDownHint";
-import { hintRenderAssets } from "../protyle/hint/extend";
-import { Menu } from "../plugin/Menu";
-import { getFirstBlock } from "../protyle/wysiwyg/getBlock";
-import { popSearch } from "../mobile/menu/search";
-import { showMessage } from "../dialog/message";
-import { renderAVAttribute } from "../protyle/render/av/blockAttr";
+import {blockRender} from "../protyle/render/blockRender";
+import {renameAsset} from "../editor/rename";
+import {electronUndo} from "../protyle/undo";
+import {pushBack} from "../mobile/util/MobileBackFoward";
+import {copyPNGByLink, exportAsset} from "./util";
+import {removeInlineType} from "../protyle/toolbar/util";
+import {alignImgCenter, alignImgLeft} from "../protyle/wysiwyg/commonHotkey";
+import {checkFold, renameTag} from "../util/noRelyPCFunction";
+import {hideElements} from "../protyle/ui/hideElements";
+import {emitOpenMenu} from "../plugin/EventBus";
+import {openMobileFileById} from "../mobile/editor";
+import {openBacklink, openGraph} from "../layout/dock/util";
+import {updateHeader} from "../protyle/render/av/row";
+import {renderAssetsPreview} from "../asset/renderAssets";
+import {upDownHint} from "../util/upDownHint";
+import {hintRenderAssets} from "../protyle/hint/extend";
+import {Menu} from "../plugin/Menu";
+import {getFirstBlock} from "../protyle/wysiwyg/getBlock";
+import {popSearch} from "../mobile/menu/search";
+import {showMessage} from "../dialog/message";
+import {renderAVAttribute} from "../protyle/render/av/blockAttr";
 import {img3115} from "../boot/compatibleVersion";
-import { renderCustomAttr } from "../mux/attributeView";
+import {renderCustomAttr} from "../mux/attributeView";
 import {hideTooltip} from "../dialog/tooltip";
+import {clearSelect} from "../protyle/util/clearSelect";
 
 const renderAssetList = (element: Element, k: string, position: IPosition, exts: string[] = []) => {
     fetchPost("/api/search/searchAsset", {
@@ -2531,16 +2532,7 @@ export const setFold = (protyle: IProtyle, nodeElement: Element, isOpen?: boolea
                 focusBlock(nodeElement, undefined, false);
             }
         }
-        nodeElement.querySelectorAll(".img--select, .av__cell--select, .av__cell--active, .av__row--select").forEach((item: HTMLElement) => {
-            if (item.classList.contains("av__row--select")) {
-                item.classList.remove("av__row--select");
-                item.querySelector(".av__firstcol use").setAttribute("xlink:href", "#iconUncheck");
-                updateHeader(item);
-            } else {
-                item.querySelector(".av__drag-fill")?.remove();
-                item.classList.remove("img--select", "av__cell--select", "av__cell--active");
-            }
-        });
+        clearSelect(["img", "av"], nodeElement);
     }
     const id = nodeElement.getAttribute("data-node-id");
     if (nodeElement.getAttribute("data-type") === "NodeHeading") {
