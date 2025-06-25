@@ -70,8 +70,15 @@ export class MuxGlobalOverlayPlugin extends Plugin {
     private renderFocusForBlock(blockEl: HTMLElement) {
         if (!blockEl || !blockEl.hasAttribute("custom-timer-records")) return;
 
-        const attrEl = blockEl.nextElementSibling as HTMLElement;
-        if (!attrEl || !attrEl.classList.contains("protyle-attr")) return;
+        // Only search in first-level children for protyle-attr
+        let attrEl: HTMLElement | null = null;
+        for (const child of blockEl.children) {
+            if (child.classList.contains('protyle-attr')) {
+                attrEl = child as HTMLElement;
+                break;
+            }
+        }
+        if (!attrEl) return;
 
         // parse attribute JSON (may be encoded with &quot;)
         let raw = blockEl.getAttribute("custom-timer-records");
