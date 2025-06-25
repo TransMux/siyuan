@@ -72,7 +72,8 @@ export class MuxGlobalOverlayPlugin extends Plugin {
 
         // Only search in first-level children for protyle-attr
         let attrEl: HTMLElement | null = null;
-        for (const child of blockEl.children) {
+        for (let i = blockEl.children.length - 1; i >= 0; i--) {
+            const child = blockEl.children[i];
             if (child.classList.contains('protyle-attr')) {
                 attrEl = child as HTMLElement;
                 break;
