@@ -115,7 +115,7 @@ export class MuxGlobalOverlayPlugin extends Plugin {
             focusNode.innerHTML = html;
         } else {
             focusNode = document.createElement('div');
-            focusNode.className = 'protyle-attr--focus';
+            focusNode.className = 'protyle-attr--focus protyle-custom';
             focusNode.innerHTML = html;
             attrEl.appendChild(focusNode);
         }
