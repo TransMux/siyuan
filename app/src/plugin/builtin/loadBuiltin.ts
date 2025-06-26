@@ -3,6 +3,7 @@ import { Plugin } from "../index";
 import { QuickAppendPlugin } from "./QuickAppendPlugin";
 import { MuxGlobalOverlayPlugin } from "./MuxGlobalOverlayPlugin";
 import { QuickSearchPlugin } from "./QuickSearchPlugin";
+import { GatewayConnectorPlugin } from "./GatewayConnectorPlugin";
 
 export interface IBuiltinPluginInfo {
     name: string;
@@ -30,6 +31,12 @@ export const BUILTIN_PLUGIN_INFOS: IBuiltinPluginInfo[] = [
         description: "快速全局搜索",
         iconURL: "/stage/images/icon.png",
     },
+    {
+        name: "gatewayConnector",
+        displayName: "Gateway Connector",
+        description: "连接 Gateway 服务",
+        iconURL: "/stage/images/icon.png",
+    },
 ];
 
 // Map of builtin plugin classes
@@ -37,6 +44,7 @@ export const BUILTIN_PLUGIN_CLASSES: Record<string, new (options: { app: App; na
     quickAppend: QuickAppendPlugin,
     muxGlobalOverlay: MuxGlobalOverlayPlugin,
     quickSearch: QuickSearchPlugin,
+    gatewayConnector: GatewayConnectorPlugin,
 };
 
 /**
