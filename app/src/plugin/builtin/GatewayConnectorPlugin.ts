@@ -43,7 +43,7 @@ export class GatewayConnectorPlugin extends Plugin {
                 "http://100.74.82.128:6253/tools/siyuan/ai/summary-doc",
                 { document_id: docId },
                 (response: any) => {
-                    if (typeof response === "object" && response.code === 0) {
+                    if (typeof response === "object" && response.success) {
                         showMessage("AI 总结请求已发送", 3000, "info");
                     } else if (typeof response === "object") {
                         showMessage(response.msg || "AI 总结请求发送失败", 3000, "error");
