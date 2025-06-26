@@ -1,5 +1,7 @@
 {
-  "cardAspectRatio": "Seitenverhältnis der Karte",
+  "hideEmptyFields": "Leere Felder ausblenden",
+  "displayEmptyFields": "Leere Felder anzeigen",
+  "cardAspectRatio": "Seitenverhältnis des Vorschau-Bereichs",
   "cardPreview1": "Kartenansicht",
   "contentImage": "Inhaltsbild",
   "cardSize": "Kartengröße",

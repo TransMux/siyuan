@@ -633,7 +633,7 @@ export class WYSIWYG {
             hideElements(["select"], protyle);
             if (hasClosestByAttribute(target, "data-type", "av-gallery-more")) {
                 clearSelect(["img", "row", "cell"], protyle.wysiwyg.element);
-            } else {
+            } else if (!hasClosestByClassName(target, "av__firstcol")) {
                 clearSelect(["img", "av"], protyle.wysiwyg.element);
             }
 

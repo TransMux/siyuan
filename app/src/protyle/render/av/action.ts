@@ -4,7 +4,7 @@ import {transaction} from "../../wysiwyg/transaction";
 import {openEditorTab} from "../../../menus/util";
 import {openFileAttr} from "../../../menus/commonMenuItem";
 import {
-    addDragFill,
+    addDragFill, cellValueIsEmpty,
     genCellValueByElement,
     getCellText,
     getTypeByCellElement,
@@ -229,12 +229,9 @@ export const avClick = (protyle: IProtyle, event: MouseEvent & { target: HTMLEle
                 const cellType = getTypeByCellElement(target);
                 if (viewType === "gallery") {
                     const itemElement = hasClosestByClassName(target, "av__gallery-item");
-                    if (itemElement)
-                        if (cellType === "updated" || cellType === "created" || cellType === "lineNumber") {
-                            itemElement.classList.add("av__gallery-item--select");
-                        } else {
-                            popTextCell(protyle, [target]);
-                        }
+                    if (itemElement && cellType !== "updated" && cellType !== "created" && cellType !== "lineNumber") {
+                        popTextCell(protyle, [target]);
+                    }
                 } else {
                     const scrollElement = hasClosestByClassName(target, "av__scroll");
                     if (!scrollElement) {
@@ -303,7 +300,10 @@ export const avContextmenu = (protyle: IProtyle, rowElement: HTMLElement, positi
     if (!blockElement) {
         return false;
     }
-    clearSelect(["cell", "row"], blockElement);
+    if (!rowElement.classList.contains("av__row--select")) {
+        clearSelect(["row"], blockElement);
+    }
+    clearSelect(["cell"], blockElement);
     const menu = new Menu();
     rowElement.classList.add("av__row--select");
     rowElement.querySelector(".av__firstcol use").setAttribute("xlink:href", "#iconCheck");
@@ -731,7 +731,9 @@ export const updateAttrViewCellAnimation = (cellElement: HTMLElement, value: IAV
         const viewType = blockElement.getAttribute("data-av-type") as TAVView;
         if (viewType === "gallery") {
             const iconElement = cellElement.querySelector(".b3-menu__avemoji");
-            cellElement.innerHTML = renderCell(value, undefined, iconElement ? !iconElement.classList.contains("fn__none") : false, viewType);
+            cellElement.innerHTML = renderCell(value, undefined, iconElement ? !iconElement.classList.contains("fn__none") : false, viewType) +
+                cellElement.querySelector(".av__gallery-tip").outerHTML;
+            cellElement.setAttribute("data-empty", cellValueIsEmpty(value).toString());
         } else {
             cellElement.innerHTML = renderCell(value);
         }
