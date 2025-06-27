@@ -3,6 +3,7 @@ import { fetchPost } from "../../util/fetch";
 import { getActiveTab } from "../../layout/tabUtil";
 import { Editor } from "../../editor";
 import { showMessage } from "../../dialog/message";
+import { copyBlockLink, openHomepage } from "./GatewayConnectorUtils";
 
 /**
  * Built-in plugin: Gateway Connector
@@ -19,6 +20,24 @@ export class GatewayConnectorPlugin extends Plugin {
             hotkey: "", // no default hotkey
             globalCallback: () => this.summaryCurrentDoc(),
             callback: () => this.summaryCurrentDoc(),
+        });
+
+        this.addCommand({
+            langKey: "copyBlockLink",
+            langText: "复制当前所在块的超链接(copy-block-link)",
+            hotkey: "⌥⌘L",
+            callback: (event) => {
+                copyBlockLink(event);
+            },
+        });
+
+        this.addCommand({
+            langKey: "openHomepage",
+            langText: "打开首页(open-homepage)",
+            hotkey: "",
+            callback: () => {
+                openHomepage();
+            },
         });
     }
 
