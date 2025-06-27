@@ -106,11 +106,15 @@ export class QuickSearchPlugin extends Plugin {
         if (this.win && !this.win.isDestroyed()) {
             // Already visible → just focus
             if (this.win.isVisible()) {
+                this.win.setSize(800, 900);
+                this.win.center();
                 this.win.focus();
                 return;
             }
             // Recently hidden (≤5 s) and already loaded → reuse without reload
             if (Date.now() - this.lastHideAt < 5000 && this.win.webContents.getURL() !== "about:blank") {
+                this.win.setSize(800, 900);
+                this.win.center();
                 this.win.show();
                 this.win.focus();
                 return;
@@ -157,6 +161,8 @@ export class QuickSearchPlugin extends Plugin {
         )}`;
 
         this.win?.loadURL(url).then(() => {
+            this.win?.setSize(800, 900);
+            this.win?.center();
             this.win?.show();
             this.lastHideAt = 0; // reset because window now visible
         });

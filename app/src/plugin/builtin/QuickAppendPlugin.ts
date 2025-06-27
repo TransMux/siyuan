@@ -107,13 +107,16 @@ export class QuickAppendPlugin extends Plugin {
         if (this.win && !this.win.isDestroyed()) {
             // 若窗口已可见直接聚焦
             if (this.win.isVisible()) {
+                this.win.setSize(480, 400);
+                this.win.center();
                 this.win.focus();
                 return;
             }
             // 若刚隐藏 ≤5 秒且内容已加载，直接复用
             if (Date.now() - this.lastHideAt < 5000 && this.win.webContents.getURL() !== "about:blank") {
+                this.win.setSize(480, 400);
+                this.win.center();
                 this.win.show();
-                this.win.focus();
                 return;
             }
         }
@@ -170,8 +173,9 @@ export class QuickAppendPlugin extends Plugin {
 
                 // 此时窗口仍存在但需要刷新内容
                 if (this.win?.webContents.getURL() && this.win.webContents.getURL() !== "about:blank") {
+                    this.win.setSize(480, 400);
+                    this.win.center();
                     this.win.show();
-                    this.win.focus();
                     this.win.webContents.send("quick-append-update", {
                         notebookId: infoRes.data.box,
                         blockId: newBlockId,
@@ -180,6 +184,8 @@ export class QuickAppendPlugin extends Plugin {
                 } else {
                     // 首次加载页面
                     this.win?.loadURL(url).then(() => {
+                        this.win?.setSize(480, 400);
+                        this.win?.center();
                         this.win?.show();
                         this.lastHideAt = 0; // reset because now window visible with new content
                     });
