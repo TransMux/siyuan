@@ -26,18 +26,21 @@
 <body>
     <div id="mapContainer"></div>
     <script>
-        // Initialize the map and enable automatic resize handling.
+        // Initialize the map first so that we have it ready
         const map = new AMap.Map('mapContainer', {
             resizeEnable: true,
-            // You can specify a default center and zoom if needed
             zoom: 11,
-            center: [116.397428, 39.90923] // Beijing Tiananmen
+            center: [116.397428, 39.90923],
         });
 
-        // Ensure the map always refreshes to fill the full visible area
-        window.addEventListener('resize', () => {
-            map.resize();
-        });
+        // Ensure resize
+        window.addEventListener('resize', () => map.resize());
+    </script>
+    <script type="module">
+        import { resolveAvId } from './utils/siyuan.js';
+
+        const avId = resolveAvId();
+        console.log('Resolved av_id:', avId);
     </script>
 </body>
 </html>
