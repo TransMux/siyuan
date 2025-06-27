@@ -1,0 +1,30 @@
+{
+  "name": "siyuan-amap-widget",
+  "author": "TransMux",
+  "url": "https://github.com/TransMux/siyuan-amap-widget",
+  "version": "0.0.1",
+  "minAppVersion": "2.8.8",
+  "displayName": {
+    "default": "Amap Widget",
+    "zh_CN": "高德地图挂件"
+  },
+  "description": {
+    "default": "This is a Amap widget",
+    "zh_CN": "这是一个高德地图挂件"
+  },
+  "readme": {
+    "default": "README.md",
+    "zh_CN": "README_zh_CN.md"
+  },
+  "funding": {
+    "openCollective": "",
+    "patreon": "",
+    "github": "",
+    "custom": [
+      "https://ld246.com/sponsor"
+    ]
+  },
+  "keywords": [
+    "sample", "示例"
+  ]
+}
