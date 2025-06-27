@@ -190,27 +190,4 @@ export function initPlaceSearch(map, options = {}) {
         const anyChecked = resultsList.querySelector('input[type="checkbox"]:checked');
         addSelectedBtn.disabled = !anyChecked;
     });
-}
-
-async function drawIsochrone(center) {
-    try {
-        // TODO: Replace key with your key or fetch from global
-        const key = '96c22bea781373e30fca84e8aa3a3dde';
-        const url = `https://restapi.amap.com/v4/isoline?parameters`; // placeholder, unknown endpoint
-        // For demo fallback: draw simple circle approximation (~20km radius)
-        const radius = 20000; // meters
-        import('./siyuan.js').then(({addPolygons}) => {
-            const path = [];
-            const numPoints = 60;
-            for (let i = 0; i < numPoints; i++) {
-                const angle = (Math.PI * 2 * i) / numPoints;
-                const lngOff = (radius * Math.cos(angle)) / (111320 * Math.cos(center.lat * Math.PI / 180));
-                const latOff = (radius * Math.sin(angle)) / 110540;
-                path.push([center.lng + lngOff, center.lat + latOff]);
-            }
-            addPolygons(map, [{path, strokeColor: '#FF5722', fillColor: 'rgba(255, 87, 34, 0.3)'}]);
-        });
-    } catch (err) {
-        console.error('Isochrone error', err);
-    }
 } 

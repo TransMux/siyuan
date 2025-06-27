@@ -1,8 +1,8 @@
 /**
- * Isochrone (等时圈) utility using AMap.ArrivalRange for driving
+ * Transit arrival range utility using AMap.ArrivalRange
  */
 
-let drivingRange = null;
+let arrivalRange = null;
 let polygons = [];
 let centerMarker = null;
 
@@ -18,7 +18,7 @@ function addCenterMarker(map, position) {
             position: position,
             icon: new AMap.Icon({
                 size: new AMap.Size(25, 34),
-                image: '//a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-red.png',
+                image: '//a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-default.png',
                 imageOffset: new AMap.Pixel(0, 0),
                 imageSize: new AMap.Size(25, 34)
             })
@@ -29,15 +29,16 @@ function addCenterMarker(map, position) {
 }
 
 /**
- * Draw driving isochrone polygon on map
- * @param {AMap.Map} map
+ * Draw transit arrival range on map
+ * @param {AMap.Map} map 
  * @param {number[]} origin [lng, lat]
  * @param {number} timeMinutes time in minutes (default 30)
+ * @param {string} policy transit policy (default "SUBWAY,BUS")
  */
-export function drawIsochrone(map, origin, timeMinutes = 30) {
+export function drawTransitArrival(map, origin, timeMinutes = 30, policy = "SUBWAY,BUS") {
     try {
-        if (!drivingRange) {
-            drivingRange = new AMap.ArrivalRange();
+        if (!arrivalRange) {
+            arrivalRange = new AMap.ArrivalRange();
         }
 
         // Clear previous polygons
@@ -49,40 +50,40 @@ export function drawIsochrone(map, origin, timeMinutes = 30) {
         // Add center marker
         addCenterMarker(map, origin);
 
-        // Search driving range (using null policy for driving)
-        drivingRange.search(origin, timeMinutes, function(status, result) {
+        // Search arrival range
+        arrivalRange.search(origin, timeMinutes, function(status, result) {
             if ((result.info === 'OK' || status === 'complete') && result.bounds && result.bounds.length > 0) {
                 for (let i = 0; i < result.bounds.length; i++) {
                     const polygon = new AMap.Polygon({
-                        fillColor: "#FF5722",
-                        fillOpacity: 0.3,
-                        strokeColor: "#FF5722", 
-                        strokeOpacity: 0.8,
-                        strokeWeight: 2
+                        fillColor: "#3366FF",
+                        fillOpacity: 0.4,
+                        strokeColor: "#00FF00", 
+                        strokeOpacity: 0.5,
+                        strokeWeight: 1
                     });
                     polygon.setPath(result.bounds[i]);
                     polygons.push(polygon);
                 }
                 map.add(polygons);
                 map.setFitView();
-                console.log(`Driving ${timeMinutes}-minute isochrone drawn successfully`);
+                console.log(`Public transit ${timeMinutes}-minute arrival range drawn successfully`);
             } else {
-                console.warn('No driving range data found', result);
+                console.warn('No arrival range data found', result);
             }
         }, {
-            policy: null // null or undefined for driving
+            policy: policy
         });
 
     } catch (err) {
-        console.error('Isochrone error:', err);
+        console.error('Transit arrival range error:', err);
     }
 }
 
 /**
- * Clear all isochrone polygons
+ * Clear all arrival range polygons
  * @param {AMap.Map} map 
  */
-export function clearIsochrone(map) {
+export function clearArrivalRange(map) {
     if (polygons.length > 0) {
         map.remove(polygons);
         polygons = [];

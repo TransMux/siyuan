@@ -10,7 +10,7 @@
             securityJsCode: "0ee82a99f81771ef91bd476e14ac5211",
         };
     </script>
-    <script src="https://webapi.amap.com/maps?v=2.0&key=96c22bea781373e30fca84e8aa3a3dde"></script>
+    <script src="https://webapi.amap.com/maps?v=2.0&key=96c22bea781373e30fca84e8aa3a3dde&plugin=AMap.ArrivalRange"></script>
 </head>
 <body>
     <div id="searchContainer"></div>
@@ -52,6 +52,12 @@
                 const lnglat = contextMenuPosition;
                 drawIsochrone(window.map, [lnglat.lng, lnglat.lat]);
             }, 0);
+            contextMenu.addItem('30分钟公交到达圈', () => {
+                const lnglat = contextMenuPosition;
+                import('./utils/arrival.js').then(({ drawTransitArrival }) => {
+                    drawTransitArrival(window.map, [lnglat.lng, lnglat.lat]);
+                });
+            }, 1);
         });
 
         let contextMenuPosition;
