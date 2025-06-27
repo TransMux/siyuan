@@ -1,5 +1,5 @@
-import { showMessage } from "../../dialog/message";
-import { Plugin } from "../index";
+import { showMessage } from "../../../dialog/message";
+import { Plugin } from "../../index";
 
 /**
  * Built-in plugin: Mux Global Overlay
@@ -12,7 +12,7 @@ export class MuxGlobalOverlayPlugin extends Plugin {
     /** Per-protyle pending state */
     private protylePendingState: WeakMap<Element, { blocks: Set<HTMLElement>; rafId: number }> = new WeakMap();
 
-    constructor(options: { app: import("../../index").App; name: string; displayName: string; i18n: IObject }) {
+    constructor(options: { app: import("../../../index").App; name: string; displayName: string; i18n: IObject }) {
         super(options);
 
         // When protyle editors are loaded, attach observer and initial render

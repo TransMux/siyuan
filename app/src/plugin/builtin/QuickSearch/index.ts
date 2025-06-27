@@ -1,6 +1,6 @@
-import { Plugin } from "../index";
-import { Constants } from "../../constants";
-import { isWindow } from "../../util/functions";
+import { Plugin } from "../../index";
+import { Constants } from "../../../constants";
+import { isWindow } from "../../../util/functions";
 /// #if !BROWSER
 import { BrowserWindow } from "@electron/remote";
 /// #endif
@@ -10,7 +10,7 @@ import { BrowserWindow } from "@electron/remote";
  * Quickly open a stand-alone global search window using ⌥⇧P.
  */
 export class QuickSearchPlugin extends Plugin {
-    private appRef: import("../../index").App;
+    private appRef: import("../../../index").App;
 
     /// #if !BROWSER
     /** Cached BrowserWindow instance used for quick re-open */
@@ -18,7 +18,7 @@ export class QuickSearchPlugin extends Plugin {
     private lastHideAt = 0;
     /// #endif
 
-    constructor(options: { app: import("../../index").App; name: string; displayName: string; i18n: IObject }) {
+    constructor(options: { app: import("../../../index").App; name: string; displayName: string; i18n: IObject }) {
         super(options);
         this.appRef = options.app;
 

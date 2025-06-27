@@ -1,15 +1,15 @@
-import { Plugin } from "../index";
-import { fetchPost, fetchSyncPost } from "../../util/fetch";
-import { Constants } from "../../constants";
-import { showMessage } from "../../dialog/message";
-import { newQuickAppendModel } from "./QuickAppendModel";
-import { isWindow } from "../../util/functions";
+import { Plugin } from "../../index";
+import { fetchPost, fetchSyncPost } from "../../../util/fetch";
+import { Constants } from "../../../constants";
+import { showMessage } from "../../../dialog/message";
+import { newQuickAppendModel } from "./utils";
+import { isWindow } from "../../../util/functions";
 /// #if !BROWSER
 import { BrowserWindow } from "@electron/remote";
 /// #endif
 
 export class QuickAppendPlugin extends Plugin {
-    private appRef: import("../../index").App;
+    private appRef: import("../../../index").App;
 
     /// #if !BROWSER
     /** Persistent Quick-Append window */
@@ -17,7 +17,7 @@ export class QuickAppendPlugin extends Plugin {
     private lastHideAt = 0; // timestamp when window was last hidden
     /// #endif
 
-    constructor(options: { app: import("../../index").App; name: string; displayName: string; i18n: IObject }) {
+    constructor(options: { app: import("../../../index").App; name: string; displayName: string; i18n: IObject }) {
         super(options);
         // Preserve app reference for creating models later
         this.appRef = options.app;

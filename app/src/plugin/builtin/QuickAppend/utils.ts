@@ -1,8 +1,8 @@
-import { Tab } from "../../layout/Tab";
-import { Custom } from "../../layout/dock/Custom";
-import { Protyle } from "../../protyle";
-import { App } from "../../index";
-import { Constants } from "../../constants";
+import { Tab } from "../../../layout/Tab";
+import { Custom } from "../../../layout/dock/Custom";
+import { Protyle } from "../../../protyle";
+import { App } from "../../../index";
+import { Constants } from "../../../constants";
 /// #if !BROWSER
 import { ipcRenderer } from "electron";
 /// #endif

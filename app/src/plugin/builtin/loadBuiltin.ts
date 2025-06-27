@@ -1,9 +1,9 @@
 import { App } from "../../index";
 import { Plugin } from "../index";
-import { QuickAppendPlugin } from "./QuickAppendPlugin";
-import { MuxGlobalOverlayPlugin } from "./MuxGlobalOverlayPlugin";
-import { QuickSearchPlugin } from "./QuickSearchPlugin";
-import { GatewayConnectorPlugin } from "./GatewayConnectorPlugin";
+import { QuickAppendPlugin } from "./QuickAppend";
+import { MuxGlobalOverlayPlugin } from "./MuxGlobalOverlay";
+import { QuickSearchPlugin } from "./QuickSearch";
+import { GatewayConnectorPlugin } from "./GatewayConnector";
 
 export interface IBuiltinPluginInfo {
     name: string;
@@ -48,21 +48,34 @@ export const BUILTIN_PLUGIN_CLASSES: Record<string, new (options: { app: App; na
 };
 
 /**
- * Dynamically instantiate builtin plugin and mount it just like external plugins.
+ * Load a builtin plugin by name
  */
-export const loadBuiltinPlugin = async (app: App, name: string): Promise<Plugin | undefined> => {
-    const Cls = BUILTIN_PLUGIN_CLASSES[name];
-    if (!Cls) {
-        console.error(`Unknown builtin plugin: ${name}`);
-        return;
+export async function loadBuiltinPlugin(app: App, name: string): Promise<Plugin | null> {
+    const PluginClass = BUILTIN_PLUGIN_CLASSES[name];
+    if (!PluginClass) {
+        console.warn(`Unknown builtin plugin: ${name}`);
+        return null;
     }
-    const plugin = new Cls({
-        app,
-        name,
-        displayName: BUILTIN_PLUGIN_INFOS.find((i) => i.name === name)?.displayName || name,
-        i18n: {},
-    });
-    app.plugins.push(plugin);
-    await plugin.onload?.();
-    return plugin;
-}; 
+
+    const info = BUILTIN_PLUGIN_INFOS.find(p => p.name === name);
+    if (!info) {
+        console.warn(`No info found for builtin plugin: ${name}`);
+        return null;
+    }
+
+    try {
+        const plugin = new PluginClass({
+            app,
+            name,
+            displayName: info.displayName,
+            i18n: {}, // TODO: Load i18n data if needed
+        });
+
+        app.plugins.push(plugin);
+        await plugin.onload();
+        return plugin;
+    } catch (e) {
+        console.error(`Failed to load builtin plugin ${name}:`, e);
+        return null;
+    }
+} 

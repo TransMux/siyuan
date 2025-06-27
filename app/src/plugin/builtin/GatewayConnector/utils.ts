@@ -1,5 +1,5 @@
-import { showMessage } from "../../dialog/message";
-import { getSelectedBlock } from "./utils/block";
+import { showMessage } from "../../../dialog/message";
+import { getSelectedBlock } from "../utils/block";
 
 export function copyBlockLink(event: any) {
     const selectedBlock = getSelectedBlock(event?.detail?.previousRange);

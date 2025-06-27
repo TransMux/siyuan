@@ -1,16 +1,16 @@
-import { Plugin } from "../index";
-import { fetchPost } from "../../util/fetch";
-import { getActiveTab } from "../../layout/tabUtil";
-import { Editor } from "../../editor";
-import { showMessage } from "../../dialog/message";
-import { copyBlockLink, openHomepage } from "./GatewayConnectorUtils";
+import { Plugin } from "../../index";
+import { fetchPost } from "../../../util/fetch";
+import { getActiveTab } from "../../../layout/tabUtil";
+import { Editor } from "../../../editor";
+import { showMessage } from "../../../dialog/message";
+import { copyBlockLink, openHomepage } from "./utils";
 
 /**
  * Built-in plugin: Gateway Connector
  * Adds a command that sends the current document ID to external AI gateway for summarisation.
  */
 export class GatewayConnectorPlugin extends Plugin {
-    constructor(options: { app: import("../../index").App; name: string; displayName: string; i18n: IObject }) {
+    constructor(options: { app: import("../../../index").App; name: string; displayName: string; i18n: IObject }) {
         super(options);
 
         // Register command: 使用AI总结当前文章 (Summarise Current Doc)
