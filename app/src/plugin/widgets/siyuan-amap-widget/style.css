@@ -1,0 +1,27 @@
+html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+#mapContainer {
+    height: 100%;
+    width: 100%;
+}
+
+#searchContainer {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1000;
+    background: #fff;
+    padding: 6px;
+    border-radius: 4px;
+    box-shadow: 0 0 6px rgba(0,0,0,0.3);
+    font-size: 14px;
+}
+
+#searchContainer input {
+    width: 140px;
+} 
