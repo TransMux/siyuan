@@ -15,6 +15,17 @@
             height: 100%;
             width: 100%;
         }
+        #searchContainer {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: #fff;
+            padding: 6px;
+            border-radius: 4px;
+            box-shadow: 0 0 6px rgba(0,0,0,0.3);
+            font-size: 14px;
+        }
     </style>
     <script type="text/javascript">
         window._AMapSecurityConfig = {
@@ -24,7 +35,9 @@
     <script src="https://webapi.amap.com/maps?v=2.0&key=96c22bea781373e30fca84e8aa3a3dde"></script>
 </head>
 <body>
+    <div id="searchContainer"></div>
     <div id="mapContainer"></div>
+
     <script>
         // Initialize the map first so that we have it ready
         const map = new AMap.Map('mapContainer', {
@@ -32,41 +45,24 @@
             zoom: 11,
             center: [116.397428, 39.90923],
         });
+        window.map = map;
 
         // Ensure resize
         window.addEventListener('resize', () => map.resize());
     </script>
     <script type="module">
-        import { resolveAvId, addMarkers, addPolygons } from './utils/siyuan.js';
+        import { resolveAvId, addMarkers } from './utils/siyuan.js';
+        import { isWebEnv, initPlaceSearch } from './utils/search.js';
 
         const avId = resolveAvId();
         console.log('Resolved av_id:', avId);
 
-        // DEMO data, replace with backend data later
-        const demoMarkers = [
-            { lng: 116.397428, lat: 39.90923, title: 'Tiananmen' },
-            { lng: 116.405285, lat: 39.904989, title: 'Forbidden City' }
-        ];
+        // DEMO marker (remove in production)
+        addMarkers(window.map, [{ lng: 116.397428, lat: 39.90923, title: 'Tiananmen' }]);
 
-        const demoPolygons = [
-            {
-                path: [
-                    [116.392, 39.907],
-                    [116.404, 39.907],
-                    [116.404, 39.915],
-                    [116.392, 39.915]
-                ],
-                strokeColor: '#FF0000',
-                fillColor: '#FFAAAA',
-            }
-        ];
-
-        const overlays = [];
-        overlays.push(...addMarkers(map, demoMarkers));
-        overlays.push(...addPolygons(map, demoPolygons));
-
-        if (overlays.length) {
-            map.setFitView(overlays);
+        // Enable search only in web environment
+        if (isWebEnv()) {
+            initPlaceSearch(window.map);
         }
     </script>
 </body>
