@@ -1173,6 +1173,7 @@ export const replace = (element: Element, config: Config.IUILayoutTabSearchConfi
     }
     loadElement.classList.remove("fn__none");
     const currentId = currentList.getAttribute("data-node-id");
+
     fetchPost("/api/search/findReplace", {
         k: config.method === 0 || config.method === 1 ? getKeyByLiElement(currentList) : searchInputElement.value,
         r: replaceInputElement.value,
@@ -1260,6 +1261,9 @@ export const inputEvent = (element: Element, config: Config.IUILayoutTabSearchCo
             } else {
                 previousElement.setAttribute("disabled", "disabled");
             }
+            const searchToken = Date.now().toString();
+            element.setAttribute("data-search-token", searchToken);
+
             fetchPost("/api/search/fullTextSearchBlock", {
                 query: inputValue,
                 method: config.method,
@@ -1269,6 +1273,9 @@ export const inputEvent = (element: Element, config: Config.IUILayoutTabSearchCo
                 orderBy: config.sort,
                 page: config.page || 1,
             }, (response) => {
+                if (element.getAttribute("data-search-token") !== searchToken) {
+                    return;
+                }
                 if (window.siyuan.reqIds["/api/block/getRecentUpdatedBlocks"] && window.siyuan.reqIds["/api/search/fullTextSearchBlock"] &&
                     window.siyuan.reqIds["/api/block/getRecentUpdatedBlocks"] > window.siyuan.reqIds["/api/search/fullTextSearchBlock"]) {
                     return;
