@@ -1246,18 +1246,14 @@ export const inputEvent = (element: Element, config: Config.IUILayoutTabSearchCo
             });
         });
         const searchResultElement = element.querySelector("#searchResult");
-        if (inputValue === "" && (!config.idPath || config.idPath.length === 0)) {
-            fetchPost("/api/block/getRecentUpdatedBlocks", {}, (response) => {
-                if (window.siyuan.reqIds["/api/block/getRecentUpdatedBlocks"] && window.siyuan.reqIds["/api/search/fullTextSearchBlock"] &&
-                    window.siyuan.reqIds["/api/block/getRecentUpdatedBlocks"] < window.siyuan.reqIds["/api/search/fullTextSearchBlock"]) {
-                    return;
-                }
-                onSearch(response.data, edit, element, config);
-                loadingElement.classList.add("fn__none");
-                searchResultElement.innerHTML = "";
-                previousElement.setAttribute("disabled", "true");
-                nextElement.setAttribute("disabled", "true");
-            });
+        if (inputValue === "") {
+            // Keyword is empty – do NOT load the default "recently updated blocks" list.
+            // Instead, clear existing results and keep the panel idle awaiting user input.
+            onSearch([], edit, element, config);
+            loadingElement.classList.add("fn__none");
+            searchResultElement.innerHTML = "";
+            previousElement.setAttribute("disabled", "true");
+            nextElement.setAttribute("disabled", "true");
         } else {
             if (config.page > 1) {
                 previousElement.removeAttribute("disabled");
