@@ -3,9 +3,41 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Hello, World!</title>
+    <title>Amap Widget</title>
+    <style>
+        html, body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        #mapContainer {
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+    <script type="text/javascript">
+        window._AMapSecurityConfig = {
+            securityJsCode: "0ee82a99f81771ef91bd476e14ac5211",
+        };
+    </script>
+    <script src="https://webapi.amap.com/maps?v=2.0&key=96c22bea781373e30fca84e8aa3a3dde"></script>
 </head>
 <body>
-    Hello World!
+    <div id="mapContainer"></div>
+    <script>
+        // Initialize the map and enable automatic resize handling.
+        const map = new AMap.Map('mapContainer', {
+            resizeEnable: true,
+            // You can specify a default center and zoom if needed
+            zoom: 11,
+            center: [116.397428, 39.90923] // Beijing Tiananmen
+        });
+
+        // Ensure the map always refreshes to fill the full visible area
+        window.addEventListener('resize', () => {
+            map.resize();
+        });
+    </script>
 </body>
 </html>
