@@ -31,6 +31,7 @@
     <script type="module">
         import { resolveAvId, addMarkers } from './utils/siyuan.js';
         import { isWebEnv, initPlaceSearch } from './utils/search.js';
+        import { drawIsochrone } from './utils/isochrone.js';
 
         const avId = resolveAvId();
         console.log('Resolved av_id:', avId);
@@ -42,6 +43,23 @@
         if (isWebEnv()) {
             initPlaceSearch(window.map);
         }
+
+        // Add context menu for 30-minute isochrone
+        let contextMenu;
+        AMap.plugin('AMap.ContextMenu', () => {
+            contextMenu = new AMap.ContextMenu();
+            contextMenu.addItem('30分钟等时圈', () => {
+                const lnglat = contextMenuPosition;
+                drawIsochrone(window.map, [lnglat.lng, lnglat.lat]);
+            }, 0);
+        });
+
+        let contextMenuPosition;
+        window.map.on('rightclick', e => {
+            if (!contextMenu) return;
+            contextMenuPosition = e.lnglat;
+            contextMenu.open(window.map, e.lnglat);
+        });
     </script>
 </body>
 </html>
