@@ -9,7 +9,7 @@ export function isWebEnv() {
 }
 
 export function initPlaceSearch(map, options = {}) {
-    if (!isWebEnv()) {
+    if (!isWebEnv() && !options.forceEnable) {
         console.debug('Search disabled in SiYuan environment.');
         return;
     }
@@ -26,6 +26,10 @@ export function initPlaceSearch(map, options = {}) {
             <input type="text" id="searchInput" placeholder="搜索地点..." />
             <button id="searchBtn">搜索</button>
             <button id="clearBtn">清空</button>
+            <button id="backToNormalBtn" style="display:none">回到普通搜索</button>
+        </div>
+        <div id="nearbySearchInfo" style="display:none; margin: 4px 0; font-size: 12px; color: #666;">
+            正在搜索 "<span id="selectedPointName"></span>" 周边
         </div>
         <ul id="searchResults"></ul>
         <div class="search-footer">
@@ -41,6 +45,9 @@ export function initPlaceSearch(map, options = {}) {
     const searchInput = container.querySelector('#searchInput');
     const searchBtn = container.querySelector('#searchBtn');
     const clearBtn = container.querySelector('#clearBtn');
+    const backToNormalBtn = container.querySelector('#backToNormalBtn');
+    const nearbySearchInfo = container.querySelector('#nearbySearchInfo');
+    const selectedPointName = container.querySelector('#selectedPointName');
     const prevPageBtn = container.querySelector('#prevPageBtn');
     const nextPageBtn = container.querySelector('#nextPageBtn');
     const pageInfo = container.querySelector('#pageInfo');
@@ -58,6 +65,10 @@ export function initPlaceSearch(map, options = {}) {
     let currentKeyword = '';
     let currentPage = 1;
     const pageSize = options.pageSize || 10;
+    
+    // 搜索模式状态
+    let isNearbyMode = false;
+    let selectedPoint = null;
 
     AMap.plugin('AMap.PlaceSearch', () => {
         placeSearch = new AMap.PlaceSearch({
@@ -108,28 +119,42 @@ export function initPlaceSearch(map, options = {}) {
         if (!keyword || !placeSearch) return;
         currentKeyword = keyword;
         placeSearch.setPageIndex(currentPage - 1);
-        placeSearch.search(keyword, (status, result) => {
-            if (status !== 'complete' || !result.poiList) return;
-            // Clear previous
-            if (searchOverlays.length) {
-                map.remove(searchOverlays);
-                searchOverlays = [];
-            }
-            const pois = result.poiList.pois;
-            currentPois = pois;
-
-            const markerData = pois.map(p => ({
-                lng: p.location.lng,
-                lat: p.location.lat,
-                title: p.name,
-            }));
-            import('./siyuan.js').then(({addMarkers}) => {
-                searchOverlays = addMarkers(map, markerData);
-                renderResults(pois);
-                updatePageControls(result.poiList.count);
-
-                if (searchOverlays.length) map.setFitView(searchOverlays);
+        
+        if (isNearbyMode && selectedPoint) {
+            // 周边搜索
+            placeSearch.searchNearBy(keyword, [selectedPoint.lng, selectedPoint.lat], 5000, (status, result) => {
+                if (status !== 'complete' || !result.poiList) return;
+                handleSearchResults(result);
             });
+        } else {
+            // 普通搜索
+            placeSearch.search(keyword, (status, result) => {
+                if (status !== 'complete' || !result.poiList) return;
+                handleSearchResults(result);
+            });
+        }
+    }
+    
+    function handleSearchResults(result) {
+        // Clear previous
+        if (searchOverlays.length) {
+            map.remove(searchOverlays);
+            searchOverlays = [];
+        }
+        const pois = result.poiList.pois;
+        currentPois = pois;
+
+        const markerData = pois.map(p => ({
+            lng: p.location.lng,
+            lat: p.location.lat,
+            title: p.name,
+        }));
+        import('./siyuan.js').then(({addMarkers}) => {
+            searchOverlays = addMarkers(map, markerData);
+            renderResults(pois);
+            updatePageControls(result.poiList.count);
+
+            if (searchOverlays.length) map.setFitView(searchOverlays);
         });
     }
 
@@ -142,6 +167,35 @@ export function initPlaceSearch(map, options = {}) {
         map.remove(searchOverlays);
         searchOverlays = [];
         footer.style.display = 'none';
+    }
+    
+    function switchToNearbyMode(point) {
+        isNearbyMode = true;
+        selectedPoint = point;
+        selectedPointName.textContent = point.title;
+        nearbySearchInfo.style.display = 'block';
+        backToNormalBtn.style.display = 'inline-block';
+        searchInput.placeholder = `搜索 "${point.title}" 周边...`;
+        
+        // 自动执行周边搜索（如果有关键词）
+        if (currentKeyword) {
+            currentPage = 1;
+            performSearch();
+        }
+    }
+    
+    function switchToNormalMode() {
+        isNearbyMode = false;
+        selectedPoint = null;
+        nearbySearchInfo.style.display = 'none';
+        backToNormalBtn.style.display = 'none';
+        searchInput.placeholder = '搜索地点...';
+        
+        // 如果有关键词，执行普通搜索
+        if (currentKeyword) {
+            currentPage = 1;
+            performSearch();
+        }
     }
 
     function addSelectedToMap() {
@@ -170,6 +224,7 @@ export function initPlaceSearch(map, options = {}) {
     });
 
     clearBtn.addEventListener('click', clearSearch);
+    backToNormalBtn.addEventListener('click', switchToNormalMode);
 
     prevPageBtn.addEventListener('click', () => {
         if (currentPage > 1) {
@@ -189,5 +244,11 @@ export function initPlaceSearch(map, options = {}) {
     resultsList.addEventListener('change', () => {
         const anyChecked = resultsList.querySelector('input[type="checkbox"]:checked');
         addSelectedBtn.disabled = !anyChecked;
+    });
+    
+    // 监听标记点点击事件
+    window.addEventListener('markerClicked', (event) => {
+        const point = event.detail;
+        switchToNearbyMode(point);
     });
 } 

@@ -17,11 +17,32 @@ export function resolveAvId() {
 
 export function addMarkers(map, markerData = []) {
     if (!map || !Array.isArray(markerData) || markerData.length === 0) return [];
-    const markers = markerData.map(m => new AMap.Marker({
-        position: [m.lng, m.lat],
-        title: m.title || '',
-        ...m.options
-    }));
+    const markers = markerData.map(m => {
+        const marker = new AMap.Marker({
+            position: [m.lng, m.lat],
+            title: m.title || '',
+            ...m.options
+        });
+        
+        // 添加点击事件，触发周边搜索
+        marker.on('click', function(e) {
+            const position = marker.getPosition();
+            const title = marker.getOptions().title || '未知地点';
+            
+            // 触发周边搜索事件
+            const event = new CustomEvent('markerClicked', {
+                detail: {
+                    position: position,
+                    title: title,
+                    lng: position.lng,
+                    lat: position.lat
+                }
+            });
+            window.dispatchEvent(event);
+        });
+        
+        return marker;
+    });
     map.add(markers);
     return markers;
 }

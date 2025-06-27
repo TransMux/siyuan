@@ -5,6 +5,7 @@
     --color-accent: #FF8A65;
     --color-text: #333333;
     --color-border: #E0E0E0;
+    --color-info: #4CAF50;
     --border-radius: 6px;
     --shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
@@ -32,11 +33,11 @@ html, body {
     box-shadow: var(--shadow);
     border: 1px solid var(--color-border);
     font-size: 14px;
+    min-width: 300px;
 }
 
 #searchContainer input {
     flex: 1 1 auto;
-    min-width: 160px;
     padding: 6px 8px;
     border: 1px solid var(--color-border);
     border-radius: var(--border-radius);
@@ -65,6 +66,28 @@ html, body {
     background: var(--color-primary-dark);
 }
 
+#searchContainer #backToNormalBtn {
+    background: var(--color-info);
+    font-size: 12px;
+    padding: 4px 8px;
+}
+
+#searchContainer #backToNormalBtn:hover {
+    background: #45a049;
+}
+
+#nearbySearchInfo {
+    background: #e8f5e8;
+    border: 1px solid var(--color-info);
+    border-radius: var(--border-radius);
+    padding: 4px 8px;
+    color: #2e7d32;
+}
+
+#nearbySearchInfo span {
+    font-weight: bold;
+}
+
 #searchContainer ul{
     list-style: none;
     margin: 6px 0 0 0;
@@ -74,11 +97,13 @@ html, body {
     border: 1px solid var(--color-border);
     border-radius: var(--border-radius);
 }
+
 #searchContainer li{
     padding: 6px 8px;
     cursor: pointer;
     transition: background 0.2s ease;
 }
+
 #searchContainer li:hover{
     background-color: var(--color-primary);
     color: #fff;
@@ -90,6 +115,7 @@ html, body {
     flex-wrap: wrap;
     align-items: center;
 }
+
 #searchContainer .search-footer{
     margin-top: 6px;
     justify-content: space-between;
