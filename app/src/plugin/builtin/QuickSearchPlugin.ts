@@ -121,7 +121,8 @@ export class QuickSearchPlugin extends Plugin {
         // Build search tab configuration – reuse last local search data if available
         const localData = (window as any).siyuan?.storage?.[Constants.LOCAL_SEARCHDATA] || {};
         const searchConfig = {
-            k: localData.k || "",
+            // Always start with an empty keyword – do not automatically reuse the last searched keyword
+            k: "",
             r: "",
             hasReplace: false,
             method: localData.method ?? 0,
