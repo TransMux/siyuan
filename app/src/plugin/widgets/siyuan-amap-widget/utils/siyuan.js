@@ -13,4 +13,29 @@ export function resolveAvId() {
         }
     }
     return null;
+}
+
+export function addMarkers(map, markerData = []) {
+    if (!map || !Array.isArray(markerData) || markerData.length === 0) return [];
+    const markers = markerData.map(m => new AMap.Marker({
+        position: [m.lng, m.lat],
+        title: m.title || '',
+        ...m.options
+    }));
+    map.add(markers);
+    return markers;
+}
+
+export function addPolygons(map, polygonData = []) {
+    if (!map || !Array.isArray(polygonData) || polygonData.length === 0) return [];
+    const polygons = polygonData.map(p => new AMap.Polygon({
+        path: p.path, // Array of [lng, lat]
+        strokeColor: p.strokeColor || '#FF33FF',
+        strokeWeight: p.strokeWeight || 2,
+        fillColor: p.fillColor || '#FFC0CB',
+        fillOpacity: p.fillOpacity ?? 0.35,
+        ...p.options
+    }));
+    map.add(polygons);
+    return polygons;
 } 

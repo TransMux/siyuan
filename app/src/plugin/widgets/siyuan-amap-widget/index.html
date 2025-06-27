@@ -37,10 +37,37 @@
         window.addEventListener('resize', () => map.resize());
     </script>
     <script type="module">
-        import { resolveAvId } from './utils/siyuan.js';
+        import { resolveAvId, addMarkers, addPolygons } from './utils/siyuan.js';
 
         const avId = resolveAvId();
         console.log('Resolved av_id:', avId);
+
+        // DEMO data, replace with backend data later
+        const demoMarkers = [
+            { lng: 116.397428, lat: 39.90923, title: 'Tiananmen' },
+            { lng: 116.405285, lat: 39.904989, title: 'Forbidden City' }
+        ];
+
+        const demoPolygons = [
+            {
+                path: [
+                    [116.392, 39.907],
+                    [116.404, 39.907],
+                    [116.404, 39.915],
+                    [116.392, 39.915]
+                ],
+                strokeColor: '#FF0000',
+                fillColor: '#FFAAAA',
+            }
+        ];
+
+        const overlays = [];
+        overlays.push(...addMarkers(map, demoMarkers));
+        overlays.push(...addPolygons(map, demoPolygons));
+
+        if (overlays.length) {
+            map.setFitView(overlays);
+        }
     </script>
 </body>
 </html>
