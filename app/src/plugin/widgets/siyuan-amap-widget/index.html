@@ -13,7 +13,127 @@
     <script src="https://webapi.amap.com/maps?v=2.0&key=96c22bea781373e30fca84e8aa3a3dde&plugin=AMap.ArrivalRange"></script>
 </head>
 <body>
+    <!-- SVG 图标定义 -->
+    <svg width="0" height="0" style="position: absolute;">
+        <defs>
+            <symbol id="iconDatabase" viewBox="0 0 24 24">
+                <path d="M12 3C7.58 3 4 4.79 4 7s3.58 4 8 4 8-1.79 8-4-3.58-4-8-4zM4 9v3c0 2.21 3.58 4 8 4s8-1.79 8-4V9c0 2.21-3.58 4-8 4s-8-1.79-8-4zM4 14v3c0 2.21 3.58 4 8 4s8-1.79 8-4v-3c0 2.21-3.58 4-8 4s-8-1.79-8-4z"/>
+            </symbol>
+            <symbol id="iconRight" viewBox="0 0 24 24">
+                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+            </symbol>
+            <symbol id="iconDownload" viewBox="0 0 24 24">
+                <path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/>
+            </symbol>
+            <symbol id="iconUpload" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                <polyline points="14,2 14,8 20,8"/>
+                <line x1="12" y1="18" x2="12" y2="12"/>
+                <polyline points="9,15 12,12 15,15"/>
+            </symbol>
+            <symbol id="iconTrashcan" viewBox="0 0 24 24">
+                <polyline points="3,6 5,6 21,6"/>
+                <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
+                <line x1="10" y1="11" x2="10" y2="17"/>
+                <line x1="14" y1="11" x2="14" y2="17"/>
+            </symbol>
+        </defs>
+    </svg>
+
     <div id="searchContainer"></div>
+    
+    <!-- 数据库管理面板 -->
+    <div id="databasePanel" class="database-panel">
+        <div class="database-header">
+            <div class="database-title">
+                <svg class="database-icon"><use xlink:href="#iconDatabase"></use></svg>
+                <span>地图数据库</span>
+            </div>
+            <button id="toggleDatabaseBtn" class="toggle-btn" aria-label="切换数据库面板">
+                <svg><use xlink:href="#iconRight"></use></svg>
+            </button>
+        </div>
+        
+        <div class="database-content">
+            <!-- 数据库选择 -->
+            <div class="database-select-section">
+                <label for="databaseSelect">选择数据库：</label>
+                <select id="databaseSelect">
+                    <option value="">请选择数据库...</option>
+                </select>
+                <button id="createDatabaseBtn" class="btn-secondary">新建</button>
+            </div>
+
+            <!-- 数据操作 -->
+            <div class="database-actions">
+                <button id="loadDataBtn" class="btn-primary">
+                    <svg><use xlink:href="#iconDownload"></use></svg>
+                    加载数据
+                </button>
+                <button id="saveDataBtn" class="btn-primary">
+                    <svg><use xlink:href="#iconUpload"></use></svg>
+                    保存数据
+                </button>
+                <button id="clearMapBtn" class="btn-warning">
+                    <svg><use xlink:href="#iconTrashcan"></use></svg>
+                    清空地图
+                </button>
+            </div>
+
+            <!-- 添加地图数据表单 -->
+            <div class="add-data-section">
+                <h4>添加地点</h4>
+                <form id="addLocationForm">
+                    <div class="form-group">
+                        <label for="locationName">地点名称：</label>
+                        <input type="text" id="locationName" placeholder="输入地点名称..." required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="locationNotes">备注：</label>
+                        <textarea id="locationNotes" placeholder="添加备注信息..." rows="2"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="locationCoords">经纬度：</label>
+                        <input type="text" id="locationCoords" placeholder="[经度, 纬度] 或 [[经度,纬度],...] 多边形" required>
+                        <small>支持标记点 [lng,lat] 或多边形 [[lng,lat],...]</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="locationTags">标签：</label>
+                        <div class="tag-selector">
+                            <label><input type="checkbox" value="景点"> 景点</label>
+                            <label><input type="checkbox" value="餐厅"> 餐厅</label>
+                            <label><input type="checkbox" value="住宿"> 住宿</label>
+                            <label><input type="checkbox" value="交通"> 交通</label>
+                            <label><input type="checkbox" value="购物"> 购物</label>
+                            <label><input type="checkbox" value="其他"> 其他</label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary">添加到地图</button>
+                </form>
+            </div>
+
+            <!-- 数据统计 -->
+            <div class="data-stats">
+                <div class="stat-item">
+                    <span class="stat-label">标记点：</span>
+                    <span id="markerCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">多边形：</span>
+                    <span id="polygonCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">数据库记录：</span>
+                    <span id="dbRecordCount">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="mapContainer"></div>
 
     <script>
@@ -32,6 +152,7 @@
         import { resolveAvId, addMarkers } from './utils/siyuan.js';
         import { isWebEnv, initPlaceSearch } from './utils/search.js';
         import { drawIsochrone } from './utils/isochrone.js';
+        import { initMapDatabase } from './utils/mapDatabase.js';
 
         const avId = resolveAvId();
         console.log('Resolved av_id:', avId);
@@ -43,6 +164,9 @@
         if (isWebEnv()) {
             initPlaceSearch(window.map);
         }
+
+        // Initialize database functionality
+        initMapDatabase(window.map);
 
         // Add context menu for 30-minute isochrone
         let contextMenu;

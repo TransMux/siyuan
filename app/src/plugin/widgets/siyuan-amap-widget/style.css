@@ -125,3 +125,433 @@ html, body {
     background: var(--color-border);
     cursor: not-allowed;
 } 
+
+/* 数据库面板样式 */
+.database-panel {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    background: var(--color-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--color-border);
+    min-width: 300px;
+    max-width: 350px;
+    transition: transform 0.3s ease;
+}
+
+.database-panel.collapsed {
+    transform: translateX(calc(100% - 40px));
+}
+
+.database-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--color-border);
+    background: #f8f9fa;
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+}
+
+.database-title {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.database-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 6px;
+    fill: var(--color-primary);
+}
+
+.toggle-btn {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background-color 0.2s;
+}
+
+.toggle-btn:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.toggle-btn svg {
+    width: 12px;
+    height: 12px;
+    transition: transform 0.3s ease;
+}
+
+.database-panel.collapsed .toggle-btn svg {
+    transform: rotate(180deg);
+}
+
+.database-content {
+    padding: 12px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.database-panel.collapsed .database-content {
+    display: none;
+}
+
+/* 数据库选择区域 */
+.database-select-section {
+    margin-bottom: 16px;
+}
+
+.database-select-section label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.database-select-section select {
+    width: 70%;
+    padding: 6px 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    font-size: 12px;
+    margin-right: 4px;
+}
+
+/* 按钮样式 */
+.btn-primary, .btn-secondary, .btn-warning {
+    padding: 6px 12px;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-primary {
+    background: var(--color-primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--color-primary-dark);
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+    font-size: 11px;
+    padding: 4px 8px;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+}
+
+.btn-warning {
+    background: #ffc107;
+    color: #212529;
+}
+
+.btn-warning:hover {
+    background: #e0a800;
+}
+
+.btn-primary svg, .btn-warning svg {
+    width: 12px;
+    height: 12px;
+    fill: currentColor;
+}
+
+/* 数据操作区域 */
+.database-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.database-actions button {
+    justify-content: center;
+}
+
+/* 添加数据区域 */
+.add-data-section {
+    border-top: 1px solid var(--color-border);
+    padding-top: 12px;
+    margin-bottom: 16px;
+}
+
+.add-data-section h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: var(--color-text);
+}
+
+.form-group {
+    margin-bottom: 12px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.form-group input, .form-group textarea, .form-group select {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    font-size: 12px;
+    box-sizing: border-box;
+}
+
+.form-group small {
+    font-size: 10px;
+    color: #666;
+    margin-top: 2px;
+    display: block;
+}
+
+.tag-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.tag-selector label {
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+    margin-bottom: 0;
+}
+
+.tag-selector input[type="checkbox"] {
+    width: auto;
+    margin-right: 4px;
+}
+
+/* 数据统计区域 */
+.data-stats {
+    border-top: 1px solid var(--color-border);
+    padding-top: 12px;
+    font-size: 12px;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    color: #666;
+}
+
+.stat-item span:last-child {
+    font-weight: 600;
+    color: var(--color-primary);
+}
+
+/* 搜索结果样式增强 */
+.poi-actions {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.poi-actions button {
+    font-size: 10px;
+    padding: 2px 6px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.iso-btn {
+    background: var(--color-accent);
+    color: white;
+}
+
+.iso-btn:hover {
+    background: #E64A19;
+}
+
+.save-btn {
+    background: var(--color-info);
+    color: white;
+}
+
+.save-btn:hover {
+    background: #2E7D32;
+}
+
+.poi-info {
+    margin-top: 2px;
+}
+
+.poi-info small {
+    color: #666;
+    font-size: 10px;
+}
+
+/* 信息窗口样式 */
+.marker-info-window, .polygon-info-window {
+    min-width: 200px;
+    max-width: 300px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.marker-header, .polygon-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #eee;
+}
+
+.marker-header h4, .polygon-header h4 {
+    margin: 0;
+    color: var(--color-text);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.delete-marker-btn, .delete-polygon-btn {
+    background: #F44336;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.delete-marker-btn:hover, .delete-polygon-btn:hover {
+    background: #D32F2F;
+}
+
+.marker-notes, .polygon-notes {
+    margin: 8px 0;
+    font-size: 12px;
+    color: #555;
+    line-height: 1.4;
+}
+
+.marker-tags, .polygon-tags {
+    margin: 8px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.tag {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    color: white;
+    font-weight: 500;
+}
+
+.tag-景点 { background: #FF6B6B; }
+.tag-餐厅 { background: #4ECDC4; }
+.tag-住宿 { background: #45B7D1; }
+.tag-交通 { background: #96CEB4; }
+.tag-购物 { background: #FECA57; }
+.tag-其他 { background: #A0A0A0; }
+
+.marker-coordinates, .polygon-info {
+    margin: 8px 0;
+    color: #666;
+    font-size: 11px;
+}
+
+.marker-actions, .polygon-actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 6px;
+}
+
+.marker-actions button, .polygon-actions button {
+    flex: 1;
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.edit-marker-btn, .edit-polygon-btn {
+    background: #FF9800;
+    color: white;
+}
+
+.edit-marker-btn:hover, .edit-polygon-btn:hover {
+    background: #F57C00;
+}
+
+.nearby-search-btn {
+    background: var(--color-primary);
+    color: white;
+}
+
+.nearby-search-btn:hover {
+    background: var(--color-primary-dark);
+}
+
+.show-bounds-btn {
+    background: #9C27B0;
+    color: white;
+}
+
+.show-bounds-btn:hover {
+    background: #7B1FA2;
+}
+
+/* 搜索消息样式 */
+.search-message {
+    transition: opacity 0.3s ease;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .database-panel {
+        right: 5px;
+        min-width: 280px;
+        max-width: 280px;
+    }
+    
+    .database-panel.collapsed {
+        transform: translateX(calc(100% - 35px));
+    }
+    
+    .marker-info-window, .polygon-info-window {
+        max-width: 250px;
+    }
+    
+    .marker-actions, .polygon-actions {
+        flex-direction: column;
+    }
+}

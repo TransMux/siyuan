@@ -84,7 +84,16 @@ export function initPlaceSearch(map, options = {}) {
         resultsList.innerHTML = '';
         pois.forEach((poi, idx) => {
             const li = document.createElement('li');
-            li.innerHTML = `<label><input type="checkbox" data-idx="${idx}" /> ${poi.name}</label> <button data-idx="${idx}" class="iso-btn">30分钟圈</button>`;
+            li.innerHTML = `
+                <label><input type="checkbox" data-idx="${idx}" /> ${poi.name}</label>
+                <div class="poi-actions">
+                    <button data-idx="${idx}" class="iso-btn">30分钟圈</button>
+                    <button data-idx="${idx}" class="save-btn">保存到数据库</button>
+                </div>
+                <div class="poi-info">
+                    <small>${poi.address || '无地址信息'}</small>
+                </div>
+            `;
             li.querySelector('label').addEventListener('click', (e) => {
                 // ignore when clicking checkbox
                 if (e.target.tagName.toLowerCase() !== 'input') {
@@ -97,6 +106,15 @@ export function initPlaceSearch(map, options = {}) {
                 drawIsochrone(map, [poi.location.lng, poi.location.lat]);
                 e.stopPropagation();
             });
+            
+            // 添加保存到数据库功能
+            li.querySelector('.save-btn').addEventListener('click', async (e) => {
+                const id = parseInt(e.currentTarget.dataset.idx, 10);
+                const poi = currentPois[id];
+                await savePoiToDatabase(poi);
+                e.stopPropagation();
+            });
+            
             resultsList.appendChild(li);
         });
     }
@@ -251,4 +269,120 @@ export function initPlaceSearch(map, options = {}) {
         const point = event.detail;
         switchToNearbyMode(point);
     });
+    
+    // 保存POI到数据库
+    async function savePoiToDatabase(poi) {
+        try {
+            // 导入数据库操作函数
+            const { addMapDataToDatabase, getCurrentDatabase, addMapDataItem } = await import('./mapDatabase.js');
+            
+            const currentDb = getCurrentDatabase();
+            if (!currentDb) {
+                showSearchMessage('请先选择数据库', 'warning');
+                return;
+            }
+            
+            // 推断POI类型标签
+            const tags = inferPoiTags(poi);
+            
+            const locationData = {
+                name: poi.name,
+                notes: poi.address || '',
+                coordinates: [poi.location.lng, poi.location.lat],
+                tags: tags
+            };
+            
+            // 添加到数据库
+            await addMapDataToDatabase(currentDb, locationData);
+            
+            // 添加到本地数据
+            addMapDataItem(locationData);
+            
+            // 添加到地图
+            const markerData = [{
+                lng: poi.location.lng,
+                lat: poi.location.lat,
+                title: poi.name,
+                notes: poi.address || '',
+                tags: tags
+            }];
+            
+            import('./siyuan.js').then(({addMarkers}) => {
+                addMarkers(map, markerData);
+            });
+            
+            showSearchMessage(`已保存 "${poi.name}" 到数据库`, 'success');
+            
+        } catch (error) {
+            console.error('保存POI到数据库失败:', error);
+            showSearchMessage('保存失败: ' + error.message, 'error');
+        }
+    }
+    
+    // 推断POI类型标签
+    function inferPoiTags(poi) {
+        const name = poi.name.toLowerCase();
+        const address = (poi.address || '').toLowerCase();
+        const type = (poi.type || '').toLowerCase();
+        
+        // 根据名称和类型推断标签
+        if (name.includes('餐厅') || name.includes('酒店') || name.includes('饭店') || 
+            name.includes('咖啡') || name.includes('茶') || type.includes('餐饮')) {
+            return ['餐厅'];
+        } else if (name.includes('酒店') || name.includes('宾馆') || name.includes('旅馆') || 
+                   name.includes('民宿') || type.includes('住宿')) {
+            return ['住宿'];
+        } else if (name.includes('地铁') || name.includes('公交') || name.includes('车站') || 
+                   name.includes('机场') || name.includes('火车') || type.includes('交通')) {
+            return ['交通'];
+        } else if (name.includes('商场') || name.includes('超市') || name.includes('购物') || 
+                   name.includes('百货') || type.includes('购物')) {
+            return ['购物'];
+        } else if (name.includes('景区') || name.includes('公园') || name.includes('博物馆') || 
+                   name.includes('寺庙') || name.includes('教堂') || type.includes('旅游')) {
+            return ['景点'];
+        } else {
+            return ['其他'];
+        }
+    }
+    
+    // 显示搜索消息
+    function showSearchMessage(message, type = 'info') {
+        const messageEl = document.createElement('div');
+        messageEl.className = `search-message search-message-${type}`;
+        messageEl.textContent = message;
+        
+        Object.assign(messageEl.style, {
+            position: 'fixed',
+            top: '70px',
+            left: '20px',
+            zIndex: '10001',
+            padding: '8px 12px',
+            borderRadius: '4px',
+            color: 'white',
+            fontSize: '12px',
+            fontWeight: '500',
+            maxWidth: '300px',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+        });
+        
+        const colors = {
+            success: '#4CAF50',
+            error: '#F44336',
+            warning: '#FF9800',
+            info: '#2196F3'
+        };
+        messageEl.style.backgroundColor = colors[type] || colors.info;
+        
+        document.body.appendChild(messageEl);
+        
+        setTimeout(() => {
+            messageEl.style.opacity = '0';
+            setTimeout(() => {
+                if (messageEl.parentNode) {
+                    document.body.removeChild(messageEl);
+                }
+            }, 300);
+        }, 3000);
+    }
 } 
