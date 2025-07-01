@@ -23,7 +23,7 @@ function getExistingSlibingElement(inlineElement: HTMLElement, avID: string, blo
     // create slibing element
     // 使用HTML模板格式创建sibling元素
     const slibingElementTemplate = `
-            <div class="mux-av-attr-inline non-protyle" data-av-id="${avID}" data-block-id="${blockID}" data-av-block-id="${avBlockID}">
+            <div class="mux-av-attr-inline protyle-custom" data-av-id="${avID}" data-block-id="${blockID}" data-av-block-id="${avBlockID}">
                 <svg><use xlink:href="#iconDatabase"></use></svg>
                 <span class="popover__block"></span>
             </div>
