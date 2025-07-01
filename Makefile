@@ -23,3 +23,6 @@ install:
 	make install-app
 	make install-desktop
 	curl -G "http://100.74.82.128:6253/push" --data-urlencode "message=SiYuan Build Success"
+
+pull:
+	git pull --all
