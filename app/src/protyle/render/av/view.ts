@@ -164,12 +164,7 @@ export const bindViewEvent = (options: {
 
 export const getViewHTML = (data: IAV) => {
     const view = data.view;
-    let fields: IAVColumn[];
-    if (data.viewType === "table") {
-        fields = (view as IAVTable).columns;
-    } else if (data.viewType === "gallery") {
-        fields = (view as IAVGallery).fields;
-    }
+    const fields = getFieldsByData(data);
     return `<div class="b3-menu__items">
 <button class="b3-menu__item" data-type="nobg">
     <span class="b3-menu__label ft__center">${window.siyuan.languages.config}</span>
@@ -214,6 +209,12 @@ export const getViewHTML = (data: IAV) => {
     <svg class="b3-menu__icon"><use xlink:href="#iconSort"></use></svg>
     <span class="b3-menu__label">${window.siyuan.languages.sort}</span>
     <span class="b3-menu__accelerator">${view.sorts.length}</span>
+    <svg class="b3-menu__icon b3-menu__icon--small"><use xlink:href="#iconRight"></use></svg>
+</button>
+<button class="b3-menu__item" data-type="goGroups">
+    <svg class="b3-menu__icon"><use xlink:href="#iconGroups"></use></svg>
+    <span class="b3-menu__label">${window.siyuan.languages.group}</span>
+    <span class="b3-menu__accelerator">${data.view.group ? fields.filter((item: IAVColumn) => item.id === data.view.group.field)[0].name : ""}</span>
     <svg class="b3-menu__icon b3-menu__icon--small"><use xlink:href="#iconRight"></use></svg>
 </button>
 <button class="b3-menu__separator"></button>

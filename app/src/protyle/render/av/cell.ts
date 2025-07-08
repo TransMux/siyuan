@@ -189,11 +189,11 @@ const transformCellValue = (colType: TAVCol, value: IAVCellValue): IAVCellValue 
         }
     } else if (["text", "block", "url", "phone", "email", "template"].includes(colType)) {
         newValue[colType as "text"] = {
-            content: getCellValueContent(value)
+            content: getCellValueContent(value).toString()
         };
     } else if (colType === "mSelect" || colType === "select") {
         newValue.mSelect = [{
-            content: getCellValueContent(value),
+            content: getCellValueContent(value).toString(),
             color: "1"
         }];
     } else if (colType === "rollup") {
@@ -212,7 +212,7 @@ const transformCellValue = (colType: TAVCol, value: IAVCellValue): IAVCellValue 
             newValue.relation = {blockIDs: [], contents: []};
         }
     } else if (colType === "mAsset") {
-        const content = getCellValueContent(value);
+        const content = getCellValueContent(value).toString();
         newValue.mAsset = [{
             type: Constants.SIYUAN_ASSETS_IMAGE.includes(pathPosix().extname(content).toLowerCase()) ? "image" : "file",
             content,
@@ -806,7 +806,7 @@ export const updateCellsValue = (protyle: IProtyle, nodeElement: HTMLElement, va
                     });
                 }
             }
-        } else if (type === "mSelect") {
+        } else if (type === "mSelect" || type === "select") {
             // 不传入为删除
             if (typeof value === "string") {
                 const newMSelectValue: IAVCellSelectValue[] = [];

@@ -810,6 +810,11 @@ const dragSame = async (protyle: IProtyle, sourceElements: Element[], targetElem
 
 export const dropEvent = (protyle: IProtyle, editorElement: HTMLElement) => {
     editorElement.addEventListener("dragstart", (event) => {
+        if (protyle.disabled) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+        }
         let target = event.target as HTMLElement;
         if (target.classList.contains("av__gallery-img")) {
             target = hasClosestByClassName(target, "av__gallery-item") as HTMLElement;
@@ -870,6 +875,11 @@ export const dropEvent = (protyle: IProtyle, editorElement: HTMLElement) => {
             } else if (target.classList.contains("av__gallery-item")) {
                 const blockElement = hasClosestBlock(target);
                 if (blockElement) {
+                    if (blockElement.querySelector('.block__icon[data-type="av-sort"]')?.classList.contains("block__icon--active")) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        return;
+                    }
                     target.classList.add("av__gallery-item--select");
                     const ghostElement = document.createElement("div");
                     ghostElement.className = "protyle-wysiwyg protyle-wysiwyg--attr " + target.parentElement.className;
@@ -879,7 +889,7 @@ export const dropEvent = (protyle: IProtyle, editorElement: HTMLElement) => {
                         cloneItem.querySelector(".av__gallery-fields").setAttribute("style", "background-color: var(--b3-theme-background)");
                         ghostElement.append(cloneItem);
                     });
-                    ghostElement.setAttribute("style", "position:fixed;opacity:.1;padding:0;z-index:1;");
+                    ghostElement.setAttribute("style", "top:100vh;position:fixed;opacity:.1;padding:0");
                     document.body.append(ghostElement);
                     event.dataTransfer.setDragImage(ghostElement, -10, -10);
                     setTimeout(() => {
