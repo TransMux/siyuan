@@ -1,4 +1,5 @@
 {
+  "syncColWidth": "Synchroniser la largeur de la colonne",
   "groupMethod": "Méthode de regroupement",
   "hideEmptyGroup": "Masquer le groupe vide",
   "groups": "Groupes",
@@ -438,7 +439,7 @@
   "apiVersion": "Version API",
   "apiVersionTip": "Requis uniquement lors de l'utilisation du service Azure OpenAI",
   "apiProvider": "API du fournisseur",
-  "apiProviderTip": "Utiliser le fournisseur d'API sélectionné pour implémenter les fonctions liées à l'IA",
+  "apiProviderTip": "En sélectionnant, le service API du fournisseur sera utilisé pour implémenter des fonctionnalités d'IA (ChatGPT, Claude, DeepSeek et autres modèles prennent en charge l'interface OpenAI)",
   "skip": "Navire",
   "nextRound": "Prochain tour",
   "save": "Sauvegarder",
@@ -814,7 +815,7 @@
   "syncMode3": "Manuelle Complète (pas de synchronisation au démarrage et à l'arrêt, contrôle manuel complet de la synchronisation et du sens de synchronisation)",
   "cloudSync": "Cloud Sync",
   "cloudSyncDir": "Répertoire de sync cloud",
-  "cloudSyncDirTip": "Les répertoires de synchronisation cloud correspondent un à un aux espaces de travail, ils ne doivent pas être mélangés. Après avoir modifié la clé de référentiel de données, il est nécessaire de remplacer le nouveau répertoire de synchronisation cloud",
+  "cloudSyncDirTip": "Chaque répertoire de synchronisation cloud ne stocke que les données d'un espace de travail, et un espace de travail local ne peut utiliser qu'un seul répertoire de synchronisation cloud. Veuillez ne pas basculer d'avant en arrière. Après avoir modifié la clé de référentiel de données, vous devez basculer vers un nouveau répertoire de synchronisation cloud",
   "emptyCloudSyncList": "La liste de sync du cloud est videy",
   "retry": "Réessayer",
   "insertVideoURL": "Insérer lien vidéo",
@@ -1627,6 +1628,12 @@
     "255": "Le site cible a activé la protection contre le hotlinking, il est donc impossible de télécharger [%d] ressources",
     "256": "Le chemin spécifié [%s] contient un chemin d'espace de travail parent [%s]",
     "257": "Souviens-toi de moi pendant 30 jours",
-    "258": "Échec de l'opération, veuillez réessayer plus tard"
+    "258": "Échec de l'opération, veuillez réessayer plus tard",
+    "259": "Les %d derniers jours",
+    "260": "Hier",
+    "261": "Aujourd'hui",
+    "262": "Demain",
+    "263": "Les %d prochains jours",
+    "264": "Le champ [%s] est vide"
   }
 }

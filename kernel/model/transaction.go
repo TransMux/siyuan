@@ -303,6 +303,8 @@ func performTx(tx *Transaction) (ret *TxErr) {
 			ret = tx.doHideAttrViewGroup(op)
 		case "setGroupHideEmpty":
 			ret = tx.doSetGroupHideEmpty(op)
+		case "syncAttrViewTableColWidth":
+			ret = tx.doSyncAttrViewTableColWidth(op)
 		}
 
 		if nil != ret {
@@ -1205,15 +1207,22 @@ func (tx *Transaction) doInsert(operation *Operation) (ret *TxErr) {
 		ReloadAttrView(avID)
 	}
 
-	// 插入数据库块时需要重新绑定其中已经存在的块
-	// 比如剪切操作时，会先进行 delete 数据库解绑块，这里需要重新绑定 https://github.com/siyuan-note/siyuan/issues/13031
 	if ast.NodeAttributeView == insertedNode.Type {
+		// 插入数据库块时需要重新绑定其中已经存在的块
+		// 比如剪切操作时，会先进行 delete 数据库解绑块，这里需要重新绑定 https://github.com/siyuan-note/siyuan/issues/13031
 		attrView, parseErr := av.ParseAttributeView(insertedNode.AttributeViewID)
 		if nil == parseErr {
 			trees, toBindNodes := tx.getAttrViewBoundNodes(attrView)
 			for _, toBindNode := range toBindNodes {
 				t := trees[toBindNode.ID]
 				bindBlockAv0(tx, insertedNode.AttributeViewID, toBindNode, t)
+			}
+
+			// 设置视图 https://github.com/siyuan-note/siyuan/issues/15279
+			v := attrView.GetView(attrView.ViewID)
+			if nil != v {
+				insertedNode.AttributeViewType = string(v.LayoutType)
+				insertedNode.SetIALAttr(av.NodeAttrView, v.ID)
 			}
 		}
 	}
@@ -1548,7 +1557,7 @@ type Operation struct {
 	Name                string                   `json:"name"`              // 属性视图列名
 	Typ                 string                   `json:"type"`              // 属性视图列类型
 	Format              string                   `json:"format"`            // 属性视图列格式化
-	KeyID               string                   `json:"keyID"`             // 属性视列 ID
+	KeyID               string                   `json:"keyID"`             // 属性视图字段 ID
 	RowID               string                   `json:"rowID"`             // 属性视图行 ID
 	IsTwoWay            bool                     `json:"isTwoWay"`          // 属性视图关联列是否是双向关系
 	BackRelationKeyID   string                   `json:"backRelationKeyID"` // 属性视图关联列回链关联列的 ID

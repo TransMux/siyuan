@@ -20,6 +20,7 @@ import {av在客户端渲染template} from "../../../mux/utils";
 import {genUUID} from "../../../util/genID";
 import {getFieldIdByCellElement} from "./row";
 import {getFieldsByData} from "./view";
+import {getCompressURL, removeCompressURL} from "../../../util/image";
 
 const renderCellURL = (urlContent: string) => {
     let host = urlContent;
@@ -132,7 +133,7 @@ export const genCellValueByElement = (colType: TAVCol, cellElement: HTMLElement)
             const isImg = item.classList.contains("av__cellassetimg");
             mAsset.push({
                 type: isImg ? "image" : "file",
-                content: isImg ? item.getAttribute("src") : item.getAttribute("data-url"),
+                content: isImg ? removeCompressURL(item.getAttribute("src")) : item.getAttribute("data-url"),
                 name: isImg ? "" : item.getAttribute("data-name")
             });
         });
@@ -979,7 +980,7 @@ export const renderCell = (cellValue: IAVCellValue, rowIndex = 0, showIcon = tru
     } else if (cellValue.type === "mAsset") {
         cellValue?.mAsset?.forEach((item) => {
             if (item.type === "image") {
-                text += `<img class="av__cellassetimg ariaLabel" aria-label="${item.content}" src="${item.content}">`;
+                text += `<img loading="lazy" class="av__cellassetimg ariaLabel" aria-label="${item.content}" src="${getCompressURL(item.content)}">`;
             } else {
                 text += `<span class="b3-chip av__celltext--url ariaLabel" aria-label="${escapeAttr(item.content)}" data-name="${escapeAttr(item.name)}" data-url="${escapeAttr(item.content)}">${item.name || item.content}</span>`;
             }
@@ -1016,8 +1017,9 @@ export const renderCell = (cellValue: IAVCellValue, rowIndex = 0, showIcon = tru
         }
     }
 
-    if ((["text", "template", "url", "email", "phone", "number", "date", "created", "updated"].includes(cellValue.type) && cellValue[cellValue.type as "url"]?.content) ||
+    if ((["text", "template", "url", "email", "phone", "date", "created", "updated"].includes(cellValue.type) && cellValue[cellValue.type as "url"]?.content) ||
         cellValue.type === "lineNumber" ||
+        (cellValue.type === "number" && cellValue.number?.isNotEmpty) ||
         (cellValue.type === "block" && cellValue.block?.content)) {
         text += `<span ${cellValue.type !== "number" ? "" : 'style="right:auto;left:5px"'} data-type="copy" class="block__icon"><svg><use xlink:href="#iconCopy"></use></svg></span>`;
     }

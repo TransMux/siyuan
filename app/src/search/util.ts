@@ -1235,7 +1235,7 @@ export const inputEvent = (element: Element, config: Config.IUILayoutTabSearchCo
         const loadingElement = element.querySelector(".fn__loading--top");
         loadingElement.classList.remove("fn__none");
         const searchInputElement = element.querySelector("#searchInput") as HTMLInputElement;
-        const inputValue = searchInputElement.value;
+        config.query = searchInputElement.value;
         element.querySelector("#searchList").scrollTo(0, 0);
         const previousElement = element.querySelector('[data-type="previous"]');
         const nextElement = element.querySelector('[data-type="next"]');
@@ -1247,7 +1247,7 @@ export const inputEvent = (element: Element, config: Config.IUILayoutTabSearchCo
             });
         });
         const searchResultElement = element.querySelector("#searchResult");
-        if (inputValue === "") {
+        if (config.query === "") {
             // Keyword is empty – do NOT load the default "recently updated blocks" list.
             // Instead, clear existing results and keep the panel idle awaiting user input.
             onSearch([], edit, element, config);
@@ -1265,7 +1265,7 @@ export const inputEvent = (element: Element, config: Config.IUILayoutTabSearchCo
             element.setAttribute("data-search-token", searchToken);
 
             fetchPost("/api/search/fullTextSearchBlock", {
-                query: inputValue,
+                query: config.query,
                 method: config.method,
                 types: config.types,
                 paths: config.idPath || [],

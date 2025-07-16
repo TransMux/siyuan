@@ -322,16 +322,24 @@ export class WYSIWYG {
                     html = "[";
                     cellElements.forEach((item: HTMLElement, index) => {
                         const cellText = getCellText(item);
-                        if (index === 0 || !cellElements[index - 1].isSameNode(item.previousElementSibling)) {
+                        if (index === 0 || (
+                            !cellElements[index - 1].isSameNode(item.previousElementSibling) &&
+                            !(item.previousElementSibling?.classList.contains("av__colsticky") && !cellElements[index - 1].nextElementSibling && cellElements[index - 1].parentElement.isSameNode(item.previousElementSibling))
+                        )) {
                             html += "[";
                         }
                         html += JSON.stringify(genCellValueByElement(getTypeByCellElement(item), item)) + ",";
-                        if (index === cellElements.length - 1 || !cellElements[index + 1].isSameNode(item.nextElementSibling)) {
+                        if (index === cellElements.length - 1 || (
+                            !cellElements[index + 1].isSameNode(item.nextElementSibling) &&
+                            !(!item.nextElementSibling && item.parentElement.nextElementSibling.isSameNode(cellElements[index + 1]))
+                        )) {
                             html = html.substring(0, html.length - 1) + "],";
+                            textPlain += cellText + "\n";
+                        } else {
+                            textPlain += cellText + "\t";
                         }
-                        textPlain += cellText + ((cellElements[index + 1] && item.nextElementSibling && item.nextElementSibling.isSameNode(cellElements[index + 1])) ? "\t" : "\n\n");
                     });
-                    textPlain = textPlain.substring(0, textPlain.length - 2);
+                    textPlain = textPlain.substring(0, textPlain.length - 1);
                     html = html.substring(0, html.length - 1) + "]";
                 }
             } else if (selectTableElement) {
@@ -1646,6 +1654,12 @@ export class WYSIWYG {
                     }
                     if (selectElement.length > 0) {
                         range.collapse(true);
+                        if (range.commonAncestorContainer.nodeType === 1 &&
+                            range.startContainer.childNodes[range.startOffset] &&
+                            range.startContainer.childNodes[range.startOffset].nodeType === 1 &&
+                            (range.commonAncestorContainer as HTMLElement).classList.contains("protyle-wysiwyg")) {
+                            focusBlock(range.startContainer.childNodes[range.startOffset] as Element);
+                        }
                         return;
                     }
                     const startBlockElement = hasClosestBlock(range.startContainer);
@@ -1685,7 +1699,7 @@ export class WYSIWYG {
         protyle.observer = new ResizeObserver(() => {
             const contentRect = protyle.contentElement.getBoundingClientRect();
             protyle.wysiwyg.element.querySelectorAll(".av").forEach((item: HTMLElement) => {
-                if (item.querySelector(".av__title")) {
+                if (item.querySelector(".av__scroll")) {
                     stickyRow(item, contentRect, "all");
                 }
             });
@@ -1975,9 +1989,6 @@ export class WYSIWYG {
             }
             const avGalleryItemElement = hasClosestByClassName(target, "av__gallery-item");
             if (avGalleryItemElement) {
-                if (protyle.disabled) {
-                    return false;
-                }
                 openGalleryItemMenu({
                     target: avGalleryItemElement.querySelector(".protyle-icon--last"),
                     protyle,

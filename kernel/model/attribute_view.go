@@ -45,6 +45,55 @@ import (
 	"github.com/xrash/smetrics"
 )
 
+func (tx *Transaction) doSyncAttrViewTableColWidth(operation *Operation) (ret *TxErr) {
+	err := syncAttrViewTableColWidth(operation)
+	if err != nil {
+		return &TxErr{code: TxErrHandleAttributeView, id: operation.AvID, msg: err.Error()}
+	}
+	return
+}
+
+func syncAttrViewTableColWidth(operation *Operation) (err error) {
+	attrView, err := av.ParseAttributeView(operation.AvID)
+	if err != nil {
+		return
+	}
+
+	view := attrView.GetView(operation.ID)
+	if nil == view {
+		err = av.ErrViewNotFound
+		logging.LogErrorf("view [%s] not found in attribute view [%s]", operation.ID, operation.AvID)
+		return
+	}
+
+	var width string
+	switch view.LayoutType {
+	case av.LayoutTypeTable:
+		for _, column := range view.Table.Columns {
+			if column.ID == operation.KeyID {
+				width = column.Width
+				break
+			}
+		}
+	case av.LayoutTypeGallery:
+		return
+	}
+
+	for _, v := range attrView.Views {
+		if av.LayoutTypeTable == v.LayoutType {
+			for _, column := range v.Table.Columns {
+				if column.ID == operation.KeyID {
+					column.Width = width
+					break
+				}
+			}
+		}
+	}
+
+	err = av.SaveAttributeView(attrView)
+	return
+}
+
 func (tx *Transaction) doSetGroupHideEmpty(operation *Operation) (ret *TxErr) {
 	if err := SetGroupHideEmpty(operation.AvID, operation.BlockID, operation.Data.(bool)); nil != err {
 		return &TxErr{code: TxErrHandleAttributeView, id: operation.AvID, msg: err.Error()}
@@ -144,95 +193,7 @@ func SetAttributeViewGroup(avID, blockID string, group *av.ViewGroup) (err error
 	}
 
 	view.Group = group
-	view.Groups = nil
-
-	// 生成分组数据
-	const (
-		defaultGroupName = "_@default@_"
-		notInRange       = "_@notInRange@_"
-	)
-	var groupName string
-	viewable := sql.RenderView(attrView, view, "")
-
-	var items []av.Item
-	for _, item := range viewable.(av.Collection).GetItems() {
-		items = append(items, item)
-	}
-	var rangeStart, rangeEnd float64
-	switch group.Method {
-	case av.GroupMethodValue:
-	case av.GroupMethodRangeNum:
-		if nil == group.Range {
-			logging.LogWarnf("range is nil in av [%s]", avID)
-			return
-		}
-
-		rangeStart, rangeEnd = group.Range.NumStart, group.Range.NumStart+group.Range.NumStep
-		sort.SliceStable(items, func(i, j int) bool {
-			if av.GroupOrderAsc == group.Order {
-				return items[i].GetValue(group.Field).Number.Content < items[j].GetValue(group.Field).Number.Content
-			}
-			return items[i].GetValue(group.Field).Number.Content > items[j].GetValue(group.Field).Number.Content
-		})
-		// TODO Database grouping by field https://github.com/siyuan-note/siyuan/issues/10964
-	}
-
-	groupItemsMap := map[string][]av.Item{}
-	for _, item := range items {
-		value := item.GetValue(group.Field)
-		if value.IsEmpty() {
-			groupName = defaultGroupName
-		} else {
-			switch group.Method {
-			case av.GroupMethodValue:
-				groupName = value.String(false)
-			case av.GroupMethodRangeNum:
-				if value.Type != av.KeyTypeNumber {
-					logging.LogWarnf("item [%s] value [%s] type is not number in av [%s]", item.GetID(), value.String(false), avID)
-					return
-				}
-				if nil == value.Number {
-					logging.LogWarnf("item [%s] value [%s] number is nil in av [%s]", item.GetID(), value.String(false), avID)
-					return
-				}
-
-				if group.Range.NumStart > value.Number.Content || group.Range.NumEnd < value.Number.Content {
-					groupName = notInRange
-					break
-				}
-
-				for rangeEnd <= group.Range.NumEnd && rangeEnd < value.Number.Content {
-					rangeStart += group.Range.NumStep
-					rangeEnd += group.Range.NumStep
-				}
-
-				if rangeStart <= value.Number.Content && rangeEnd >= value.Number.Content {
-					groupName = fmt.Sprintf("%s - %s", strconv.FormatFloat(rangeStart, 'f', -1, 64), strconv.FormatFloat(rangeEnd, 'f', -1, 64))
-				}
-			}
-		}
-		groupItemsMap[groupName] = append(groupItemsMap[groupName], item)
-	}
-
-	for name, groupItems := range groupItemsMap {
-		var v *av.View
-		switch view.LayoutType {
-		case av.LayoutTypeTable:
-			v = av.NewTableView()
-			v.Table = av.NewLayoutTable()
-		case av.LayoutTypeGallery:
-			v = av.NewGalleryView()
-			v.Gallery = av.NewLayoutGallery()
-		}
-		for _, item := range groupItems {
-			v.GroupItemIDs = append(v.GroupItemIDs, item.GetID())
-		}
-		v.Name = name
-		view.Groups = append(view.Groups, v)
-		view.GroupDefault = name == defaultGroupName
-	}
-
-	err = av.SaveAttributeView(attrView)
+	genAttrViewViewGroups(view, attrView)
 	return err
 }
 
@@ -343,13 +304,27 @@ func ChangeAttrViewLayout(blockID, avID string, layout av.LayoutType) (err error
 			continue
 		}
 
-		node.AttributeViewType = string(view.LayoutType)
+		changed := false
 		attrs := parse.IAL2Map(node.KramdownIAL)
-		attrs[av.NodeAttrView] = view.ID
-		err = setNodeAttrs(node, tree, attrs)
-		if err != nil {
-			logging.LogWarnf("set node [%s] attrs failed: %s", bID, err)
-			return
+		if blockID == bID { // 当前操作的镜像库
+			attrs[av.NodeAttrView] = view.ID
+			node.AttributeViewType = string(view.LayoutType)
+			attrView.ViewID = view.ID
+			changed = true
+		} else {
+			if view.ID == attrs[av.NodeAttrView] {
+				// 仅更新和当前操作的镜像库指定的视图相同的镜像库
+				node.AttributeViewType = string(view.LayoutType)
+				changed = true
+			}
+		}
+
+		if changed {
+			err = setNodeAttrs(node, tree, attrs)
+			if err != nil {
+				logging.LogWarnf("set node [%s] attrs failed: %s", bID, err)
+				return
+			}
 		}
 	}
 
@@ -1310,7 +1285,7 @@ func RenderRepoSnapshotAttributeView(indexID, avID string) (viewable av.Viewable
 		}
 	}
 
-	viewable, err = renderAttributeView(attrView, "", "", 1, -1)
+	viewable, err = renderAttributeView(attrView, "", "", "", 1, -1)
 	return
 }
 
@@ -1353,11 +1328,11 @@ func RenderHistoryAttributeView(avID, created string) (viewable av.Viewable, att
 		}
 	}
 
-	viewable, err = renderAttributeView(attrView, "", "", 1, -1)
+	viewable, err = renderAttributeView(attrView, "", "", "", 1, -1)
 	return
 }
 
-func RenderAttributeView(avID, viewID, query string, page, pageSize int) (viewable av.Viewable, attrView *av.AttributeView, err error) {
+func RenderAttributeView(blockID, avID, viewID, query string, page, pageSize int) (viewable av.Viewable, attrView *av.AttributeView, err error) {
 	waitForSyncingStorages()
 
 	if avJSONPath := av.GetAttributeViewDataPath(avID); !filelock.IsExist(avJSONPath) {
@@ -1374,11 +1349,17 @@ func RenderAttributeView(avID, viewID, query string, page, pageSize int) (viewab
 		return
 	}
 
-	viewable, err = renderAttributeView(attrView, viewID, query, page, pageSize)
+	viewable, err = renderAttributeView(attrView, blockID, viewID, query, page, pageSize)
 	return
 }
 
-func renderAttributeView(attrView *av.AttributeView, viewID, query string, page, pageSize int) (viewable av.Viewable, err error) {
+const (
+	groupNameLast30Days, groupNameLast7Days               = "_@last30Days@_", "_@last7Days@_"
+	groupNameYesterday, groupNameToday, groupNameTomorrow = "_@yesterday@_", "_@today@_", "_@tomorrow@_"
+	groupNameNext7Days, groupNameNext30Days               = "_@next7Days@_", "_@next30Days@_"
+)
+
+func renderAttributeView(attrView *av.AttributeView, blockID, viewID, query string, page, pageSize int) (viewable av.Viewable, err error) {
 	if 1 > len(attrView.Views) {
 		view, _, _ := av.NewTableViewWithBlockKey(ast.NewNodeID())
 		attrView.Views = append(attrView.Views, view)
@@ -1386,6 +1367,17 @@ func renderAttributeView(attrView *av.AttributeView, viewID, query string, page,
 		if err = av.SaveAttributeView(attrView); err != nil {
 			logging.LogErrorf("save attribute view [%s] failed: %s", attrView.ID, err)
 			return
+		}
+	}
+
+	if "" == viewID && "" != blockID {
+		if "" != blockID {
+			node, _, getErr := getNodeByBlockID(nil, blockID)
+			if nil != getErr {
+				logging.LogWarnf("get node by block ID [%s] failed: %s", blockID, getErr)
+			} else {
+				viewID = node.IALAttr(av.NodeAttrView)
+			}
 		}
 	}
 
@@ -1417,6 +1409,33 @@ func renderAttributeView(attrView *av.AttributeView, viewID, query string, page,
 		return
 	}
 
+	// 当前日期可能会变，所以如果是按日期分组则需要重新生成分组
+	if isGroupByDate(view) {
+		updatedDate := time.UnixMilli(view.GroupUpdated).Format("2006-01-02")
+		if time.Now().Format("2006-01-02") != updatedDate {
+			genAttrViewViewGroups(view, attrView)
+		}
+
+		for _, groupView := range view.Groups {
+			switch groupView.Name {
+			case groupNameLast30Days:
+				groupView.Name = fmt.Sprintf(Conf.language(259), 30)
+			case groupNameLast7Days:
+				groupView.Name = fmt.Sprintf(Conf.language(259), 7)
+			case groupNameYesterday:
+				groupView.Name = Conf.language(260)
+			case groupNameToday:
+				groupView.Name = Conf.language(261)
+			case groupNameTomorrow:
+				groupView.Name = Conf.language(262)
+			case groupNameNext7Days:
+				groupView.Name = fmt.Sprintf(Conf.language(263), 7)
+			case groupNameNext30Days:
+				groupView.Name = fmt.Sprintf(Conf.language(263), 30)
+			}
+		}
+	}
+
 	// 如果存在分组的话渲染分组视图视图
 	var groups []av.Viewable
 	for _, groupView := range view.Groups {
@@ -1436,6 +1455,193 @@ func renderAttributeView(attrView *av.AttributeView, viewID, query string, page,
 	}
 	viewable.SetGroups(groups)
 	return
+}
+
+func genAttrViewViewGroups(view *av.View, attrView *av.AttributeView) {
+	if nil == view.Group {
+		return
+	}
+
+	group := view.Group
+	view.Groups = nil
+	viewable := sql.RenderView(attrView, view, "")
+	var items []av.Item
+	for _, item := range viewable.(av.Collection).GetItems() {
+		items = append(items, item)
+	}
+
+	groupKey, _ := attrView.GetKey(group.Field)
+	if nil == groupKey {
+		return
+	}
+
+	// 如果是按日期分组，则需要记录每个分组视图的一些状态字段，以便后面重新计算分组后可以恢复这些状态
+	type GroupState struct{ Folded, Hidden bool }
+	groupStates := map[string]*GroupState{}
+	if isGroupByDate(view) {
+		for _, groupView := range view.Groups {
+			groupStates[groupView.Name] = &GroupState{
+				Folded: groupView.GroupFolded,
+				Hidden: groupView.GroupHidden,
+			}
+		}
+	}
+
+	var rangeStart, rangeEnd float64
+	switch group.Method {
+	case av.GroupMethodValue:
+		if av.GroupOrderMan != group.Order {
+			sort.SliceStable(items, func(i, j int) bool {
+				if av.GroupOrderAsc == group.Order {
+					return items[i].GetValue(group.Field).String(false) < items[j].GetValue(group.Field).String(false)
+				}
+				return items[i].GetValue(group.Field).String(false) > items[j].GetValue(group.Field).String(false)
+			})
+		}
+	case av.GroupMethodRangeNum:
+		if nil == group.Range {
+			return
+		}
+
+		rangeStart, rangeEnd = group.Range.NumStart, group.Range.NumStart+group.Range.NumStep
+		sort.SliceStable(items, func(i, j int) bool {
+			if av.GroupOrderAsc == group.Order {
+				return items[i].GetValue(group.Field).Number.Content < items[j].GetValue(group.Field).Number.Content
+			}
+			return items[i].GetValue(group.Field).Number.Content > items[j].GetValue(group.Field).Number.Content
+		})
+	case av.GroupMethodDateDay, av.GroupMethodDateWeek, av.GroupMethodDateMonth, av.GroupMethodDateYear, av.GroupMethodDateRelative:
+		sort.SliceStable(items, func(i, j int) bool {
+			if av.GroupOrderAsc == group.Order {
+				return items[i].GetValue(group.Field).Date.Content < items[j].GetValue(group.Field).Date.Content
+			}
+			return items[i].GetValue(group.Field).Date.Content > items[j].GetValue(group.Field).Date.Content
+		})
+	}
+
+	const defaultGroupName, notInRange = "_@default@_", "_@notInRange@_"
+	var groupName string
+	groupItemsMap := map[string][]av.Item{}
+	for _, item := range items {
+		value := item.GetValue(group.Field)
+		if value.IsEmpty() {
+			groupName = defaultGroupName
+			groupItemsMap[groupName] = append(groupItemsMap[groupName], item)
+			continue
+		}
+
+		switch group.Method {
+		case av.GroupMethodValue:
+			groupName = value.String(false)
+		case av.GroupMethodRangeNum:
+			if group.Range.NumStart > value.Number.Content || group.Range.NumEnd < value.Number.Content {
+				groupName = notInRange
+				break
+			}
+
+			for rangeEnd <= group.Range.NumEnd && rangeEnd < value.Number.Content {
+				rangeStart += group.Range.NumStep
+				rangeEnd += group.Range.NumStep
+			}
+
+			if rangeStart <= value.Number.Content && rangeEnd >= value.Number.Content {
+				groupName = fmt.Sprintf("%s - %s", strconv.FormatFloat(rangeStart, 'f', -1, 64), strconv.FormatFloat(rangeEnd, 'f', -1, 64))
+			}
+		case av.GroupMethodDateDay, av.GroupMethodDateWeek, av.GroupMethodDateMonth, av.GroupMethodDateYear, av.GroupMethodDateRelative:
+			var contentTime time.Time
+			switch value.Type {
+			case av.KeyTypeDate:
+				contentTime = time.UnixMilli(value.Date.Content)
+			case av.KeyTypeCreated:
+				contentTime = time.UnixMilli(value.Created.Content)
+			case av.KeyTypeUpdated:
+				contentTime = time.UnixMilli(value.Updated.Content)
+			}
+			switch group.Method {
+			case av.GroupMethodDateDay:
+				groupName = contentTime.Format("2006-01-02")
+			case av.GroupMethodDateWeek:
+				year, week := contentTime.ISOWeek()
+				groupName = fmt.Sprintf("%d-W%02d", year, week)
+			case av.GroupMethodDateMonth:
+				groupName = contentTime.Format("2006-01")
+			case av.GroupMethodDateYear:
+				groupName = contentTime.Format("2006")
+			case av.GroupMethodDateRelative:
+				// 过去 30 天之前的按月分组
+				// 过去 30 天、过去 7 天、昨天、今天、明天、未来 7 天、未来 30 天
+				// 未来 30 天之后的按月分组
+				now := time.Now()
+				if contentTime.Before(now.AddDate(0, 0, -30)) {
+					groupName = contentTime.Format("2006-01")
+				} else if contentTime.Before(now.AddDate(0, 0, -7)) {
+					groupName = groupNameLast30Days
+				} else if contentTime.Before(now.AddDate(0, 0, -1)) {
+					groupName = groupNameLast7Days
+				} else if contentTime.Equal(now.AddDate(0, 0, -1)) {
+					groupName = groupNameYesterday
+				} else if contentTime.Equal(now) {
+					groupName = groupNameToday
+				} else if contentTime.Equal(now.AddDate(0, 0, 1)) {
+					groupName = groupNameTomorrow
+				} else if contentTime.After(now.AddDate(0, 0, 30)) {
+					groupName = contentTime.Format("2006-01")
+				} else if contentTime.After(now.AddDate(0, 0, 7)) {
+					groupName = groupNameNext30Days
+				} else if contentTime.After(now.AddDate(0, 0, 1)) {
+					groupName = groupNameNext7Days
+				} else {
+					groupName = notInRange
+				}
+			}
+		}
+		groupItemsMap[groupName] = append(groupItemsMap[groupName], item)
+	}
+
+	for name, groupItems := range groupItemsMap {
+		var v *av.View
+		switch view.LayoutType {
+		case av.LayoutTypeTable:
+			v = av.NewTableView()
+			v.Table = av.NewLayoutTable()
+		case av.LayoutTypeGallery:
+			v = av.NewGalleryView()
+			v.Gallery = av.NewLayoutGallery()
+		default:
+			logging.LogWarnf("unknown layout type [%s] for group view", view.LayoutType)
+			return
+		}
+		for _, item := range groupItems {
+			v.GroupItemIDs = append(v.GroupItemIDs, item.GetID())
+		}
+
+		if defaultGroupName == name {
+			name = fmt.Sprintf(Conf.language(264), groupKey.Name)
+		}
+		v.Name = name
+		view.Groups = append(view.Groups, v)
+	}
+
+	if isGroupByDate(view) {
+		view.GroupUpdated = time.Now().UnixMilli()
+
+		// 则恢复分组视图状态
+		for _, groupView := range view.Groups {
+			if state, ok := groupStates[groupView.Name]; ok {
+				groupView.GroupFolded = state.Folded
+				groupView.GroupHidden = state.Hidden
+			}
+		}
+	}
+
+	av.SaveAttributeView(attrView)
+}
+
+func isGroupByDate(view *av.View) bool {
+	if nil == view.Group {
+		return false
+	}
+	return av.GroupMethodDateDay == view.Group.Method || av.GroupMethodDateWeek == view.Group.Method || av.GroupMethodDateMonth == view.Group.Method || av.GroupMethodDateYear == view.Group.Method || av.GroupMethodDateRelative == view.Group.Method
 }
 
 func renderViewableInstance(viewable av.Viewable, view *av.View, attrView *av.AttributeView, page, pageSize int) (err error) {
@@ -2156,7 +2362,7 @@ func addAttrViewView(avID, viewID, blockID string, layout av.LayoutType) (err er
 		switch firstView.LayoutType {
 		case av.LayoutTypeTable:
 			for _, col := range firstView.Table.Columns {
-				view.Table.Columns = append(view.Table.Columns, &av.ViewTableColumn{BaseField: &av.BaseField{ID: col.ID}})
+				view.Table.Columns = append(view.Table.Columns, &av.ViewTableColumn{BaseField: &av.BaseField{ID: col.ID}, Width: col.Width})
 			}
 		case av.LayoutTypeGallery:
 			for _, field := range firstView.Gallery.CardFields {
@@ -2606,7 +2812,6 @@ func addAttributeViewBlock(now int64, avID, blockID, previousBlockID, addingBloc
 
 	// 如果存在过滤条件，则将过滤条件应用到新添加的块上
 	view, _ := getAttrViewViewByBlockID(attrView, blockID)
-
 	if nil != view && 0 < len(view.Filters) && !ignoreFillFilter {
 		viewable := sql.RenderView(attrView, view, "")
 		av.Filter(viewable, attrView)

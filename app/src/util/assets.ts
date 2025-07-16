@@ -28,7 +28,17 @@ export const loadAssets = (data: Config.IAppearance) => {
     const defaultThemeAddress = `/appearance/themes/${data.mode === 1 ? "midnight" : "daylight"}/theme.css?v=${Constants.SIYUAN_VERSION}`;
     if (defaultStyleElement) {
         if (!defaultStyleElement.getAttribute("href").startsWith(defaultThemeAddress)) {
-            defaultStyleElement.setAttribute("href", defaultThemeAddress);
+            const newStyleElement = document.createElement("link");
+            // 等待新样式表加载完成再移除旧样式表
+            new Promise((resolve) => {
+                newStyleElement.rel = "stylesheet";
+                newStyleElement.href = defaultThemeAddress;
+                newStyleElement.onload = resolve;
+                defaultStyleElement.parentNode.insertBefore(newStyleElement, defaultStyleElement);
+            }).then(() => {
+                defaultStyleElement.remove();
+                newStyleElement.id = "themeDefaultStyle";
+            });
         }
     } else {
         addStyle(defaultThemeAddress, "themeDefaultStyle");
@@ -96,6 +106,17 @@ export const loadAssets = (data: Config.IAppearance) => {
 
     if ((isBuiltInIcon && iconDefaultScriptElement && iconDefaultScriptElement.getAttribute("src").startsWith(iconDefaultURL)) ||
         (!isBuiltInIcon && iconScriptElement && iconScriptElement.getAttribute("src").startsWith(iconThirdURL))) {
+        // 第三方图标切换到 material
+        if (isBuiltInIcon) {
+            iconScriptElement?.remove();
+            Array.from(document.body.children).forEach((item) => {
+                if (item.tagName === "svg" &&
+                    !item.getAttribute("data-name") &&
+                    !["iconsMaterial", "iconsAnt"].includes(item.id)) {
+                    item.remove();
+                }
+            });
+        }
         return;
     }
     if (iconDefaultScriptElement && !iconDefaultScriptElement.getAttribute("src").startsWith(iconDefaultURL)) {
@@ -111,8 +132,8 @@ export const loadAssets = (data: Config.IAppearance) => {
         }
     }
     addScript(iconDefaultURL, "iconDefaultScript").then(() => {
+        iconScriptElement?.remove();
         if (!isBuiltInIcon) {
-            iconScriptElement?.remove();
             addScript(iconThirdURL, "iconScript").then(() => {
                 Array.from(document.body.children).forEach((item, index) => {
                     if (item.tagName === "svg" &&

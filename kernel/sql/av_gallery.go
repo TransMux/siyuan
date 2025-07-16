@@ -201,7 +201,10 @@ func fillAttributeViewGalleryCardCover(attrView *av.AttributeView, view *av.View
 			break
 		}
 
-		galleryCard.CoverURL = assetValue.MAsset[0].Content
+		p := assetValue.MAsset[0].Content
+		if util.IsAssetsImage(p) {
+			galleryCard.CoverURL = p
+		}
 		return
 	case av.CoverFromContentBlock:
 		blockValue := getBlockValue(cardValues)
@@ -226,11 +229,23 @@ func renderCoverContentBlock(node *ast.Node, luteEngine *lute.Lute) string {
 	if isDoc {
 		node = node.FirstChild
 	}
+	heading := node
+	isHeading := ast.NodeHeading == node.Type
+	headingLevel := node.HeadingLevel
+	if isHeading {
+		node = node.Next
+	}
 
 	buf := bytes.Buffer{}
 	for c := node; nil != c; c = c.Next {
+		if isHeading && ast.NodeHeading == c.Type && c.HeadingLevel <= headingLevel {
+			if 1 > buf.Len() {
+				buf.WriteString(renderBlockDOMByNode(heading, luteEngine))
+			}
+			break
+		}
 		buf.WriteString(renderBlockDOMByNode(c, luteEngine))
-		if !isDoc || 1024*4 < buf.Len() {
+		if (!isDoc && !isHeading) || 1024*4 < buf.Len() {
 			break
 		}
 	}

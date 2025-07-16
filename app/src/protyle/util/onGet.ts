@@ -134,6 +134,20 @@ const setHTML = (options: {
     if (protyle.contentElement.classList.contains("fn__none") && protyle.wysiwyg.element.innerHTML !== "") {
         return;
     }
+
+    if (DOMPurify) {
+        // XSS in inline memo elements https://github.com/siyuan-note/siyuan/issues/15280
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(options.content, "text/html");
+        doc.querySelectorAll("[data-inline-memo-content]").forEach(item => {
+            const content = item.getAttribute("data-inline-memo-content");
+            if (content) {
+                item.setAttribute("data-inline-memo-content", DOMPurify.sanitize(content));
+            }
+        });
+        options.content = doc.body.innerHTML;
+    }
+
     protyle.block.showAll = options.action.includes(Constants.CB_GET_ALL);
     const REMOVED_OVER_HEIGHT = protyle.contentElement.clientHeight * 8;
     const updateReadonly = typeof options.updateReadonly === "undefined" ? protyle.wysiwyg.element.innerHTML === "" : options.updateReadonly;
@@ -410,7 +424,7 @@ export const enableProtyle = (protyle: IProtyle) => {
     });
     const contentRect = protyle.contentElement.getBoundingClientRect();
     protyle.wysiwyg.element.querySelectorAll(".av").forEach((item: HTMLElement) => {
-        if (item.querySelector(".av__title")) {
+        if (item.querySelector(".av__scroll")) {
             stickyRow(item, contentRect, "all");
         }
     });

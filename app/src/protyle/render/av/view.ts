@@ -5,6 +5,8 @@ import {openMenuPanel} from "./openMenuPanel";
 import {focusBlock} from "../../util/selection";
 import {upDownHint} from "../../../util/upDownHint";
 import {escapeAriaLabel, escapeAttr, escapeHtml} from "../../../util/escape";
+import {hasClosestByClassName} from "../../util/hasClosest";
+import {Constants} from "../../../constants";
 
 export const openViewMenu = (options: { protyle: IProtyle, blockElement: HTMLElement, element: HTMLElement }) => {
     if (options.protyle.disabled) {
@@ -211,7 +213,7 @@ export const getViewHTML = (data: IAV) => {
     <span class="b3-menu__accelerator">${view.sorts.length}</span>
     <svg class="b3-menu__icon b3-menu__icon--small"><use xlink:href="#iconRight"></use></svg>
 </button>
-<button class="b3-menu__item" data-type="goGroups">
+<button class="b3-menu__item fn__none" data-type="goGroups">
     <svg class="b3-menu__icon"><use xlink:href="#iconGroups"></use></svg>
     <span class="b3-menu__label">${window.siyuan.languages.group}</span>
     <span class="b3-menu__accelerator">${data.view.group ? fields.filter((item: IAVColumn) => item.id === data.view.group.field)[0].name : ""}</span>
@@ -384,4 +386,41 @@ export const getViewName = (type: string) => {
 
 export const getFieldsByData = (data: IAV) => {
     return data.viewType === "table" ? (data.view as IAVTable).columns : (data.view as IAVGallery).fields;
+};
+
+export const dragoverTab = (event: DragEvent) => {
+    const viewTabElement = window.siyuan.dragElement.parentElement;
+    if (viewTabElement.scrollWidth > viewTabElement.clientWidth) {
+        const viewTabRect = viewTabElement.getBoundingClientRect();
+        if (event.clientX < viewTabRect.left) {
+            viewTabElement.scroll({
+                left: viewTabElement.scrollLeft - Constants.SIZE_SCROLL_STEP,
+                behavior: "smooth"
+            });
+        } else if (event.clientX > viewTabRect.right) {
+            viewTabElement.scroll({
+                left: viewTabElement.scrollLeft + Constants.SIZE_SCROLL_STEP,
+                behavior: "smooth"
+            });
+        }
+    }
+    const target = hasClosestByClassName(document.elementFromPoint(event.clientX, window.siyuan.dragElement.getBoundingClientRect().top + 10), "item");
+    if (!target) {
+        return;
+    }
+    if (!viewTabElement.isSameNode(window.siyuan.dragElement.parentElement) || target.isSameNode(window.siyuan.dragElement)) {
+        return;
+    }
+    const targetRect = target.getBoundingClientRect();
+    if (targetRect.left + targetRect.width / 2 < event.clientX) {
+        if (target.nextElementSibling?.isSameNode(window.siyuan.dragElement)) {
+            return;
+        }
+        target.after(window.siyuan.dragElement);
+    } else {
+        if (target.previousElementSibling?.isSameNode(window.siyuan.dragElement)) {
+            return;
+        }
+        target.before(window.siyuan.dragElement);
+    }
 };

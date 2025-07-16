@@ -395,8 +395,7 @@ export const paste = async (protyle: IProtyle, event: (ClipboardEvent | DragEven
     protyle.wysiwyg.element.querySelectorAll(".protyle-wysiwyg--hl").forEach(item => {
         item.classList.remove("protyle-wysiwyg--hl");
     });
-
-    const code = processPasteCode(textHTML, textPlain);
+    const code = processPasteCode(textHTML, textPlain, protyle);
     const range = getEditorRange(protyle.wysiwyg.element);
 
     // 处理代码块粘贴

@@ -16,8 +16,9 @@ import {webUtils} from "electron";
 /// #endif
 import {isBrowser} from "../../../util/functions";
 import {Constants} from "../../../constants";
-import { av在客户端渲染template } from "../../../mux/utils";
-import { genUUID } from "../../../util/genID";
+import {getCompressURL} from "../../../util/image";
+import {av在客户端渲染template} from "../../../mux/utils";
+import {genUUID} from "../../../util/genID";
 
 const genAVRollupHTML = (value: IAVCellValue) => {
     let html = "";
@@ -84,7 +85,7 @@ export const genAVValueHTML = (value: IAVCellValue) => {
         case "mAsset":
             value.mAsset?.forEach(item => {
                 if (item.type === "image") {
-                    html += `<img class="av__cellassetimg ariaLabel" aria-label="${item.content}" src="${item.content}">`;
+                    html += `<img loading="lazy" class="av__cellassetimg ariaLabel" aria-label="${item.content}" src="${getCompressURL(item.content)}">`;
                 } else {
                     html += `<span class="b3-chip b3-chip--middle av__celltext--url ariaLabel" aria-label="${escapeAttr(item.content)}" data-name="${escapeAttr(item.name)}" data-url="${escapeAttr(item.content)}">${item.name || item.content}</span>`;
                 }

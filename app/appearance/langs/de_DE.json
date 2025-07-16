@@ -1,4 +1,5 @@
 {
+  "syncColWidth": "Spaltenbreite synchronisieren",
   "groupMethod": "Gruppierungsmethode",
   "hideEmptyGroup": "Leere Gruppe ausblenden",
   "groups": "Gruppen",
@@ -438,7 +439,7 @@
   "apiVersion": "API-Version",
   "apiVersionTip": "Nur erforderlich, wenn der Azure OpenAI-Dienst verwendet wird.",
   "apiProvider": "API-Anbieter",
-  "apiProviderTip": "Verwenden Sie den ausgewählten API-Anbieter, um AI-bezogene Funktionen zu implementieren.",
+  "apiProviderTip": "Durch die Auswahl wird der API-Dienst des Anbieters verwendet, um KI-Funktionen zu implementieren (ChatGPT, Claude, DeepSeek und andere Modelle unterstützen die OpenAI-Schnittstelle)",
   "skip": "Überspringen",
   "nextRound": "Nächste Runde",
   "save": "Speichern",
@@ -814,7 +815,7 @@
   "syncMode3": "Vollständige manuelle Synchronisation (keine Synchronisation beim Start und beim Schließen, vollständige manuelle Kontrolle über den Synchronisationszeitpunkt und die Synchronisationsrichtung)",
   "cloudSync": "Cloud-Synchronisation",
   "cloudSyncDir": "Cloud-Synchronisationsverzeichnis",
-  "cloudSyncDirTip": "Das cloud-Synchronisationsverzeichnis entspricht eins zu eins dem Arbeitsbereich und kann nicht gemischt werden. Nach dem Ändern des Datenrepo-Schlüssels muss ein neues Cloud-Synchronisationsverzeichnis ersetzt werden.",
+  "cloudSyncDirTip": "Jedes Cloud-Synchronisationsverzeichnis speichert nur Daten für einen Arbeitsbereich, und ein lokaler Arbeitsbereich kann nur ein Cloud-Synchronisationsverzeichnis verwenden. Bitte wechseln Sie nicht hin und her. Nach dem Ändern des Datenrepo-Schlüssels müssen Sie zu einem neuen Cloud-Synchronisationsverzeichnis wechseln.",
   "emptyCloudSyncList": "Die Cloud-Synchronisationsliste ist leer.",
   "retry": "Erneut versuchen",
   "insertVideoURL": "Videolink einfügen",
@@ -1627,6 +1628,12 @@
     "255": "Die Zielseite hat den Hotlink-Schutz aktiviert, daher ist es nicht möglich, [%d] Ressourcen herunterzuladen",
     "256": "Der angegebene Pfad [%s] hat einen übergeordneten Arbeitsbereichspfad [%s]",
     "257": "Erinnere dich 30 Tage an mich",
-    "258": "Vorgang fehlgeschlagen, bitte versuchen Sie es später erneut"
+    "258": "Vorgang fehlgeschlagen, bitte versuchen Sie es später erneut",
+    "259": "Letzte %d Tage",
+    "260": "Gestern",
+    "261": "Heute",
+    "262": "Morgen",
+    "263": "Nächste %d Tage",
+    "264": "Das Feld [%s] ist leer"
   }
 }

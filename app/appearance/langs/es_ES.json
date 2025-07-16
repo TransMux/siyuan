@@ -1,4 +1,5 @@
 {
+  "syncColWidth": "Sincronizar ancho de columna",
   "groupMethod": "Método de agrupación",
   "hideEmptyGroup": "Ocultar grupo vacío",
   "groups": "Grupos",
@@ -438,7 +439,7 @@
   "apiVersion": "Versión API",
   "apiVersionTip": "Sólo es necesario cuando se utiliza el servicio Azure OpenAI",
   "apiProvider": "API proveedor",
-  "apiProviderTip": "Utilice el proveedor de API seleccionado para implementar funciones relacionadas con la IA",
+  "apiProviderTip": "Al seleccionar, se utilizará el servicio API del proveedor para implementar funcionalidades de IA (ChatGPT, Claude, DeepSeek y otros modelos son compatibles con la interfaz OpenAI)",
   "skip": "barco",
   "nextRound": "Siguiente ronda",
   "save": "Guardar",
@@ -814,7 +815,7 @@
   "syncMode3": "Manual Completa (sin sincronización al iniciar y apagar, control manual completo de sincronización y dirección de sincronización)",
   "cloudSync": "Sincronización en la nube",
   "cloudSyncDir": "Directorio de sincronización en la nube",
-  "cloudSyncDirTip": "El Directorio de sincronización en la nube corresponde uno a uno con el Espacio de trabajo, no se pueden mezclar. Después de cambiar la Clave del repositorio de datos, es necesario cambiar el nuevo Directorio de sincronización en la nube",
+  "cloudSyncDirTip": "Cada directorio de sincronización en la nube solo almacena datos para un espacio de trabajo, y un espacio de trabajo local solo puede usar un directorio de sincronización en la nube. Por favor, no cambie de un lado a otro. Después de cambiar la clave del repositorio de datos, debe cambiar a un nuevo directorio de sincronización en la nube",
   "emptyCloudSyncList": "La lista de sincronización con la nube está vacía",
   "retry": "Reintentar",
   "insertVideoURL": "Insertar enlace de vídeo",
@@ -1627,6 +1628,12 @@
     "255": "El sitio de destino ha activado la protección contra hotlinking, por lo que no es posible descargar [%d] recursos",
     "256": "La ruta especificada [%s] tiene una ruta de espacio de trabajo padre [%s]",
     "257": "Recuérdame durante 30 días",
-    "258": "La operación falló, inténtelo de nuevo más tarde"
+    "258": "La operación falló, inténtelo de nuevo más tarde",
+    "259": "Últimos %d días",
+    "260": "Ayer",
+    "261": "Hoy",
+    "262": "Mañana",
+    "263": "Próximos %d días",
+    "264": "El campo [%s] está vacío"
   }
 }
