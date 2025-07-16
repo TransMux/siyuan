@@ -37,6 +37,8 @@
 @use "component/svg" as *;
 @use "util/mux" as *;
 @use "main/main" as *;
+// 需放置最后，否则 https://github.com/siyuan-note/siyuan/issues/7056
+@use "util/responsive" as *;
 
 /*
 .status: 2
@@ -74,15 +76,16 @@ html {
   z-index: 8;
   border-radius: 0;
 
-  & > .protyle-breadcrumb,
-  & > .block__icons { // 关系图、card
+  &>.protyle-breadcrumb,
+  &>.block__icons {
+    // 关系图、card
     padding-left: var(--b3-toolbar-left-mac);
     height: 32px;
     min-height: 32px;
   }
 
-  .protyle-breadcrumb > .protyle-breadcrumb__space,
-  & > .block__icons > .fn__flex-1 {
+  .protyle-breadcrumb>.protyle-breadcrumb__space,
+  &>.block__icons>.fn__flex-1 {
     -webkit-app-region: drag;
     min-width: 32px;
     height: 100%;
@@ -263,7 +266,7 @@ html {
     color: var(--b3-theme-on-surface);
     font-size: 12px;
 
-    & > div {
+    &>div {
       height: 4px;
       border-radius: var(--b3-border-radius);
       overflow: hidden;
@@ -274,7 +277,7 @@ html {
       cursor: pointer;
       flex-shrink: 0;
 
-      & > div {
+      &>div {
         background-color: var(--b3-theme-primary-light);
         height: 4px;
         background-image: linear-gradient(-45deg, rgba(255, 255, 255, .2) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .2) 50%, rgba(255, 255, 255, .2) 75%, transparent 75%, transparent);
@@ -299,12 +302,16 @@ html {
     height: 100%;
   }
 
-  img, video, audio, canvas {
+  img,
+  video,
+  audio,
+  canvas {
     max-width: 100%;
   }
 }
 
 .file-tree {
+
   &:hover .block__icons .block__icon:not([disabled]),
   &.fullscreen .block__icons .block__icon:not([disabled]) {
     opacity: 1;
@@ -386,6 +393,3 @@ html {
     min-height: 18px;
   }
 }
-
-// 需放置最后，否则 https://github.com/siyuan-note/siyuan/issues/7056
-@use "util/responsive" as *;
