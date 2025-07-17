@@ -257,7 +257,7 @@ export class DocumentStylerPlugin extends Plugin {
 
                     <!-- 图片表格列表 -->
                     <div class="document-styler-section" id="figures-section" style="display: none;">
-                        <h3 class="document-styler-section-title">图片和表格</h3>
+                        <h3 class="document-styler-section-title">文档内容</h3>
                         <div class="document-styler-figures-list" id="figures-list">
                             <!-- 动态生成的图片表格列表 -->
                         </div>
@@ -403,34 +403,41 @@ export class DocumentStylerPlugin extends Plugin {
     }
 
     private generateHeadingNumberingCSS(minLevel: number): string {
-        const levels = [1, 2, 3, 4, 5, 6];
-        const adjustedLevels = levels.map(level => level - minLevel + 1).filter(level => level >= 1);
-
         let css = `
             .protyle-wysiwyg {
-                counter-reset: ${levels.map(l => `h${l}`).join(' ')};
+                counter-reset: h1 h2 h3 h4 h5 h6;
             }
         `;
 
-        levels.forEach((level) => {
-            const adjustedLevel = level - minLevel + 1;
-            if (adjustedLevel >= 1) {
-                const resetCounters = levels.slice(level).map(l => `h${l}`).join(' ');
-                const counterContent = adjustedLevels.slice(0, adjustedLevel).map(l => `counter(h${l + minLevel - 1})`).join(' "." ');
+        // 为每个标题级别生成CSS规则
+        for (let level = minLevel; level <= 6; level++) {
+            const adjustedLevel = level - minLevel + 1; // 调整后的层级（从1开始）
 
-                css += `
-                    .protyle-wysiwyg [data-subtype="h${level}"] > div:first-child:before {
-                        counter-increment: h${level};
-                        ${resetCounters ? `counter-reset: ${resetCounters};` : ''}
-                        content: "${counterContent}. ";
-                        color: var(--b3-theme-on-surface-light);
-                        margin-right: 8px;
-                        user-select: none;
-                        display: inline;
-                    }
-                `;
+            // 生成counter-reset规则（重置更深层级的计数器）
+            const resetCounters = [];
+            for (let resetLevel = level + 1; resetLevel <= 6; resetLevel++) {
+                resetCounters.push(`h${resetLevel}`);
             }
-        });
+
+            // 生成content内容（显示层级编号）
+            const counterParts = [];
+            for (let contentLevel = minLevel; contentLevel <= level; contentLevel++) {
+                counterParts.push(`counter(h${contentLevel})`);
+            }
+            const counterContent = counterParts.join(' "." ');
+
+            css += `
+                .protyle-wysiwyg [data-subtype="h${level}"] > div:first-child:before {
+                    counter-increment: h${level};
+                    ${resetCounters.length > 0 ? `counter-reset: ${resetCounters.join(' ')};` : ''}
+                    content: "${counterContent}. ";
+                    color: var(--b3-theme-on-surface-light);
+                    margin-right: 8px;
+                    user-select: none;
+                    display: inline;
+                }
+            `;
+        }
 
         return css;
     }
