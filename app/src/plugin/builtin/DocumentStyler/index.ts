@@ -23,6 +23,9 @@ export class DocumentStylerPlugin extends Plugin {
         super(options);
         this.appRef = options.app;
 
+        // 将插件实例暴露到全局，供HTML onclick使用
+        (window as any).documentStylerPlugin = this;
+
         // Load CSS styles
         this.loadStyles();
 
@@ -46,9 +49,6 @@ export class DocumentStylerPlugin extends Plugin {
         // Listen for document changes
         this.eventBus.on("switch-protyle", this.onDocumentSwitch.bind(this));
         this.eventBus.on("loaded-protyle-static", this.onDocumentLoaded.bind(this));
-
-        // Register cross-reference hint
-        this.registerCrossReferenceHint();
     }
 
     private loadStyles() {
@@ -174,6 +174,20 @@ export class DocumentStylerPlugin extends Plugin {
                 color: var(--b3-theme-on-surface-light);
                 font-size: 13px;
             }
+
+            .document-styler-subsection {
+                margin-bottom: 16px;
+            }
+
+            .document-styler-subsection h4 {
+                margin: 0 0 8px 0;
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--b3-theme-on-surface);
+                padding: 4px 8px;
+                background-color: var(--b3-theme-surface-light);
+                border-radius: 4px;
+            }
         `;
         document.head.appendChild(styleElement);
     }
@@ -208,11 +222,12 @@ export class DocumentStylerPlugin extends Plugin {
                     <div class="document-styler-section">
                         <h3 class="document-styler-section-title">标题样式</h3>
                         <div class="document-styler-option">
-                            <label class="b3-switch fn__flex">
-                                <input type="checkbox" id="heading-numbering" ${this.settings.headingNumbering ? 'checked' : ''}>
-                                <span class="b3-switch__slider"></span>
+                            <label class="fn__flex b3-label">
+                                <div class="fn__flex-1">
+                                    自动编号
+                                </div>
                                 <span class="fn__space"></span>
-                                <span>自动编号</span>
+                                <input class="b3-switch fn__flex-center" id="heading-numbering" type="checkbox" ${this.settings.headingNumbering ? 'checked' : ''}>
                             </label>
                         </div>
                     </div>
@@ -221,15 +236,14 @@ export class DocumentStylerPlugin extends Plugin {
                     <div class="document-styler-section">
                         <h3 class="document-styler-section-title">图片/表格属性</h3>
                         <div class="document-styler-option">
-                            <label class="b3-switch fn__flex">
-                                <input type="checkbox" id="cross-reference" ${this.settings.crossReference ? 'checked' : ''}>
-                                <span class="b3-switch__slider"></span>
+                            <label class="fn__flex b3-label">
+                                <div class="fn__flex-1">
+                                    支持交叉引用
+                                    <div class="b3-label__text">启用后将为图片和表格添加编号标签，支持@符号触发交叉引用选择</div>
+                                </div>
                                 <span class="fn__space"></span>
-                                <span>支持交叉引用</span>
+                                <input class="b3-switch fn__flex-center" id="cross-reference" type="checkbox" ${this.settings.crossReference ? 'checked' : ''}>
                             </label>
-                        </div>
-                        <div class="document-styler-description">
-                            启用后将为图片和表格添加编号标签，支持@符号触发交叉引用选择
                         </div>
                     </div>
 
@@ -289,7 +303,14 @@ export class DocumentStylerPlugin extends Plugin {
     private onDocumentSwitch(event: CustomEvent) {
         const protyle = event.detail?.protyle;
         if (protyle?.block?.rootID) {
+            // 先清除当前文档的样式
+            this.removeHeadingNumbering();
+            this.removeCrossReference();
+
             this.currentDocId = protyle.block.rootID;
+
+            // 加载新文档的设置
+            this.loadSettings();
             this.updateDockPanel();
         }
     }
@@ -297,15 +318,15 @@ export class DocumentStylerPlugin extends Plugin {
     private onDocumentLoaded(event: CustomEvent) {
         const protyle = event.detail?.protyle;
         if (protyle?.block?.rootID) {
+            // 先清除当前文档的样式
+            this.removeHeadingNumbering();
+            this.removeCrossReference();
+
             this.currentDocId = protyle.block.rootID;
+
+            // 加载新文档的设置
+            this.loadSettings();
             this.updateDockPanel();
-            // 应用当前设置
-            if (this.settings.headingNumbering) {
-                this.applyHeadingNumbering();
-            }
-            if (this.settings.crossReference) {
-                this.applyCrossReference();
-            }
         }
     }
 
@@ -355,58 +376,63 @@ export class DocumentStylerPlugin extends Plugin {
             document.head.appendChild(styleElement);
         }
 
-        styleElement.textContent = `
+        // 首先检测文档中的最高标题级别
+        const minHeadingLevel = this.getMinHeadingLevel();
+
+        styleElement.textContent = this.generateHeadingNumberingCSS(minHeadingLevel);
+    }
+
+    private getMinHeadingLevel(): number {
+        const protyle = this.getCurrentProtyle();
+        if (!protyle) return 1;
+
+        const headings = protyle.wysiwyg.element.querySelectorAll('[data-subtype^="h"]');
+        let minLevel = 6;
+
+        headings.forEach((heading: any) => {
+            const subtype = heading.getAttribute('data-subtype');
+            if (subtype) {
+                const level = parseInt(subtype.substring(1));
+                if (level < minLevel) {
+                    minLevel = level;
+                }
+            }
+        });
+
+        return minLevel === 6 ? 1 : minLevel; // 如果没有标题，默认从1开始
+    }
+
+    private generateHeadingNumberingCSS(minLevel: number): string {
+        const levels = [1, 2, 3, 4, 5, 6];
+        const adjustedLevels = levels.map(level => level - minLevel + 1).filter(level => level >= 1);
+
+        let css = `
             .protyle-wysiwyg {
-                counter-reset: h1 h2 h3 h4 h5 h6;
-            }
-            
-            .protyle-wysiwyg [data-subtype="h1"]:before {
-                counter-increment: h1;
-                counter-reset: h2 h3 h4 h5 h6;
-                content: counter(h1) ". ";
-                color: var(--b3-theme-on-surface-light);
-                margin-right: 8px;
-            }
-            
-            .protyle-wysiwyg [data-subtype="h2"]:before {
-                counter-increment: h2;
-                counter-reset: h3 h4 h5 h6;
-                content: counter(h1) "." counter(h2) ". ";
-                color: var(--b3-theme-on-surface-light);
-                margin-right: 8px;
-            }
-            
-            .protyle-wysiwyg [data-subtype="h3"]:before {
-                counter-increment: h3;
-                counter-reset: h4 h5 h6;
-                content: counter(h1) "." counter(h2) "." counter(h3) ". ";
-                color: var(--b3-theme-on-surface-light);
-                margin-right: 8px;
-            }
-            
-            .protyle-wysiwyg [data-subtype="h4"]:before {
-                counter-increment: h4;
-                counter-reset: h5 h6;
-                content: counter(h1) "." counter(h2) "." counter(h3) "." counter(h4) ". ";
-                color: var(--b3-theme-on-surface-light);
-                margin-right: 8px;
-            }
-            
-            .protyle-wysiwyg [data-subtype="h5"]:before {
-                counter-increment: h5;
-                counter-reset: h6;
-                content: counter(h1) "." counter(h2) "." counter(h3) "." counter(h4) "." counter(h5) ". ";
-                color: var(--b3-theme-on-surface-light);
-                margin-right: 8px;
-            }
-            
-            .protyle-wysiwyg [data-subtype="h6"]:before {
-                counter-increment: h6;
-                content: counter(h1) "." counter(h2) "." counter(h3) "." counter(h4) "." counter(h5) "." counter(h6) ". ";
-                color: var(--b3-theme-on-surface-light);
-                margin-right: 8px;
+                counter-reset: ${levels.map(l => `h${l}`).join(' ')};
             }
         `;
+
+        levels.forEach((level) => {
+            const adjustedLevel = level - minLevel + 1;
+            if (adjustedLevel >= 1) {
+                const resetCounters = levels.slice(level).map(l => `h${l}`).join(' ');
+                const counterContent = adjustedLevels.slice(0, adjustedLevel).map(l => `counter(h${l + minLevel - 1})`).join(' "." ');
+
+                css += `
+                    .protyle-wysiwyg [data-subtype="h${level}"] > div:first-child:before {
+                        counter-increment: h${level};
+                        ${resetCounters ? `counter-reset: ${resetCounters};` : ''}
+                        content: "${counterContent}. ";
+                        color: var(--b3-theme-on-surface-light);
+                        margin-right: 8px;
+                        user-select: none;
+                        display: inline;
+                    }
+                `;
+            }
+        });
+
+        return css;
     }
 
     private removeHeadingNumbering() {
@@ -606,31 +632,58 @@ export class DocumentStylerPlugin extends Plugin {
             return '<div class="b3-list--empty">当前文档中没有图片或表格</div>';
         }
 
-        let html = '';
-        let figureCount = 0;
-        let tableCount = 0;
+        // 分离图片和表格
+        const images = figures.filter(f => f.figureType === 'image');
+        const tables = figures.filter(f => f.figureType === 'table');
 
-        figures.forEach(figure => {
-            if (figure.figureType === 'image') {
-                figureCount++;
+        let html = '';
+
+        // 图片列表
+        if (images.length > 0) {
+            html += '<div class="document-styler-subsection"><h4>图片</h4>';
+            images.forEach((figure, index) => {
                 html += `
-                    <div class="document-styler-figure-item" data-id="${figure.id}">
-                        <span class="figure-label">Figure ${figureCount}</span>
-                        <span class="figure-content">${this.truncateText(figure.content, 50)}</span>
+                    <div class="document-styler-figure-item" data-id="${figure.id}" onclick="window.documentStylerPlugin?.scrollToFigure('${figure.id}')">
+                        <span class="figure-label">Figure ${index + 1}</span>
+                        <span class="figure-content">${this.truncateText(this.extractImageAlt(figure.content), 50)}</span>
                     </div>
                 `;
-            } else if (figure.figureType === 'table') {
-                tableCount++;
+            });
+            html += '</div>';
+        }
+
+        // 表格列表
+        if (tables.length > 0) {
+            html += '<div class="document-styler-subsection"><h4>表格</h4>';
+            tables.forEach((table, index) => {
                 html += `
-                    <div class="document-styler-figure-item" data-id="${figure.id}">
-                        <span class="table-label">Table ${tableCount}</span>
-                        <span class="figure-content">${this.truncateText(figure.content, 50)}</span>
+                    <div class="document-styler-figure-item" data-id="${table.id}" onclick="window.documentStylerPlugin?.scrollToFigure('${table.id}')">
+                        <span class="table-label">Table ${index + 1}</span>
+                        <span class="figure-content">${this.truncateText(this.extractTableSummary(table.content), 50)}</span>
                     </div>
                 `;
-            }
-        });
+            });
+            html += '</div>';
+        }
 
         return html;
+    }
+
+    private extractImageAlt(content: string): string {
+        // 从markdown内容中提取图片的alt文本
+        const match = content.match(/!\[([^\]]*)\]/);
+        return match ? match[1] || '图片' : '图片';
+    }
+
+    private extractTableSummary(content: string): string {
+        // 从表格内容中提取简要信息
+        const lines = content.split('\n').filter(line => line.trim());
+        if (lines.length > 0) {
+            // 取第一行作为表格描述
+            const firstLine = lines[0].replace(/\|/g, ' ').trim();
+            return firstLine || '表格';
+        }
+        return '表格';
     }
 
     private truncateText(text: string, maxLength: number): string {
@@ -639,173 +692,112 @@ export class DocumentStylerPlugin extends Plugin {
     }
 
     private saveSettings() {
-        localStorage.setItem('document-styler-settings', JSON.stringify(this.settings));
+        if (!this.currentDocId) return;
+
+        try {
+            // 保存到文档属性中
+            fetchPost("/api/attr/setBlockAttrs", {
+                id: this.currentDocId,
+                attrs: {
+                    "custom-document-styler-heading-numbering": this.settings.headingNumbering.toString(),
+                    "custom-document-styler-cross-reference": this.settings.crossReference.toString()
+                }
+            }, (response) => {
+                if (response.code !== 0) {
+                    console.error('Failed to save document settings:', response.msg);
+                }
+            });
+        } catch (error) {
+            console.error('Failed to save settings:', error);
+        }
     }
 
     private loadSettings() {
+        if (!this.currentDocId) return;
+
         try {
-            const saved = localStorage.getItem('document-styler-settings');
-            if (saved) {
-                this.settings = { ...this.settings, ...JSON.parse(saved) };
-            }
+            // 从文档属性中加载
+            fetchPost("/api/attr/getBlockAttrs", {
+                id: this.currentDocId
+            }, (response) => {
+                if (response.code === 0 && response.data) {
+                    const attrs = response.data;
+
+                    // 读取文档级别的设置
+                    if (attrs["custom-document-styler-heading-numbering"]) {
+                        this.settings.headingNumbering = attrs["custom-document-styler-heading-numbering"] === "true";
+                    } else {
+                        this.settings.headingNumbering = false;
+                    }
+
+                    if (attrs["custom-document-styler-cross-reference"]) {
+                        this.settings.crossReference = attrs["custom-document-styler-cross-reference"] === "true";
+                    } else {
+                        this.settings.crossReference = false;
+                    }
+
+                    // 更新UI
+                    this.updateSettingsUI();
+
+                    // 应用设置
+                    if (this.settings.headingNumbering) {
+                        this.applyHeadingNumbering();
+                    }
+                    if (this.settings.crossReference) {
+                        this.applyCrossReference();
+                    }
+                }
+            });
         } catch (error) {
             console.error('Failed to load settings:', error);
         }
     }
 
-    private registerCrossReferenceHint() {
-        // 注册@符号触发的交叉引用提示
-        this.protyleSlash.push({
-            filter: ["@"],
-            html: `<div class="b3-list-item__first"><span class="b3-list-item__text">交叉引用</span><span class="b3-list-item__meta">@</span></div>`,
-            id: "cross-reference",
-            callback: (protyle, nodeElement) => {
-                this.showCrossReferenceHint(protyle, nodeElement);
-            }
-        });
+    private updateSettingsUI() {
+        const headingCheckbox = document.querySelector('#heading-numbering') as HTMLInputElement;
+        const crossRefCheckbox = document.querySelector('#cross-reference') as HTMLInputElement;
+
+        if (headingCheckbox) {
+            headingCheckbox.checked = this.settings.headingNumbering;
+        }
+        if (crossRefCheckbox) {
+            crossRefCheckbox.checked = this.settings.crossReference;
+        }
     }
 
-    private async showCrossReferenceHint(protyle: any, nodeElement: HTMLElement) {
-        if (!this.settings.crossReference) {
-            showMessage("请先启用交叉引用功能", 3000, "info");
+
+
+    public scrollToFigure(figureId: string) {
+        const protyle = this.getCurrentProtyle();
+        if (!protyle) {
+            console.warn('No active protyle found');
             return;
         }
 
-        const figures = await this.queryDocumentFigures();
-        if (figures.length === 0) {
-            showMessage("当前文档中没有图片或表格", 3000, "info");
-            return;
-        }
-
-        // 创建提示菜单
-        const hintData = this.generateCrossReferenceHints(figures);
-        this.showHintMenu(protyle, nodeElement, hintData);
-    }
-
-    private generateCrossReferenceHints(figures: any[]): any[] {
-        const hints: any[] = [];
-        let figureCount = 0;
-        let tableCount = 0;
-
-        figures.forEach(figure => {
-            if (figure.figureType === 'image') {
-                figureCount++;
-                hints.push({
-                    value: `Figure ${figureCount}`,
-                    html: `<div class="b3-list-item__first">
-                        <span class="b3-list-item__text">Figure ${figureCount}</span>
-                        <span class="b3-list-item__meta">${this.truncateText(figure.content, 30)}</span>
-                    </div>`,
-                    id: figure.id,
-                    type: 'figure'
-                });
-            } else if (figure.figureType === 'table') {
-                tableCount++;
-                hints.push({
-                    value: `Table ${tableCount}`,
-                    html: `<div class="b3-list-item__first">
-                        <span class="b3-list-item__text">Table ${tableCount}</span>
-                        <span class="b3-list-item__meta">${this.truncateText(figure.content, 30)}</span>
-                    </div>`,
-                    id: figure.id,
-                    type: 'table'
-                });
-            }
-        });
-
-        return hints;
-    }
-
-    private showHintMenu(protyle: any, _nodeElement: HTMLElement, hints: any[]) {
-        // 这里需要集成到SiYuan的hint系统中
-        // 由于hint系统比较复杂，我们先实现一个简单的菜单
-        const menu = document.createElement('div');
-        menu.className = 'document-styler-hint-menu';
-        menu.style.cssText = `
-            position: absolute;
-            background: var(--b3-theme-surface);
-            border: 1px solid var(--b3-theme-surface-lighter);
-            border-radius: var(--b3-border-radius);
-            box-shadow: var(--b3-point-shadow);
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 1000;
-            min-width: 200px;
-        `;
-
-        hints.forEach(hint => {
-            const item = document.createElement('div');
-            item.className = 'b3-list-item b3-list-item--hide-action';
-            item.innerHTML = hint.html;
-            item.style.cursor = 'pointer';
-
-            item.addEventListener('click', () => {
-                this.insertCrossReference(protyle, hint);
-                menu.remove();
-            });
-
-            menu.appendChild(item);
-        });
-
-        // 定位菜单
-        const range = protyle.toolbar?.range || document.getSelection()?.getRangeAt(0);
-        if (range) {
-            const rect = range.getBoundingClientRect();
-            menu.style.left = rect.left + 'px';
-            menu.style.top = (rect.bottom + 5) + 'px';
-        }
-
-        document.body.appendChild(menu);
-
-        // 点击外部关闭菜单
-        const closeMenu = (e: MouseEvent) => {
-            if (!menu.contains(e.target as Node)) {
-                menu.remove();
-                document.removeEventListener('click', closeMenu);
-            }
-        };
-        setTimeout(() => document.addEventListener('click', closeMenu), 100);
-    }
-
-    private insertCrossReference(protyle: IProtyle, hint: any) {
-        const range = protyle.toolbar?.range || document.getSelection()?.getRangeAt(0);
-        if (!range) return;
-
-        // 删除@符号
-        range.setStart(range.startContainer, range.startOffset - 1);
-        range.deleteContents();
-
-        // 插入交叉引用
-        const refElement = document.createElement('span');
-        refElement.className = 'document-styler-cross-ref';
-        refElement.setAttribute('data-ref-id', hint.id);
-        refElement.setAttribute('data-ref-type', hint.type);
-        refElement.textContent = hint.value;
-        refElement.style.cssText = `
-            color: var(--b3-theme-primary);
-            text-decoration: underline;
-            cursor: pointer;
-        `;
-
-        range.insertNode(refElement);
-        range.setStartAfter(refElement);
-        range.collapse(true);
-
-        // 添加点击事件
-        refElement.addEventListener('click', () => {
-            this.scrollToFigure(hint.id);
-        });
-    }
-
-    private scrollToFigure(figureId: string) {
-        const element = document.querySelector(`[data-node-id="${figureId}"]`);
+        // 在当前编辑器中查找对应的块
+        const element = protyle.wysiwyg.element.querySelector(`[data-node-id="${figureId}"]`);
         if (element) {
+            // 滚动到元素位置
             element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
             // 高亮显示
             element.classList.add('protyle-wysiwyg--select');
             setTimeout(() => {
                 element.classList.remove('protyle-wysiwyg--select');
             }, 2000);
+
+            // 如果是表格，额外添加边框高亮
+            if (element.getAttribute('data-type') === 't') {
+                const table = element.querySelector('table');
+                if (table) {
+                    table.style.outline = '2px solid var(--b3-theme-primary)';
+                    setTimeout(() => {
+                        table.style.outline = '';
+                    }, 2000);
+                }
+            }
+        } else {
+            console.warn(`Element with id ${figureId} not found`);
         }
     }
 }
