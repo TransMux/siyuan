@@ -309,7 +309,7 @@ export class Plugin {
         destroy?: () => void,
         resize?: () => void,
         update?: () => void,
-        init: () => void
+        init: (Custom: Custom) => void
     }) {
         const type2 = this.name + options.type;
         if (typeof options.config.index === "undefined") {
