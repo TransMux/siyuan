@@ -38,9 +38,12 @@ export class DocumentStylerPlugin extends Plugin {
             },
             data: {},
             type: "document-styler-dock",
-            init: () => {
-                const custom = arguments[0] as Custom;
-                this.initDockPanel(custom);
+            init: function () {
+                // 在这个上下文中，this 指向 Custom 实例
+                const plugin = (this as any).app.plugins.find((p: any) => p.name === 'documentStyler');
+                if (plugin) {
+                    plugin.initDockPanel(this);
+                }
             },
             update: () => this.updateDockPanel(),
             destroy: () => this.destroyDockPanel()
