@@ -3,7 +3,7 @@
  * 用于处理从API获取的大纲数据
  */
 
-import { HeadingNumberStyle } from "../types";
+import { HeadingNumberStyle, IHeadingNumberMap } from "../types";
 import { NumberStyleConverter } from "./numberStyleConverter";
 
 /**
@@ -26,20 +26,7 @@ export interface IOutlineNode {
     blocks?: IOutlineNode[];
 }
 
-/**
- * 标题编号映射接口
- */
-export interface IHeadingNumberMap {
-    /** 块ID到编号的映射 */
-    [blockId: string]: {
-        /** 编号文本 */
-        number: string;
-        /** 标题级别 */
-        level: number;
-        /** 实际层级（基于存在的标题级别） */
-        actualLevel: number;
-    };
-}
+
 
 /**
  * 解析大纲数据，生成标题编号映射
@@ -51,14 +38,14 @@ export interface IHeadingNumberMap {
 export function parseOutlineToNumberMap(
     outlineData: IOutlineNode[],
     formats: string[],
-    numberStyles: import("../types").HeadingNumberStyle[]
+    numberStyles: HeadingNumberStyle[]
 ): IHeadingNumberMap {
     const numberMap: IHeadingNumberMap = {};
     const counters: number[] = [0, 0, 0, 0, 0, 0];
-    
+
     // 收集所有存在的标题级别
     const existingLevels = collectExistingLevels(outlineData);
-    
+
     // 递归处理大纲节点
     function processNode(node: IOutlineNode): void {
         if (node.nodeType === 'NodeHeading' || (node as any).type === 'NodeHeading') {
@@ -78,12 +65,8 @@ export function parseOutlineToNumberMap(
                     // 更新计数器
                     Object.assign(counters, newCounters);
 
-                    // 保存到映射
-                    numberMap[node.id] = {
-                        number,
-                        level,
-                        actualLevel
-                    };
+                    // 保存到映射 - 简化为字符串映射
+                    numberMap[node.id] = number;
                 }
             }
         }

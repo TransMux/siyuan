@@ -67,10 +67,10 @@ export interface IDocumentInfo {
     id: string;
     /** 文档标题 */
     title: string;
-    /** 文档路径 */
-    path: string;
-    /** 最后修改时间 */
-    lastModified: Date;
+    /** 标题编号启用状态 */
+    numberingEnabled: boolean;
+    /** 交叉引用启用状态 */
+    crossReferenceEnabled: boolean;
 }
 
 /**
@@ -87,6 +87,14 @@ export interface IHeadingInfo {
     originalContent: string;
     /** 编号后的内容 */
     numberedContent?: string;
+}
+
+/**
+ * 标题编号映射接口
+ */
+export interface IHeadingNumberMap {
+    /** 块ID到编号的映射 */
+    [blockId: string]: string;
 }
 
 /**

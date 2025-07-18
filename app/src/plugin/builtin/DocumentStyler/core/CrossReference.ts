@@ -5,13 +5,10 @@
 
 import { ICrossReference, IFigureInfo } from "../types";
 import { DocumentManager } from "./DocumentManager";
-import { scrollToElementAndHighlight } from "../utils/domUtils";
 import { queryDocumentFigures } from "../utils/apiUtils";
 
 export class CrossReference implements ICrossReference {
     private documentManager: DocumentManager;
-    private figureCounter: number = 0;
-    private tableCounter: number = 0;
 
     constructor(documentManager: DocumentManager) {
         this.documentManager = documentManager;
@@ -24,8 +21,6 @@ export class CrossReference implements ICrossReference {
 
     destroy(): void {
         this.removeCrossReferenceStyles();
-        this.figureCounter = 0;
-        this.tableCounter = 0;
     }
 
     async applyCrossReference(protyle: any): Promise<void> {
@@ -74,7 +69,17 @@ export class CrossReference implements ICrossReference {
         // 在当前编辑器中查找对应的块
         const element = protyle.wysiwyg.element.querySelector(`[data-node-id="${figureId}"]`);
         if (element) {
-            scrollToElementAndHighlight(element, 2000);
+            // 滚动到元素并高亮
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // 添加高亮效果
+            element.style.transition = 'background-color 0.3s ease';
+            element.style.backgroundColor = 'var(--b3-theme-primary-lighter)';
+
+            // 2秒后移除高亮
+            setTimeout(() => {
+                element.style.backgroundColor = '';
+            }, 2000);
         } else {
             console.warn(`未找到ID为 ${figureId} 的元素`);
         }
@@ -357,16 +362,7 @@ export class CrossReference implements ICrossReference {
         }
     }
 
-    /**
-     * 截断文本
-     * @param text 原始文本
-     * @param maxLength 最大长度
-     * @returns 截断后的文本
-     */
-    private truncateText(text: string, maxLength: number): string {
-        if (text.length <= maxLength) return text;
-        return text.substring(0, maxLength) + '...';
-    }
+
 
     /**
      * 处理 WebSocket transaction 消息

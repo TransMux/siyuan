@@ -3,9 +3,7 @@
  * 负责管理插件的CSS样式
  */
 
-import { IStyleManager } from "../types";
-import { CSSGenerator } from "../utils/cssGenerator";
-import { IHeadingNumberMap } from "../utils/outlineUtils";
+import { IStyleManager, IHeadingNumberMap } from "../types";
 
 export class StyleManager implements IStyleManager {
     private readonly MAIN_STYLE_ID = 'document-styler-plugin-styles';
@@ -494,26 +492,55 @@ export class StyleManager implements IStyleManager {
         const hasFigures = Object.keys(this.currentFigureMap).length > 0;
 
         if (!hasHeadings && !hasFigures) {
-            CSSGenerator.clearCSS();
+            this.clearHeadingNumbering();
             return;
         }
 
-        const css = CSSGenerator.generateCompleteCSS(
-            this.currentHeadingMap,
-            hasFigures ? this.currentFigureMap : undefined
-        );
-
-        CSSGenerator.applyCSS(css);
+        const css = this.generateHeadingNumberingCSS(this.currentHeadingMap);
+        this.applyHeadingNumberingCSS(css);
     }
 
 
+
+    /**
+     * 生成标题编号CSS
+     * @param headingMap 标题编号映射
+     * @returns CSS字符串
+     */
+    private generateHeadingNumberingCSS(headingMap: IHeadingNumberMap): string {
+        let css = '';
+        for (const [blockId, number] of Object.entries(headingMap)) {
+            css += `[data-node-id="${blockId}"] > .protyle-action:first-child::before {
+                content: "${number}";
+                margin-right: 4px;
+                color: var(--b3-theme-on-surface-light);
+                font-weight: normal;
+            }\n`;
+        }
+        return css;
+    }
+
+    /**
+     * 应用标题编号CSS
+     * @param css CSS字符串
+     */
+    private applyHeadingNumberingCSS(css: string): void {
+        let styleElement = document.getElementById(this.HEADING_STYLE_ID) as HTMLStyleElement;
+        if (!styleElement) {
+            styleElement = document.createElement('style');
+            styleElement.id = this.HEADING_STYLE_ID;
+            document.head.appendChild(styleElement);
+        }
+        styleElement.textContent = css;
+    }
 
     /**
      * 检查编号样式是否已应用
      * @returns 是否已应用
      */
     isNumberingApplied(): boolean {
-        return CSSGenerator.isApplied();
+        const styleElement = document.getElementById(this.HEADING_STYLE_ID);
+        return styleElement !== null && styleElement.textContent !== '';
     }
 
     /**
@@ -523,12 +550,10 @@ export class StyleManager implements IStyleManager {
     getNumberingStats(): {
         headingCount: number;
         figureCount: number;
-        cssStats: ReturnType<typeof CSSGenerator.getStats>;
     } {
         return {
             headingCount: Object.keys(this.currentHeadingMap).length,
-            figureCount: Object.keys(this.currentFigureMap).length,
-            cssStats: CSSGenerator.getStats()
+            figureCount: Object.keys(this.currentFigureMap).length
         };
     }
 }

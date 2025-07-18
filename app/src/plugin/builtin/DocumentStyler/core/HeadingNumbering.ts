@@ -75,7 +75,7 @@ export class HeadingNumbering implements IHeadingNumbering {
             console.log('HeadingNumbering: 获取文档设置', docSettings);
 
             // 获取标题编号映射
-            const headingMap = await this.outlineManager.getHeadingNumberMap(
+            const headingMap = await this.getHeadingNumberMap(
                 docId,
                 docSettings.numberingFormats,
                 docSettings.headingNumberStyles,
@@ -179,7 +179,8 @@ export class HeadingNumbering implements IHeadingNumbering {
      */
     async hasHeadingsInDoc(docId: string): Promise<boolean> {
         try {
-            return await this.outlineManager.hasHeadings(docId);
+            const outlineData = await getDocumentOutline(docId);
+            return outlineData && outlineData.length > 0;
         } catch (error) {
             console.error(`检查文档${docId}是否包含标题失败:`, error);
             return false;
@@ -198,7 +199,25 @@ export class HeadingNumbering implements IHeadingNumbering {
         minLevel: number;
     }> {
         try {
-            return await this.outlineManager.getHeadingStats(docId);
+            const outlineData = await getDocumentOutline(docId);
+            const stats = {
+                totalCount: 0,
+                levelCounts: {} as Record<number, number>,
+                maxLevel: 0,
+                minLevel: 6
+            };
+
+            if (outlineData && outlineData.length > 0) {
+                outlineData.forEach((item: any) => {
+                    const level = item.depth || 1;
+                    stats.totalCount++;
+                    stats.levelCounts[level] = (stats.levelCounts[level] || 0) + 1;
+                    stats.maxLevel = Math.max(stats.maxLevel, level);
+                    stats.minLevel = Math.min(stats.minLevel, level);
+                });
+            }
+
+            return stats;
         } catch (error) {
             console.error(`获取文档${docId}的标题统计失败:`, error);
             return {
