@@ -55,8 +55,6 @@ export interface IDocumentStylerSettings {
     numberingFormats: string[];
     /** 标题编号样式配置 (6个级别) */
     headingNumberStyles: HeadingNumberStyle[];
-    /** 默认启用状态 */
-    defaultEnabled: boolean;
 }
 
 /**
@@ -258,6 +256,4 @@ export interface IDocumentStylerDocumentSettings {
     numberingFormats: string[];
     /** 标题编号样式配置 (6个级别) */
     headingNumberStyles: HeadingNumberStyle[];
-    /** 默认启用状态（用于新建文档） */
-    defaultEnabled: boolean;
 }

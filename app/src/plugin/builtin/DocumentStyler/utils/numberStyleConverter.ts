@@ -26,7 +26,7 @@ class ArabicConverter implements INumberConverter {
     }
     
     getExample(): string {
-        return "1, 2, 3";
+        return "1";
     }
 }
 
@@ -64,7 +64,7 @@ class ChineseConverter implements INumberConverter {
     }
     
     getExample(): string {
-        return "一, 二, 三";
+        return "一";
     }
 }
 
@@ -101,7 +101,7 @@ class ChineseUpperConverter implements INumberConverter {
     }
     
     getExample(): string {
-        return "壹, 贰, 叁";
+        return "壹";
     }
 }
 
@@ -124,7 +124,7 @@ class CircledConverter implements INumberConverter {
     }
     
     getExample(): string {
-        return "①, ②, ③";
+        return "①";
     }
 }
 
@@ -146,7 +146,7 @@ class CircledChineseConverter implements INumberConverter {
     }
     
     getExample(): string {
-        return "❶, ❷, ❸";
+        return "❶";
     }
 }
 
@@ -168,7 +168,7 @@ class EmojiConverter implements INumberConverter {
     }
     
     getExample(): string {
-        return "1️⃣, 2️⃣, 3️⃣";
+        return "1️⃣";
     }
 }
 
@@ -186,7 +186,7 @@ class UpperAlphaConverter implements INumberConverter {
     }
     
     getExample(): string {
-        return "A, B, C";
+        return "A";
     }
 }
 
@@ -204,7 +204,7 @@ class LowerAlphaConverter implements INumberConverter {
     }
     
     getExample(): string {
-        return "a, b, c";
+        return "a";
     }
 }
 
@@ -229,7 +229,7 @@ class UpperRomanConverter implements INumberConverter {
     }
     
     getExample(): string {
-        return "I, II, III";
+        return "I";
     }
 }
 
@@ -254,7 +254,7 @@ class LowerRomanConverter implements INumberConverter {
     }
     
     getExample(): string {
-        return "i, ii, iii";
+        return "i";
     }
 }
 
@@ -276,7 +276,7 @@ class HeavenlyStemsConverter implements INumberConverter {
     }
     
     getExample(): string {
-        return "甲, 乙, 丙";
+        return "甲";
     }
 }
 
@@ -298,7 +298,7 @@ class EarthlyBranchesConverter implements INumberConverter {
     }
     
     getExample(): string {
-        return "子, 丑, 寅";
+        return "子";
     }
 }
 
@@ -387,18 +387,18 @@ export class NumberStyleConverter {
     static getExample(style: HeadingNumberStyle): string {
         const converter = converterMap.get(style);
         if (!converter) {
-            return "1, 2, 3";
+            return "1";
         }
-        
+
         switch (style) {
             case HeadingNumberStyle.PARENTHESES:
-                return "(1), (2), (3)";
+                return "(1)";
             case HeadingNumberStyle.BRACKETS:
-                return "[1], [2], [3]";
+                return "[1]";
             case HeadingNumberStyle.DOT:
-                return "1., 2., 3.";
+                return "1.";
             case HeadingNumberStyle.DOUBLE_DOT:
-                return "1), 2), 3)";
+                return "1)";
             default:
                 return converter.getExample();
         }

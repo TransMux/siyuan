@@ -168,8 +168,6 @@ export class DockPanel implements IDockPanel {
                         </label>
                     </div>
 
-
-
                     <!-- 标题编号样式设置 -->
                     <div class="document-styler-section" id="heading-styles-section" style="${docSettings.headingNumberingEnabled ? '' : 'display: none;'}">
                         <h3 class="document-styler-section-title">标题编号样式</h3>
@@ -458,12 +456,6 @@ export class DockPanel implements IDockPanel {
                 crossRefCheckbox.checked = docSettings.crossReferenceEnabled;
             }
 
-            // 更新默认启用开关
-            const defaultEnabledCheckbox = this.panelElement?.querySelector('#doc-default-enabled') as HTMLInputElement;
-            if (defaultEnabledCheckbox) {
-                defaultEnabledCheckbox.checked = docSettings.defaultEnabled;
-            }
-
             // 只在初始化时绑定事件，避免重复绑定
             if (!this.eventsInitialized) {
                 this.bindDocumentStatusEvents(docId);
@@ -483,7 +475,6 @@ export class DockPanel implements IDockPanel {
 
         const headingCheckbox = this.panelElement?.querySelector('#doc-heading-enabled') as HTMLInputElement;
         const crossRefCheckbox = this.panelElement?.querySelector('#doc-crossref-enabled') as HTMLInputElement;
-        const defaultEnabledCheckbox = this.panelElement?.querySelector('#doc-default-enabled') as HTMLInputElement;
 
         if (headingCheckbox) {
             const headingHandler = async (e: Event) => {
@@ -511,17 +502,6 @@ export class DockPanel implements IDockPanel {
             crossRefCheckbox.addEventListener('change', crossRefHandler);
             (crossRefCheckbox as any)._documentStylerHandler = crossRefHandler;
         }
-
-        if (defaultEnabledCheckbox) {
-            const defaultHandler = async (e: Event) => {
-                const enabled = (e.target as HTMLInputElement).checked;
-                console.log(`DocumentStyler: 默认启用开关改变 - 启用: ${enabled}`);
-
-                await this.settingsManager.setDocumentSettings(docId, { defaultEnabled: enabled });
-            };
-            defaultEnabledCheckbox.addEventListener('change', defaultHandler);
-            (defaultEnabledCheckbox as any)._documentStylerHandler = defaultHandler;
-        }
     }
 
     /**
@@ -540,12 +520,6 @@ export class DockPanel implements IDockPanel {
         if (crossRefCheckbox && (crossRefCheckbox as any)._documentStylerHandler) {
             crossRefCheckbox.removeEventListener('change', (crossRefCheckbox as any)._documentStylerHandler);
             delete (crossRefCheckbox as any)._documentStylerHandler;
-        }
-
-        const defaultEnabledCheckbox = this.panelElement.querySelector('#doc-default-enabled') as HTMLInputElement;
-        if (defaultEnabledCheckbox && (defaultEnabledCheckbox as any)._documentStylerHandler) {
-            defaultEnabledCheckbox.removeEventListener('change', (defaultEnabledCheckbox as any)._documentStylerHandler);
-            delete (defaultEnabledCheckbox as any)._documentStylerHandler;
         }
     }
 

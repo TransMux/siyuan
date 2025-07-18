@@ -30,7 +30,6 @@ const DEFAULT_SETTINGS: IDocumentStylerSettings = {
         HeadingNumberStyle.ARABIC,    // h5: 1, 2, 3
         HeadingNumberStyle.ARABIC,    // h6: 1, 2, 3
     ],
-    defaultEnabled: true,
 };
 
 export class SettingsManager implements ISettingsManager {
@@ -310,11 +309,10 @@ export class SettingsManager implements ISettingsManager {
      */
     getDefaultDocumentSettings(): IDocumentStylerDocumentSettings {
         return {
-            headingNumberingEnabled: this.settings.defaultEnabled,
+            headingNumberingEnabled: false,
             crossReferenceEnabled: false,
             numberingFormats: [...this.settings.numberingFormats],
             headingNumberStyles: [...this.settings.headingNumberStyles],
-            defaultEnabled: this.settings.defaultEnabled
         };
     }
 
@@ -339,10 +337,6 @@ export class SettingsManager implements ISettingsManager {
         
         if (typeof settings.crossReferenceEnabled === 'boolean') {
             fixed.crossReferenceEnabled = settings.crossReferenceEnabled;
-        }
-        
-        if (typeof settings.defaultEnabled === 'boolean') {
-            fixed.defaultEnabled = settings.defaultEnabled;
         }
         
         if (Array.isArray(settings.numberingFormats) && settings.numberingFormats.length === 6) {
@@ -380,7 +374,6 @@ export class SettingsManager implements ISettingsManager {
             'crossReference',
             'numberingFormats',
             'headingNumberStyles',
-            'defaultEnabled'
         ];
 
         for (const prop of requiredProps) {
@@ -416,9 +409,6 @@ export class SettingsManager implements ISettingsManager {
             }
             if (typeof settings.crossReference === 'boolean') {
                 fixed.crossReference = settings.crossReference;
-            }
-            if (typeof settings.defaultEnabled === 'boolean') {
-                fixed.defaultEnabled = settings.defaultEnabled;
             }
             if (Array.isArray(settings.numberingFormats) && settings.numberingFormats.length === 6) {
                 fixed.numberingFormats = [...settings.numberingFormats];
