@@ -269,42 +269,16 @@ export class CrossReference implements ICrossReference {
                 if (figure.type === 'image') {
                     // 给图片标题文本块添加样式和真实编号
                     styles += `
-                        .protyle-wysiwyg [data-node-id="${captionId}"] {
-                            text-align: center;
-                            font-size: 0.9em;
-                            color: var(--b3-theme-on-surface-light);
-                            font-style: italic;
-                            font-weight: 500;
-                            padding: 8px 16px;
-                            background-color: var(--b3-theme-surface-lightest);
-                            border-radius: var(--b3-border-radius-b);
-                            margin: 8px 0;
-                        }
-
                         .protyle-wysiwyg [data-node-id="${captionId}"] [contenteditable="true"]::before {
                             content: "图 ${figureNumber}: ";
-                            font-weight: 600;
                             color: var(--b3-theme-primary);
                         }
                     `;
                 } else if (figure.type === 'table') {
                     // 给表格标题文本块添加样式和真实编号
                     styles += `
-                        .protyle-wysiwyg [data-node-id="${captionId}"] {
-                            text-align: center;
-                            font-size: 0.9em;
-                            color: var(--b3-theme-on-surface-light);
-                            font-style: italic;
-                            font-weight: 500;
-                            padding: 8px 16px;
-                            background-color: var(--b3-theme-surface-lightest);
-                            border-radius: var(--b3-border-radius-b);
-                            margin: 8px 0;
-                        }
-
                         .protyle-wysiwyg [data-node-id="${captionId}"] [contenteditable="true"]::before {
                             content: "表 ${figureNumber}: ";
-                            font-weight: 600;
                             color: var(--b3-theme-primary);
                         }
                     `;
