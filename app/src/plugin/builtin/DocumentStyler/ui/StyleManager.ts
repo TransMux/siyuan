@@ -517,7 +517,7 @@ export class StyleManager implements IStyleManager {
     private generateHeadingNumberingCSS(headingMap: IHeadingNumberMap): string {
         let css = '';
         for (const [blockId, number] of Object.entries(headingMap)) {
-            css += `[data-node-id="${blockId}"] > .protyle-action:first-child::before {
+            css += `.protyle-wysiwyg [data-node-id="${blockId}"] [contenteditable]::before {
                 content: "${number}";
                 margin-right: 4px;
                 color: var(--b3-theme-on-surface-light);
