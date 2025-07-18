@@ -29,14 +29,6 @@ export enum HeadingNumberStyle {
     UPPER_ROMAN = 'upper_roman',
     /** 罗马数字小写：i, ii, iii */
     LOWER_ROMAN = 'lower_roman',
-    /** 带括号数字：(1), (2), (3) */
-    PARENTHESES = 'parentheses',
-    /** 方括号数字：[1], [2], [3] */
-    BRACKETS = 'brackets',
-    /** 点号数字：1., 2., 3. */
-    DOT = 'dot',
-    /** 双点号数字：1), 2), 3) */
-    DOUBLE_DOT = 'double_dot',
     /** 天干：甲, 乙, 丙 */
     HEAVENLY_STEMS = 'heavenly_stems',
     /** 地支：子, 丑, 寅 */

@@ -353,18 +353,7 @@ export class NumberStyleConverter {
             return style;
         }
         
-        switch (style) {
-            case HeadingNumberStyle.PARENTHESES:
-                return "带括号数字";
-            case HeadingNumberStyle.BRACKETS:
-                return "方括号数字";
-            case HeadingNumberStyle.DOT:
-                return "点号数字";
-            case HeadingNumberStyle.DOUBLE_DOT:
-                return "双点号数字";
-            default:
-                return converter.getDisplayName();
-        }
+        return converter.getDisplayName();
     }
     
     /**
@@ -378,18 +367,7 @@ export class NumberStyleConverter {
             return "1";
         }
 
-        switch (style) {
-            case HeadingNumberStyle.PARENTHESES:
-                return "(1)";
-            case HeadingNumberStyle.BRACKETS:
-                return "[1]";
-            case HeadingNumberStyle.DOT:
-                return "1.";
-            case HeadingNumberStyle.DOUBLE_DOT:
-                return "1)";
-            default:
-                return converter.getExample();
-        }
+        return converter.getExample();
     }
     
     /**
