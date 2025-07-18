@@ -148,10 +148,41 @@ export function querySQL(sql: string): Promise<any[]> {
 
 /**
  * 查询文档中的图片和表格
+ * 现在使用getDoc API获取完整DOM结构，并从中解析符合条件的图表
  * @param docId 文档ID
  * @returns 图片和表格信息数组
  */
 export async function queryDocumentFigures(docId: string): Promise<any[]> {
+    const results: any[] = [];
+
+    try {
+        // 使用getDoc API获取完整的文档DOM结构
+        const htmlContent = await getDocumentFullContent(docId);
+        if (!htmlContent) {
+            console.warn('无法获取文档内容，回退到SQL查询');
+            return await queryDocumentFiguresFromSQL(docId);
+        }
+
+        // 从DOM结构中解析符合条件的图表
+        const figuresFromDOM = await parseFiguresFromDOM(htmlContent);
+        results.push(...figuresFromDOM);
+
+        console.log(`从DOM解析到 ${results.length} 个符合条件的图表`);
+
+    } catch (error) {
+        console.error('从DOM解析图片表格失败，回退到SQL查询:', error);
+        return await queryDocumentFiguresFromSQL(docId);
+    }
+
+    return results;
+}
+
+/**
+ * 从SQL查询获取图片和表格（回退方案）
+ * @param docId 文档ID
+ * @returns 图片和表格信息数组
+ */
+async function queryDocumentFiguresFromSQL(docId: string): Promise<any[]> {
     const results: any[] = [];
 
     try {
@@ -168,10 +199,180 @@ export async function queryDocumentFigures(docId: string): Promise<any[]> {
         results.push(...images.map(item => ({ ...item, figureType: 'image' })));
 
     } catch (error) {
-        console.error('查询文档图片表格失败:', error);
+        console.error('SQL查询文档图片表格失败:', error);
     }
 
     return results;
+}
+
+/**
+ * 从DOM结构中解析符合条件的图表
+ * 只处理在超级块内，且超级块只有图表和文本两个元素的情况
+ * @param htmlContent 文档的HTML内容
+ * @returns 符合条件的图表信息数组
+ */
+async function parseFiguresFromDOM(htmlContent: string): Promise<any[]> {
+    const results: any[] = [];
+
+    try {
+        // 创建DOM解析器
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlContent, 'text/html');
+
+        // 查找所有超级块
+        const superBlocks = doc.querySelectorAll('[data-type="NodeSuperBlock"]');
+
+        for (const superBlock of superBlocks) {
+            const figuresInSuperBlock = analyzeSuperBlockForFigures(superBlock);
+            results.push(...figuresInSuperBlock);
+        }
+
+        console.log(`从 ${superBlocks.length} 个超级块中解析到 ${results.length} 个符合条件的图表`);
+
+    } catch (error) {
+        console.error('解析DOM中的图表失败:', error);
+    }
+
+    return results;
+}
+
+/**
+ * 分析超级块中的图表
+ * @param superBlock 超级块DOM元素
+ * @returns 符合条件的图表信息数组
+ */
+function analyzeSuperBlockForFigures(superBlock: Element): any[] {
+    const results: any[] = [];
+
+    try {
+        // 获取超级块的布局
+        const layout = superBlock.getAttribute('data-sb-layout');
+
+        // 只处理竖直布局（row）的超级块
+        if (layout !== 'row') {
+            return results;
+        }
+
+        // 获取所有直接子元素（排除属性元素）
+        const children = Array.from(superBlock.children).filter(child =>
+            !child.classList.contains('protyle-attr')
+        );
+
+        // 必须恰好有两个子元素
+        if (children.length !== 2) {
+            return results;
+        }
+
+        // 分析两个子元素，找出图表和文本的组合
+        const figureInfo = identifyFigureAndTextPair(children);
+        if (figureInfo) {
+            results.push(figureInfo);
+        }
+
+    } catch (error) {
+        console.error('分析超级块失败:', error);
+    }
+
+    return results;
+}
+
+/**
+ * 识别图表和文本的配对
+ * @param children 超级块的子元素数组
+ * @returns 图表信息，如果不符合条件则返回null
+ */
+function identifyFigureAndTextPair(children: Element[]): any | null {
+    let figureElement: Element | null = null;
+    let textElement: Element | null = null;
+    let figureType: 'image' | 'table' | null = null;
+
+    // 分析两个子元素
+    for (const child of children) {
+        const nodeType = child.getAttribute('data-type');
+
+        if (nodeType === 'NodeTable') {
+            // 表格元素
+            if (figureElement) return null; // 已经有图表了，不符合条件
+            figureElement = child;
+            figureType = 'table';
+        } else if (nodeType === 'NodeParagraph') {
+            // 段落元素，检查是否包含图片
+            const imgElement = child.querySelector('[data-type="img"]');
+            if (imgElement) {
+                // 包含图片的段落
+                if (figureElement) return null; // 已经有图表了，不符合条件
+                figureElement = child;
+                figureType = 'image';
+            } else {
+                // 纯文本段落
+                if (textElement) return null; // 已经有文本了，不符合条件
+                textElement = child;
+            }
+        } else {
+            // 其他类型的元素，不符合条件
+            return null;
+        }
+    }
+
+    // 必须同时有图表和文本元素
+    if (!figureElement || !textElement || !figureType) {
+        return null;
+    }
+
+    // 提取图表信息
+    const figureId = figureElement.getAttribute('data-node-id');
+    if (!figureId) {
+        return null;
+    }
+
+    // 提取内容和标题
+    const content = extractElementContent(figureElement, figureType);
+    const caption = extractElementText(textElement);
+
+    return {
+        id: figureId,
+        type: figureElement.getAttribute('data-type') || (figureType === 'image' ? 'p' : 't'),
+        subtype: figureElement.getAttribute('data-subtype') || '',
+        content: content,
+        figureType: figureType,
+        caption: caption,
+        // 保存DOM顺序信息，用于后续排序
+        domOrder: Array.from(figureElement.parentElement?.parentElement?.children || []).indexOf(figureElement.parentElement!)
+    };
+}
+
+/**
+ * 提取元素内容
+ * @param element DOM元素
+ * @param figureType 图表类型
+ * @returns 内容字符串
+ */
+function extractElementContent(element: Element, figureType: 'image' | 'table'): string {
+    if (figureType === 'image') {
+        // 对于图片，尝试提取markdown格式
+        const editableDiv = element.querySelector('[contenteditable="true"]');
+        if (editableDiv) {
+            return editableDiv.innerHTML || '';
+        }
+        return element.innerHTML || '';
+    } else if (figureType === 'table') {
+        // 对于表格，提取表格内容
+        return element.innerHTML || '';
+    }
+    return '';
+}
+
+/**
+ * 提取元素的纯文本内容
+ * @param element DOM元素
+ * @returns 文本内容
+ */
+function extractElementText(element: Element): string {
+    const editableDiv = element.querySelector('[contenteditable="true"]');
+    if (editableDiv) {
+        return editableDiv.textContent?.trim() || '';
+    }
+    return element.textContent?.trim() || '';
 }
 
 /**

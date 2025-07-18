@@ -279,18 +279,83 @@ export class CrossReference implements ICrossReference {
     }
 
     /**
+     * 生成图表标题样式（新版本，基于DOM解析的数据）
+     * 为从DOM解析出来的图表生成标题样式
+     * @param figuresData 图表数据（包含标题信息和编号）
+     * @param protyle 编辑器实例，用于查找标题元素
+     * @returns CSS样式字符串
+     */
+    private generateFigureCaptionStyles(figuresData: IFigureInfo[], protyle?: any): string {
+        let styles = '';
+
+        if (!protyle?.wysiwyg?.element) {
+            return styles;
+        }
+
+        // 为每个图表生成标题样式
+        for (const figure of figuresData) {
+            // 查找图表对应的超级块
+            const figureElement = protyle.wysiwyg.element.querySelector(`[data-node-id="${figure.id}"]`);
+            if (!figureElement) continue;
+
+            // 查找图表所在的超级块
+            const superBlock = figureElement.closest('[data-type="NodeSuperBlock"]');
+            if (!superBlock) continue;
+
+            // 检查超级块是否符合条件（竖直布局，两个子元素）
+            const layout = superBlock.getAttribute('data-sb-layout');
+            if (layout !== 'row') continue;
+
+            const children = Array.from(superBlock.children).filter((child: Element) =>
+                !child.classList.contains('protyle-attr')
+            );
+            if (children.length !== 2) continue;
+
+            // 找到标题元素（不是图表元素的那个）
+            let captionElement: Element | null = null;
+            for (const child of children) {
+                if (child !== figureElement.parentElement) {
+                    const nodeType = child.getAttribute('data-type');
+                    if (nodeType === 'NodeParagraph' && !child.querySelector('[data-type="img"]')) {
+                        captionElement = child;
+                        break;
+                    }
+                }
+            }
+
+            if (captionElement && figure.caption) {
+                const captionId = captionElement.getAttribute('data-node-id');
+                if (captionId) {
+                    const prefix = figure.type === 'image' ? '图' : '表';
+                    styles += `
+                        .protyle-wysiwyg [data-node-id="${captionId}"] [contenteditable="true"]::before {
+                            content: "${prefix} ${figure.number}: ";
+                            color: var(--b3-theme-primary);
+                            font-weight: 500;
+                        }
+                    `;
+                }
+            }
+        }
+
+        return styles;
+    }
+
+    /**
      * 加载交叉引用样式
-     * 基于思源原有的图片和表格结构，通过CSS实现自动编号和自定义标题
+     * 基于从完整DOM结构解析出来的图表数据，通过CSS实现自动编号和自定义标题
      */
     private async loadCrossReferenceStyles(protyle?: any): Promise<void> {
-        // 解析超级块中的图片/表格
-        const superBlockFigures = protyle ? this.parseSuperBlockFigures(protyle) : [];
-
-        // 获取当前文档的所有图片表格数据（包含正确编号）
+        // 获取当前文档的所有图片表格数据（现在从完整DOM结构解析，包含正确编号和标题）
         let figuresData: IFigureInfo[] = [];
+
         if (protyle?.block?.rootID) {
             try {
+                // 从完整DOM结构获取图表数据
                 figuresData = await this.getFiguresList(protyle.block.rootID, protyle);
+
+                // 由于现在图表数据已经包含了标题信息，我们可以直接使用
+                // 不再需要复杂的超级块解析，因为标题信息已经在figuresData中了
             } catch (error) {
                 console.error('获取图片表格数据失败:', error);
             }
@@ -298,7 +363,7 @@ export class CrossReference implements ICrossReference {
 
         const css = `
             /* 超级块中的图片/表格自定义标题样式 */
-            ${this.generateSuperBlockCaptionStyles(superBlockFigures, figuresData)}
+            ${this.generateFigureCaptionStyles(figuresData, protyle)}
 
             /* 交叉引用链接样式 */
             .protyle-wysiwyg a[href^="#figure-"],
@@ -334,9 +399,10 @@ export class CrossReference implements ICrossReference {
 
     /**
      * 处理图片表格数据
-     * @param figures 原始数据
-     * @param protyle 编辑器实例，用于获取DOM中的真实顺序
-     * @param docId 文档ID，用于通过API获取完整顺序
+     * 现在主要处理从DOM解析出来的符合条件的图表数据
+     * @param figures 原始数据（现在来自DOM解析，已经包含正确顺序）
+     * @param protyle 编辑器实例，用于获取DOM中的真实顺序（作为备用）
+     * @param docId 文档ID，用于通过API获取完整顺序（作为备用）
      * @returns 处理后的数据
      */
     private async processFiguresData(figures: any[], protyle?: any, docId?: string): Promise<IFigureInfo[]> {
@@ -344,48 +410,63 @@ export class CrossReference implements ICrossReference {
         let imageCount = 0;
         let tableCount = 0;
 
-        // 获取真实顺序的多种方法
-        let realOrder: Record<string, number> = {};
+        // 检查数据来源，如果是从DOM解析的数据，直接使用其顺序
+        const isFromDOM = figures.length > 0 && figures[0].hasOwnProperty('domOrder');
 
-        // 方法1: 如果有protyle，尝试从DOM获取
-        if (protyle) {
-            realOrder = getDocumentBlockOrderFromDOM(protyle);
-            console.log('CrossReference: 从DOM获取的顺序映射:', Object.keys(realOrder).length, '个块');
+        if (isFromDOM) {
+            // 从DOM解析的数据，按照domOrder排序
+            console.log('CrossReference: 使用DOM解析的数据，按domOrder排序');
+            figures.sort((a, b) => {
+                if (a.domOrder !== undefined && b.domOrder !== undefined) {
+                    return a.domOrder - b.domOrder;
+                }
+                // 如果没有domOrder，回退到ID排序
+                return a.id.localeCompare(b.id);
+            });
+        } else {
+            // 传统的SQL数据，使用原有的排序逻辑
+            console.log('CrossReference: 使用SQL数据，使用传统排序逻辑');
+
+            // 获取真实顺序的多种方法
+            let realOrder: Record<string, number> = {};
+
+            // 方法1: 如果有protyle，尝试从DOM获取
+            if (protyle) {
+                realOrder = getDocumentBlockOrderFromDOM(protyle);
+                console.log('CrossReference: 从DOM获取的顺序映射:', Object.keys(realOrder).length, '个块');
+            }
+
+            // 方法2: 如果DOM方法没有获取到足够的数据，或者没有protyle，尝试通过API获取
+            if (Object.keys(realOrder).length === 0 && docId) {
+                try {
+                    realOrder = await getDocumentBlockOrder(docId);
+                    console.log('CrossReference: 从API获取的顺序映射:', Object.keys(realOrder).length, '个块');
+                } catch (error) {
+                    console.error('CrossReference: 通过API获取顺序失败:', error);
+                }
+            }
+
+            // 按照在文档中的真实顺序排序
+            figures.sort((a, b) => {
+                // 优先使用真实顺序
+                if (realOrder[a.id] !== undefined && realOrder[b.id] !== undefined) {
+                    return realOrder[a.id] - realOrder[b.id];
+                }
+                // 如果真实顺序不可用，回退到sort字段
+                if (a.sort && b.sort) {
+                    return a.sort - b.sort;
+                }
+                // 最后回退到ID排序
+                return a.id.localeCompare(b.id);
+            });
         }
 
-        // 方法2: 如果DOM方法没有获取到足够的数据，或者没有protyle，尝试通过API获取
-        if (Object.keys(realOrder).length === 0 && docId) {
-            try {
-                realOrder = await getDocumentBlockOrder(docId);
-                console.log('CrossReference: 从API获取的顺序映射:', Object.keys(realOrder).length, '个块');
-            } catch (error) {
-                console.error('CrossReference: 通过API获取顺序失败:', error);
-            }
-        }
-
-        // 按照在文档中的真实顺序排序
-        console.log('CrossReference: 排序前的图片表格:', figures.map(f => ({ id: f.id, type: f.figureType, sort: f.sort, realOrder: realOrder[f.id] })));
-
-        figures.sort((a, b) => {
-            // 优先使用真实顺序
-            if (realOrder[a.id] !== undefined && realOrder[b.id] !== undefined) {
-                const result = realOrder[a.id] - realOrder[b.id];
-                console.log(`CrossReference: 真实顺序排序 ${a.id}(${realOrder[a.id]}) vs ${b.id}(${realOrder[b.id]}) = ${result}`);
-                return result;
-            }
-            // 如果真实顺序不可用，回退到sort字段
-            if (a.sort && b.sort) {
-                const result = a.sort - b.sort;
-                console.log(`CrossReference: Sort字段排序 ${a.id}(${a.sort}) vs ${b.id}(${b.sort}) = ${result}`);
-                return result;
-            }
-            // 最后回退到ID排序
-            const result = a.id.localeCompare(b.id);
-            console.log(`CrossReference: ID排序 ${a.id} vs ${b.id} = ${result}`);
-            return result;
-        });
-
-        console.log('CrossReference: 排序后的图片表格:', figures.map(f => ({ id: f.id, type: f.figureType, sort: f.sort, realOrder: realOrder[f.id] })));
+        console.log('CrossReference: 排序后的图片表格:', figures.map(f => ({
+            id: f.id,
+            type: f.figureType,
+            domOrder: f.domOrder,
+            caption: f.caption
+        })));
 
         for (const figure of figures) {
             if (figure.figureType === 'image') {
@@ -393,8 +474,9 @@ export class CrossReference implements ICrossReference {
                 result.push({
                     id: figure.id,
                     type: 'image',
-                    content: this.extractImageAlt(figure.content || figure.markdown || ''),
-                    caption: this.extractImageCaption(figure.content || figure.markdown || ''),
+                    // 优先使用从DOM解析出来的标题，如果没有则从内容中提取
+                    content: figure.caption || this.extractImageAlt(figure.content || figure.markdown || ''),
+                    caption: figure.caption || this.extractImageCaption(figure.content || figure.markdown || ''),
                     number: imageCount
                 });
             } else if (figure.figureType === 'table') {
@@ -402,8 +484,9 @@ export class CrossReference implements ICrossReference {
                 result.push({
                     id: figure.id,
                     type: 'table',
-                    content: this.extractTableSummary(figure.content || ''),
-                    caption: this.extractTableCaption(figure.content || ''),
+                    // 优先使用从DOM解析出来的标题，如果没有则从内容中提取
+                    content: figure.caption || this.extractTableSummary(figure.content || ''),
+                    caption: figure.caption || this.extractTableCaption(figure.content || ''),
                     number: tableCount
                 });
             }
@@ -663,7 +746,7 @@ export class CrossReference implements ICrossReference {
      * @param source 来源
      * @returns 提示数据数组
      */
-    private async generateCrossReferenceHints(key: string, protyle: any, source?: string): Promise<any[]> {
+    private async generateCrossReferenceHints(key: string, protyle: any): Promise<any[]> {
         if (!protyle || !protyle.block || !protyle.block.rootID) {
             return [];
         }
