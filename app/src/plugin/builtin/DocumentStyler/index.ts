@@ -198,16 +198,13 @@ export class DocumentStylerPlugin extends Plugin {
         if (!docId) return;
 
         const currentEnabled = this.settingsManager.isDocumentEnabled(docId);
-        const protyle = this.documentManager.getCurrentProtyle();
-
-        if (!protyle) return;
 
         try {
             if (currentEnabled) {
-                await this.headingNumbering.clearNumbering(protyle);
+                await this.headingNumbering.clearNumbering(null);
                 await this.settingsManager.setDocumentEnabled(docId, false);
             } else {
-                await this.headingNumbering.applyNumbering(protyle);
+                await this.headingNumbering.updateNumberingForDoc(docId);
                 await this.settingsManager.setDocumentEnabled(docId, true);
             }
 

@@ -3,7 +3,7 @@
  * 基于 siyuan-auto-seq-number 插件的设计思路重新实现
  */
 
-import { IHeadingNumbering, IHeadingInfo } from "../types";
+import { IHeadingNumbering } from "../types";
 import { SettingsManager } from "./SettingsManager";
 import { DocumentManager } from "./DocumentManager";
 import { OutlineManager } from "./OutlineManager";

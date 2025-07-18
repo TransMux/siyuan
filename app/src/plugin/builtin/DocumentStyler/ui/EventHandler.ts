@@ -375,15 +375,8 @@ export class EventHandler implements IEventHandler {
      */
     private async updateHeadingsForDoc(docId: string): Promise<void> {
         try {
-            // 这里将在重构HeadingNumbering模块时实现
-            // 暂时使用旧的方法
-            const currentDocId = this.documentManager.getCurrentDocId();
-            if (currentDocId === docId) {
-                const protyle = this.documentManager.getCurrentProtyle();
-                if (protyle) {
-                    await this.headingNumbering.updateNumbering(protyle);
-                }
-            }
+            // 使用新的架构更新标题编号
+            await this.headingNumbering.updateNumberingForDoc(docId);
         } catch (error) {
             console.error(`更新文档${docId}的标题编号失败:`, error);
         }
