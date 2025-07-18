@@ -74,18 +74,6 @@ export class CrossReference implements ICrossReference {
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
     /**
      * 生成图表标题样式（基于DOM解析的数据）
      * 为每个图表的标题元素生成CSS样式，添加编号前缀
@@ -203,6 +191,7 @@ export class CrossReference implements ICrossReference {
                 result.push({
                     id: figure.id,
                     type: 'image',
+                    captionId: figure.captionId,
                     // 优先使用从DOM解析出来的标题，如果没有则从内容中提取
                     content: figure.caption || this.extractImageAlt(figure.content || figure.markdown || ''),
                     caption: figure.caption || this.extractImageCaption(figure.content || figure.markdown || ''),
@@ -213,6 +202,7 @@ export class CrossReference implements ICrossReference {
                 result.push({
                     id: figure.id,
                     type: 'table',
+                    captionId: figure.captionId,
                     // 优先使用从DOM解析出来的标题，如果没有则从内容中提取
                     content: figure.caption || this.extractTableSummary(figure.content || ''),
                     caption: figure.caption || this.extractTableCaption(figure.content || ''),

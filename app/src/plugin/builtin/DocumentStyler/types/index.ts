@@ -101,6 +101,8 @@ export interface IFigureInfo {
     caption?: string;
     /** 编号 */
     number?: number;
+    /** 标题元素ID */
+    captionId?: string;
 }
 
 /**
