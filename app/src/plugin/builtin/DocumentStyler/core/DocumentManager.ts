@@ -4,7 +4,7 @@
  */
 
 import { App } from "../../../../index";
-import { IDocumentManager, IDocumentInfo } from "../types";
+import { IDocumentManager, IDocumentInfo, IDocumentStylerDocumentSettings } from "../types";
 import { getDocumentTitle } from "../utils/apiUtils";
 
 export class DocumentManager implements IDocumentManager {

@@ -339,19 +339,7 @@ export class NumberStyleConverter {
         
         const convertedNum = converter.convert(num);
         
-        // 处理特殊格式
-        switch (style) {
-            case HeadingNumberStyle.PARENTHESES:
-                return `(${convertedNum})`;
-            case HeadingNumberStyle.BRACKETS:
-                return `[${convertedNum}]`;
-            case HeadingNumberStyle.DOT:
-                return `${convertedNum}.`;
-            case HeadingNumberStyle.DOUBLE_DOT:
-                return `${convertedNum})`;
-            default:
-                return format.replace('{1}', convertedNum);
-        }
+        return format.replace('{1}', convertedNum);
     }
     
     /**

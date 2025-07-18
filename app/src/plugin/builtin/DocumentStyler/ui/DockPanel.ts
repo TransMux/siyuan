@@ -69,8 +69,8 @@ export class DockPanel implements IDockPanel {
             this.eventsInitialized = false;
 
             custom.element.innerHTML = await this.generatePanelHTML();
-            this.bindPanelEvents();
             await this.updatePanel();
+            this.bindPanelEvents();
         } catch (error) {
             console.error('DocumentStyler: Error initializing dock panel:', error);
         }
@@ -242,14 +242,16 @@ export class DockPanel implements IDockPanel {
         // 清除之前的事件监听器
         this.clearPanelEvents();
 
-        const docId = this.documentManager.getCurrentDocId();
-        if (!docId) return;
+
 
         // 标题编号样式选择器
         for (let i = 0; i < 6; i++) {
             const styleSelect = this.panelElement.querySelector(`#heading-style-${i}`) as HTMLSelectElement;
             if (styleSelect) {
                 const handler = async (e: Event) => {
+                    const docId = this.documentManager.getCurrentDocId();
+                    if (!docId) return;
+
                     const style = (e.target as HTMLSelectElement).value as HeadingNumberStyle;
                     console.log(`DocumentStyler: 标题编号样式改变 - 级别${i + 1}, 样式: ${style}`);
 
@@ -273,6 +275,9 @@ export class DockPanel implements IDockPanel {
             const formatInput = this.panelElement.querySelector(`#format-${i}`) as HTMLInputElement;
             if (formatInput) {
                 const handler = async (e: Event) => {
+                    const docId = this.documentManager.getCurrentDocId();
+                    if (!docId) return;
+
                     const format = (e.target as HTMLInputElement).value;
                     console.log(`DocumentStyler: 编号格式改变 - 级别${i + 1}, 格式: ${format}`);
 

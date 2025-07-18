@@ -115,7 +115,7 @@ export class SettingsManager implements ISettingsManager {
         if (level < 0 || level >= this.settings.numberingFormats.length) {
             return;
         }
-        
+
         this.settings.numberingFormats[level] = format;
         await this.saveSettings();
     }
@@ -266,7 +266,7 @@ export class SettingsManager implements ISettingsManager {
         if (level < 0 || level >= settings.headingNumberStyles.length) {
             return;
         }
-        
+
         const newStyles = [...settings.headingNumberStyles];
         newStyles[level] = style;
         await this.setDocumentSettings(docId, { headingNumberStyles: newStyles });
@@ -297,7 +297,7 @@ export class SettingsManager implements ISettingsManager {
         if (level < 0 || level >= settings.numberingFormats.length) {
             return;
         }
-        
+
         const newFormats = [...settings.numberingFormats];
         newFormats[level] = format;
         await this.setDocumentSettings(docId, { numberingFormats: newFormats });
@@ -323,7 +323,7 @@ export class SettingsManager implements ISettingsManager {
      */
     private validateAndFixDocumentSettings(settings: any): IDocumentStylerDocumentSettings {
         const defaultSettings = this.getDefaultDocumentSettings();
-        
+
         if (!settings || typeof settings !== 'object') {
             return defaultSettings;
         }
@@ -334,15 +334,15 @@ export class SettingsManager implements ISettingsManager {
         if (typeof settings.headingNumberingEnabled === 'boolean') {
             fixed.headingNumberingEnabled = settings.headingNumberingEnabled;
         }
-        
+
         if (typeof settings.crossReferenceEnabled === 'boolean') {
             fixed.crossReferenceEnabled = settings.crossReferenceEnabled;
         }
-        
+
         if (Array.isArray(settings.numberingFormats) && settings.numberingFormats.length === 6) {
             fixed.numberingFormats = [...settings.numberingFormats];
         }
-        
+
         if (Array.isArray(settings.headingNumberStyles) && settings.headingNumberStyles.length === 6) {
             fixed.headingNumberStyles = [...settings.headingNumberStyles];
         }
