@@ -683,14 +683,4 @@ export class DockPanel implements IDockPanel {
         return text.substring(0, maxLength) + '...';
     }
 
-    /**
-     * 通知设置变更
-     */
-    private notifySettingsChanged(key: string, value: any): void {
-        // 发送自定义事件，主插件类可以监听此事件
-        const event = new CustomEvent('document-styler-settings-changed', {
-            detail: { key, value }
-        });
-        document.dispatchEvent(event);
-    }
 }

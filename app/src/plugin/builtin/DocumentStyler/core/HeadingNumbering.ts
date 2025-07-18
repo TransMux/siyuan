@@ -3,30 +3,30 @@
  * 基于 siyuan-auto-seq-number 插件的设计思路重新实现
  */
 
-import { IHeadingNumbering, HeadingNumberStyle } from "../types";
+import { IHeadingNumbering, HeadingNumberStyle, IHeadingNumberMap } from "../types";
 import { SettingsManager } from "./SettingsManager";
 import { DocumentManager } from "./DocumentManager";
-import { OutlineManager } from "./OutlineManager";
 import { StyleManager } from "../ui/StyleManager";
-import { getVersion } from "../utils/apiUtils";
+import { getVersion, getDocumentOutline } from "../utils/apiUtils";
 import { NumberStyleConverter } from "../utils/numberStyleConverter";
+import { parseOutlineToNumberMap } from "../utils/outlineUtils";
 
 export class HeadingNumbering implements IHeadingNumbering {
     private settingsManager: SettingsManager;
     private documentManager: DocumentManager;
-    private outlineManager: OutlineManager;
     private styleManager: StyleManager;
     private version: string = "";
+
+    // 简化缓存机制
+    private numberMapCache: Map<string, IHeadingNumberMap> = new Map();
 
     constructor(
         settingsManager: SettingsManager,
         documentManager: DocumentManager,
-        outlineManager: OutlineManager,
         styleManager: StyleManager
     ) {
         this.settingsManager = settingsManager;
         this.documentManager = documentManager;
-        this.outlineManager = outlineManager;
         this.styleManager = styleManager;
     }
 
@@ -108,13 +108,13 @@ export class HeadingNumbering implements IHeadingNumbering {
     async updateNumberingForDoc(docId: string): Promise<void> {
         try {
             console.log(`DocumentStyler: 开始更新文档${docId}的标题编号`);
-            
+
             // 获取文档设置
             const docSettings = await this.settingsManager.getDocumentSettings(docId);
             console.log('DocumentStyler: 文档设置', docSettings);
 
             // 获取标题编号映射
-            const headingMap = await this.outlineManager.getHeadingNumberMap(
+            const headingMap = await this.getHeadingNumberMap(
                 docId,
                 docSettings.numberingFormats,
                 docSettings.headingNumberStyles,
@@ -127,6 +127,47 @@ export class HeadingNumbering implements IHeadingNumbering {
             console.log('DocumentStyler: CSS样式应用完成');
         } catch (error) {
             console.error(`更新文档${docId}的标题编号失败:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * 获取标题编号映射 - 简化版本，直接在这里实现
+     * @param docId 文档ID
+     * @param formats 编号格式配置
+     * @param numberStyles 标题编号样式配置
+     * @param forceRefresh 是否强制刷新
+     * @returns 标题编号映射
+     */
+    private async getHeadingNumberMap(
+        docId: string,
+        formats: string[],
+        numberStyles: HeadingNumberStyle[],
+        forceRefresh: boolean = false
+    ): Promise<IHeadingNumberMap> {
+        const cacheKey = `${docId}_${JSON.stringify(formats)}_${JSON.stringify(numberStyles)}`;
+
+        // 检查缓存
+        if (!forceRefresh && this.numberMapCache.has(cacheKey)) {
+            const cached = this.numberMapCache.get(cacheKey);
+            if (cached) {
+                return cached;
+            }
+        }
+
+        try {
+            // 获取大纲数据
+            const outlineData = await getDocumentOutline(docId);
+
+            // 解析生成编号映射
+            const numberMap = parseOutlineToNumberMap(outlineData, formats, numberStyles);
+
+            // 更新缓存
+            this.numberMapCache.set(cacheKey, numberMap);
+
+            return numberMap;
+        } catch (error) {
+            console.error('生成标题编号映射失败:', error);
             throw error;
         }
     }

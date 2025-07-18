@@ -2,39 +2,36 @@ import { Plugin } from "../../index";
 import { App } from "../../../index";
 import { Custom } from "../../../layout/dock/Custom";
 
-// 导入模块化组件
+// 导入核心组件
+import { SettingsManager } from "./core/SettingsManager";
+import { DocumentManager } from "./core/DocumentManager";
 import { HeadingNumbering } from "./core/HeadingNumbering";
 import { CrossReference } from "./core/CrossReference";
-import { DocumentManager } from "./core/DocumentManager";
-import { SettingsManager } from "./core/SettingsManager";
-import { OutlineManager } from "./core/OutlineManager";
-import { WebSocketManager } from "./core/WebSocketManager";
 import { DockPanel } from "./ui/DockPanel";
 import { StyleManager } from "./ui/StyleManager";
-import { EventHandler } from "./ui/EventHandler";
 import { IPluginOptions, IDocumentStylerSettings, IDocumentInfo } from "./types";
 
 /**
  * Built-in plugin: Document Styler
- * Provides a sidebar panel for setting document element styles including:
- * - Heading auto-numbering with advanced formatting options
- * - Image/table cross-references with captions and labels
- * - Cross-reference selection with @ trigger
- * - Real-time updating and customizable numbering formats
+ * 提供文档样式设置的侧边栏面板，包括：
+ * - 标题自动编号与高级格式化选项
+ * - 图片/表格交叉引用与标题标签
+ * - 实时更新与可自定义编号格式
  */
 export class DocumentStylerPlugin extends Plugin {
     private appRef: App;
 
-    // 模块化组件
+    // 核心组件 - 简化架构，只保留必要的模块
     private settingsManager: SettingsManager;
     private documentManager: DocumentManager;
-    private outlineManager: OutlineManager;
-    private webSocketManager: WebSocketManager;
     private headingNumbering: HeadingNumbering;
     private crossReference: CrossReference;
     private styleManager: StyleManager;
     private dockPanel: DockPanel;
-    private eventHandler: EventHandler;
+
+    // 事件监听器管理
+    private eventListeners: Map<string, Function> = new Map();
+    private currentDocId: string | null = null;
 
     constructor(options: IPluginOptions) {
         super(options);
@@ -43,41 +40,33 @@ export class DocumentStylerPlugin extends Plugin {
         // 将插件实例暴露到全局，供HTML onclick使用
         (window as any).documentStylerPlugin = this;
 
-        // 初始化模块化组件
-        this.initializeModules();
+        // 初始化核心组件 - 简化依赖关系
+        this.initializeComponents();
     }
 
     /**
-     * 初始化模块化组件
+     * 初始化核心组件
      */
-    private initializeModules(): void {
-        // 创建核心模块
+    private initializeComponents(): void {
+        // 按依赖顺序创建组件
         this.settingsManager = new SettingsManager(this);
         this.documentManager = new DocumentManager(this.appRef);
-        this.outlineManager = new OutlineManager();
         this.styleManager = new StyleManager();
+
+        // 功能组件
         this.headingNumbering = new HeadingNumbering(
             this.settingsManager,
             this.documentManager,
-            this.outlineManager,
             this.styleManager
         );
         this.crossReference = new CrossReference(this.documentManager);
-        this.webSocketManager = new WebSocketManager(
-            this.settingsManager,
-            this.headingNumbering,
-            this.crossReference
-        );
 
-        // 创建UI模块
-        this.dockPanel = new DockPanel(this.settingsManager, this.documentManager, this.crossReference, this);
-        this.eventHandler = new EventHandler(
-            this,
+        // UI组件
+        this.dockPanel = new DockPanel(
             this.settingsManager,
             this.documentManager,
-            this.headingNumbering,
             this.crossReference,
-            this.dockPanel
+            this
         );
     }
 
@@ -86,8 +75,11 @@ export class DocumentStylerPlugin extends Plugin {
      */
     async onload(): Promise<void> {
         try {
-            // 初始化所有模块
-            await this.initializeAllModules();
+            // 初始化所有组件
+            await this.initializeAllComponents();
+
+            // 绑定事件监听器
+            this.bindEvents();
 
             // 注册侧边栏面板
             this.registerDockPanel();
@@ -103,8 +95,11 @@ export class DocumentStylerPlugin extends Plugin {
      */
     async onunload(): Promise<void> {
         try {
-            // 销毁所有模块
-            this.destroyAllModules();
+            // 解绑事件监听器
+            this.unbindEvents();
+
+            // 销毁所有组件
+            this.destroyAllComponents();
 
             // 清理全局引用
             delete (window as any).documentStylerPlugin;
@@ -116,35 +111,200 @@ export class DocumentStylerPlugin extends Plugin {
     }
 
     /**
-     * 初始化所有模块
+     * 初始化所有组件
      */
-    private async initializeAllModules(): Promise<void> {
-        // 按依赖顺序初始化模块
+    private async initializeAllComponents(): Promise<void> {
+        // 按依赖顺序初始化组件
         await this.settingsManager.init();
         await this.documentManager.init();
-        await this.outlineManager.init();
         await this.styleManager.init();
         await this.headingNumbering.init();
         await this.crossReference.init();
-        await this.webSocketManager.init();
         await this.dockPanel.init();
-        await this.eventHandler.init();
     }
 
     /**
-     * 销毁所有模块
+     * 销毁所有组件
      */
-    private destroyAllModules(): void {
-        // 按相反顺序销毁模块
-        this.eventHandler?.destroy();
+    private destroyAllComponents(): void {
+        // 按相反顺序销毁组件
         this.dockPanel?.destroy();
-        this.webSocketManager?.destroy();
         this.crossReference?.destroy();
         this.headingNumbering?.destroy();
         this.styleManager?.destroy();
-        this.outlineManager?.destroy();
         this.documentManager?.destroy();
         this.settingsManager?.destroy();
+    }
+
+    /**
+     * 绑定事件监听器 - 合并EventHandler的功能
+     */
+    private bindEvents(): void {
+        // 文档切换事件
+        const onDocumentSwitch = this.onDocumentSwitch.bind(this);
+        this.eventBus.on("switch-protyle", onDocumentSwitch);
+        this.eventListeners.set("switch-protyle", onDocumentSwitch);
+
+        // 文档加载事件
+        const onDocumentLoaded = this.onDocumentLoaded.bind(this);
+        this.eventBus.on("loaded-protyle-static", onDocumentLoaded);
+        this.eventListeners.set("loaded-protyle-static", onDocumentLoaded);
+
+        // WebSocket 事件监听 - 简化版本
+        this.setupWebSocketListener();
+    }
+
+    /**
+     * 解绑事件监听器
+     */
+    private unbindEvents(): void {
+        // 移除所有事件监听器
+        for (const [eventName, listener] of this.eventListeners) {
+            this.eventBus.off(eventName as any, listener as any);
+        }
+        this.eventListeners.clear();
+
+        // 清理防抖定时器
+        if (this.updateTimeout) {
+            clearTimeout(this.updateTimeout);
+            this.updateTimeout = null;
+        }
+    }
+
+    /**
+     * 设置WebSocket监听器 - 简化版本，只监听必要事件
+     */
+    private setupWebSocketListener(): void {
+        if (window.siyuan?.ws?.ws) {
+            const originalOnMessage = window.siyuan.ws.ws.onmessage;
+            window.siyuan.ws.ws.onmessage = (event) => {
+                // 先调用原始处理器
+                if (originalOnMessage) {
+                    originalOnMessage.call(window.siyuan.ws.ws, event);
+                }
+
+                // 处理我们关心的事件
+                this.handleWebSocketMessage(event);
+            };
+        }
+    }
+
+    /**
+     * 文档切换事件处理
+     */
+    private async onDocumentSwitch(event: CustomEvent): Promise<void> {
+        try {
+            const protyle = event.detail?.protyle;
+            if (!protyle?.block?.rootID) return;
+
+            const newDocId = protyle.block.rootID;
+
+            // 检查是否是同一个文档
+            if (this.currentDocId === newDocId) return;
+
+            this.currentDocId = newDocId;
+            this.documentManager.updateCurrentDocument(protyle);
+
+            // 更新面板
+            await this.dockPanel.updatePanel();
+
+            // 应用当前文档的设置
+            await this.applyCurrentDocumentSettings();
+        } catch (error) {
+            console.error('DocumentStyler: 文档切换处理失败:', error);
+        }
+    }
+
+    /**
+     * 文档加载事件处理
+     */
+    private async onDocumentLoaded(event: CustomEvent): Promise<void> {
+        try {
+            const protyle = event.detail?.protyle;
+            if (!protyle?.block?.rootID) return;
+
+            const docId = protyle.block.rootID;
+            this.currentDocId = docId;
+            this.documentManager.updateCurrentDocument(protyle);
+
+            // 应用当前文档的设置
+            await this.applyCurrentDocumentSettings();
+        } catch (error) {
+            console.error('DocumentStyler: 文档加载处理失败:', error);
+        }
+    }
+
+    /**
+     * WebSocket消息处理 - 简化版本
+     */
+    private async handleWebSocketMessage(event: MessageEvent): Promise<void> {
+        try {
+            const data = JSON.parse(event.data);
+
+            // 只处理transactions事件，用于实时更新
+            if (data.cmd === 'transactions' && this.currentDocId) {
+                const isCurrentDocAffected = data.data?.some((transaction: any) =>
+                    transaction.doOperations?.some((op: any) =>
+                        op.id === this.currentDocId || op.parentID === this.currentDocId
+                    )
+                );
+
+                if (isCurrentDocAffected) {
+                    // 延迟更新，避免频繁调用
+                    this.debounceUpdate();
+                }
+            }
+        } catch (error) {
+            // 忽略解析错误，不是所有WebSocket消息都是JSON
+        }
+    }
+
+    private updateTimeout: NodeJS.Timeout | null = null;
+
+    /**
+     * 防抖更新
+     */
+    private debounceUpdate(): void {
+        if (this.updateTimeout) {
+            clearTimeout(this.updateTimeout);
+        }
+
+        this.updateTimeout = setTimeout(async () => {
+            await this.applyCurrentDocumentSettings();
+        }, 500); // 500ms延迟
+    }
+
+    /**
+     * 应用当前文档的设置
+     */
+    private async applyCurrentDocumentSettings(): Promise<void> {
+        if (!this.currentDocId) return;
+
+        try {
+            const docSettings = await this.settingsManager.getDocumentSettings(this.currentDocId);
+
+            // 应用标题编号
+            if (docSettings.headingNumberingEnabled) {
+                await this.headingNumbering.updateNumberingForDoc(this.currentDocId);
+            } else {
+                await this.headingNumbering.clearNumbering(null);
+            }
+
+            // 应用交叉引用
+            if (docSettings.crossReferenceEnabled) {
+                const protyle = this.documentManager.getCurrentProtyle();
+                if (protyle) {
+                    await this.crossReference.applyCrossReference(protyle);
+                }
+            } else {
+                const protyle = this.documentManager.getCurrentProtyle();
+                if (protyle) {
+                    await this.crossReference.clearCrossReference(protyle);
+                }
+            }
+        } catch (error) {
+            console.error('DocumentStyler: 应用文档设置失败:', error);
+        }
     }
 
     /**

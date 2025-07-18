@@ -228,15 +228,7 @@ export interface IStyleManager extends IModule {
     updateStyles(): void;
 }
 
-/**
- * 事件处理器接口
- */
-export interface IEventHandler extends IModule {
-    /** 绑定事件 */
-    bindEvents(): void;
-    /** 解绑事件 */
-    unbindEvents(): void;
-}
+// 移除不再需要的EventHandler接口
 
 /**
  * 文档属性常量
