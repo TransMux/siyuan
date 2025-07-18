@@ -5,13 +5,7 @@
 
 import { ICrossReference, IFigureInfo } from "../types";
 import { DocumentManager } from "./DocumentManager";
-import { 
-    getImageElements, 
-    getTableElements, 
-    scrollToElementAndHighlight,
-    createStyleElement,
-    removeStyleElement
-} from "../utils/domUtils";
+import { scrollToElementAndHighlight } from "../utils/domUtils";
 import { queryDocumentFigures } from "../utils/apiUtils";
 
 export class CrossReference implements ICrossReference {
@@ -228,7 +222,13 @@ export class CrossReference implements ICrossReference {
             }
         `;
 
-        createStyleElement('document-styler-cross-reference', css);
+        let styleElement = document.getElementById('document-styler-cross-reference') as HTMLStyleElement;
+        if (!styleElement) {
+            styleElement = document.createElement('style');
+            styleElement.id = 'document-styler-cross-reference';
+            document.head.appendChild(styleElement);
+        }
+        styleElement.textContent = css;
     }
 
     /**
@@ -351,7 +351,10 @@ export class CrossReference implements ICrossReference {
      * 移除交叉引用样式
      */
     private removeCrossReferenceStyles(): void {
-        removeStyleElement('document-styler-cross-reference');
+        const styleElement = document.getElementById('document-styler-cross-reference');
+        if (styleElement) {
+            styleElement.remove();
+        }
     }
 
     /**
