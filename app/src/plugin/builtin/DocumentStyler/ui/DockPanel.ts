@@ -184,6 +184,37 @@ export class DockPanel implements IDockPanel {
                         </div>
                     </div>
 
+                    <!-- 图表编号前缀设置 -->
+                    <div class="document-styler-section" id="figure-prefix-section" style="${docSettings.crossReferenceEnabled ? '' : 'display: none;'}">
+                        <h3 class="document-styler-section-title">图表编号前缀</h3>
+                        <div class="document-styler-option">
+                            <label class="fn__flex b3-label">
+                                <div class="fn__flex-1">
+                                    图片编号前缀
+                                    <div class="b3-label__text">自定义图片编号前缀，如"图"、"Figure"等</div>
+                                </div>
+                                <span class="fn__space"></span>
+                                <input type="text" class="b3-text-field" id="figure-prefix-input"
+                                       value="${docSettings.figurePrefix}"
+                                       placeholder="图"
+                                       style="width: 80px;">
+                            </label>
+                        </div>
+                        <div class="document-styler-option">
+                            <label class="fn__flex b3-label">
+                                <div class="fn__flex-1">
+                                    表格编号前缀
+                                    <div class="b3-label__text">自定义表格编号前缀，如"表"、"Table"等</div>
+                                </div>
+                                <span class="fn__space"></span>
+                                <input type="text" class="b3-text-field" id="table-prefix-input"
+                                       value="${docSettings.tablePrefix}"
+                                       placeholder="表"
+                                       style="width: 80px;">
+                            </label>
+                        </div>
+                    </div>
+
                     <!-- 图片表格列表 -->
                     <div class="document-styler-section" id="figures-section" style="${docSettings.crossReferenceEnabled ? '' : 'display: none;'}">
                         <h3 class="document-styler-section-title">文档内容</h3>
@@ -293,6 +324,49 @@ export class DockPanel implements IDockPanel {
                 // 存储事件处理器以便后续清理
                 (formatInput as any)._documentStylerHandler = handler;
             }
+        }
+
+        // 图表编号前缀输入框
+        const figurePrefixInput = this.panelElement.querySelector('#figure-prefix-input') as HTMLInputElement;
+        if (figurePrefixInput) {
+            const handler = async (e: Event) => {
+                const docId = this.documentManager.getCurrentDocId();
+                if (!docId) return;
+
+                const prefix = (e.target as HTMLInputElement).value || '图';
+                console.log(`DocumentStyler: 图片编号前缀改变: ${prefix}`);
+
+                await this.settingsManager.setDocumentFigurePrefix(docId, prefix);
+
+                // 如果交叉引用功能已启用，重新应用交叉引用
+                const docSettings = await this.settingsManager.getDocumentSettings(docId);
+                if (docSettings.crossReferenceEnabled) {
+                    await this.applyCrossReferenceSettings(docId, true);
+                }
+            };
+            figurePrefixInput.addEventListener('input', handler);
+            (figurePrefixInput as any)._documentStylerHandler = handler;
+        }
+
+        const tablePrefixInput = this.panelElement.querySelector('#table-prefix-input') as HTMLInputElement;
+        if (tablePrefixInput) {
+            const handler = async (e: Event) => {
+                const docId = this.documentManager.getCurrentDocId();
+                if (!docId) return;
+
+                const prefix = (e.target as HTMLInputElement).value || '表';
+                console.log(`DocumentStyler: 表格编号前缀改变: ${prefix}`);
+
+                await this.settingsManager.setDocumentTablePrefix(docId, prefix);
+
+                // 如果交叉引用功能已启用，重新应用交叉引用
+                const docSettings = await this.settingsManager.getDocumentSettings(docId);
+                if (docSettings.crossReferenceEnabled) {
+                    await this.applyCrossReferenceSettings(docId, true);
+                }
+            };
+            tablePrefixInput.addEventListener('input', handler);
+            (tablePrefixInput as any)._documentStylerHandler = handler;
         }
     }
 
@@ -644,9 +718,14 @@ export class DockPanel implements IDockPanel {
      * 切换图片表格节的显示
      */
     private toggleFiguresSection(show: boolean): void {
-        const section = this.panelElement?.querySelector('#figures-section') as HTMLElement;
-        if (section) {
-            section.style.display = show ? '' : 'none';
+        const figuresSection = this.panelElement?.querySelector('#figures-section') as HTMLElement;
+        if (figuresSection) {
+            figuresSection.style.display = show ? '' : 'none';
+        }
+
+        const prefixSection = this.panelElement?.querySelector('#figure-prefix-section') as HTMLElement;
+        if (prefixSection) {
+            prefixSection.style.display = show ? '' : 'none';
         }
     }
 

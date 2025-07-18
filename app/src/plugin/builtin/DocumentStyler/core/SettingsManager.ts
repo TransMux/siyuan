@@ -30,6 +30,8 @@ const DEFAULT_SETTINGS: IDocumentStylerSettings = {
         HeadingNumberStyle.ARABIC,    // h5: 1, 2, 3
         HeadingNumberStyle.ARABIC,    // h6: 1, 2, 3
     ],
+    figurePrefix: "图",
+    tablePrefix: "表",
 };
 
 export class SettingsManager implements ISettingsManager {
@@ -313,7 +315,47 @@ export class SettingsManager implements ISettingsManager {
             crossReferenceEnabled: false,
             numberingFormats: [...this.settings.numberingFormats],
             headingNumberStyles: [...this.settings.headingNumberStyles],
+            figurePrefix: this.settings.figurePrefix,
+            tablePrefix: this.settings.tablePrefix,
         };
+    }
+
+    /**
+     * 获取文档的图表编号前缀
+     * @param docId 文档ID
+     * @returns 图表编号前缀
+     */
+    async getDocumentFigurePrefix(docId: string): Promise<string> {
+        const settings = await this.getDocumentSettings(docId);
+        return settings.figurePrefix;
+    }
+
+    /**
+     * 设置文档的图表编号前缀
+     * @param docId 文档ID
+     * @param prefix 图表编号前缀
+     */
+    async setDocumentFigurePrefix(docId: string, prefix: string): Promise<void> {
+        await this.setDocumentSettings(docId, { figurePrefix: prefix });
+    }
+
+    /**
+     * 获取文档的表格编号前缀
+     * @param docId 文档ID
+     * @returns 表格编号前缀
+     */
+    async getDocumentTablePrefix(docId: string): Promise<string> {
+        const settings = await this.getDocumentSettings(docId);
+        return settings.tablePrefix;
+    }
+
+    /**
+     * 设置文档的表格编号前缀
+     * @param docId 文档ID
+     * @param prefix 表格编号前缀
+     */
+    async setDocumentTablePrefix(docId: string, prefix: string): Promise<void> {
+        await this.setDocumentSettings(docId, { tablePrefix: prefix });
     }
 
     /**

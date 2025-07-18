@@ -12,9 +12,18 @@ import { queryDocumentFigures } from "../utils/apiUtils";
 export class CrossReference implements ICrossReference {
     private documentManager: DocumentManager;
     private panelUpdateCallback: (() => Promise<void>) | null = null;
+    private settingsManager: any = null;
 
     constructor(documentManager: DocumentManager) {
         this.documentManager = documentManager;
+    }
+
+    /**
+     * 设置设置管理器引用
+     * @param settingsManager 设置管理器实例
+     */
+    setSettingsManager(settingsManager: any): void {
+        this.settingsManager = settingsManager;
     }
 
     /**
@@ -87,16 +96,18 @@ export class CrossReference implements ICrossReference {
      * 生成图表标题样式（基于DOM解析的数据）
      * 为每个图表的标题元素生成CSS样式，添加编号前缀
      * @param figuresData 图表数据（包含标题信息和编号）
+     * @param figurePrefix 图表编号前缀
+     * @param tablePrefix 表格编号前缀
      * @returns CSS样式字符串
      */
-    private generateFigureCaptionStyles(figuresData: IFigureInfo[]): string {
+    private generateFigureCaptionStyles(figuresData: IFigureInfo[], figurePrefix: string = '图', tablePrefix: string = '表'): string {
         let styles = '';
 
         for (const figure of figuresData) {
             // 检查是否有标题ID（从DOM解析时保存的）
             const captionId = (figure as any).captionId;
             if (captionId && figure.caption) {
-                const prefix = figure.type === 'image' ? '图' : '表';
+                const prefix = figure.type === 'image' ? figurePrefix : tablePrefix;
                 styles += `
                     .protyle-wysiwyg [data-node-id="${captionId}"] [contenteditable="true"]::before {
                         content: "${prefix} ${figure.number}: ";
@@ -117,11 +128,19 @@ export class CrossReference implements ICrossReference {
     private async loadCrossReferenceStyles(protyle?: any): Promise<void> {
         // 获取当前文档的所有图片表格数据（现在从完整DOM结构解析，包含正确编号和标题）
         let figuresData: IFigureInfo[] = [];
+        let figurePrefix = '图';
+        let tablePrefix = '表';
 
         if (protyle?.block?.rootID) {
             try {
                 // 从完整DOM结构获取图表数据
                 figuresData = await this.getFiguresList(protyle.block.rootID);
+
+                // 获取自定义前缀
+                if (this.settingsManager) {
+                    figurePrefix = await this.settingsManager.getDocumentFigurePrefix(protyle.block.rootID);
+                    tablePrefix = await this.settingsManager.getDocumentTablePrefix(protyle.block.rootID);
+                }
 
                 // 由于现在图表数据已经包含了标题信息，我们可以直接使用
                 // 不再需要复杂的超级块解析，因为标题信息已经在figuresData中了
@@ -132,7 +151,7 @@ export class CrossReference implements ICrossReference {
 
         const css = `
             /* 超级块中的图片/表格自定义标题样式 */
-            ${this.generateFigureCaptionStyles(figuresData)}
+            ${this.generateFigureCaptionStyles(figuresData, figurePrefix, tablePrefix)}
 
             /* 交叉引用链接样式 */
             .protyle-wysiwyg a[href^="#figure-"],

@@ -60,6 +60,7 @@ export class DocumentStylerPlugin extends Plugin {
             this.styleManager
         );
         this.crossReference = new CrossReference(this.documentManager);
+        this.crossReference.setSettingsManager(this.settingsManager);
 
         // UI组件
         this.dockPanel = new DockPanel(

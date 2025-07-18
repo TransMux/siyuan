@@ -47,6 +47,10 @@ export interface IDocumentStylerSettings {
     numberingFormats: string[];
     /** 标题编号样式配置 (6个级别) */
     headingNumberStyles: HeadingNumberStyle[];
+    /** 图表编号前缀配置 */
+    figurePrefix: string;
+    /** 表格编号前缀配置 */
+    tablePrefix: string;
 }
 
 /**
@@ -250,4 +254,8 @@ export interface IDocumentStylerDocumentSettings {
     numberingFormats: string[];
     /** 标题编号样式配置 (6个级别) */
     headingNumberStyles: HeadingNumberStyle[];
+    /** 图表编号前缀配置 */
+    figurePrefix: string;
+    /** 表格编号前缀配置 */
+    tablePrefix: string;
 }
