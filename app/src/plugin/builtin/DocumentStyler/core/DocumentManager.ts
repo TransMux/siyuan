@@ -278,4 +278,75 @@ export class DocumentManager implements IDocumentManager {
         // 这里可以添加事件监听逻辑
         // 由于需要与主插件类集成，这个方法可能需要在主类中实现
     }
+
+    /**
+     * 检查 WebSocket 消息是否影响当前文档
+     * @param msg WebSocket 消息
+     * @returns 是否影响当前文档
+     */
+    isCurrentDocumentAffected(msg: any): boolean {
+        const currentDocId = this.getCurrentDocId();
+        if (!currentDocId) {
+            return false;
+        }
+        return this.isDocumentAffected(msg, currentDocId);
+    }
+
+    /**
+     * 检查 WebSocket 消息是否影响指定文档
+     * @param msg WebSocket 消息
+     * @param docId 文档ID
+     * @returns 是否影响指定文档
+     */
+    isDocumentAffected(msg: any, docId: string): boolean {
+        if (!docId || !msg.data || !Array.isArray(msg.data)) {
+            return false;
+        }
+
+        // 检查 transaction 中是否包含指定文档的操作
+        return msg.data.some((transaction: any) => {
+            if (!transaction.doOperations || !Array.isArray(transaction.doOperations)) {
+                return false;
+            }
+
+            return transaction.doOperations.some((operation: any) => {
+                // 检查操作数据中是否包含指定文档的 root-id
+                if (operation.data && typeof operation.data === 'string') {
+                    return operation.data.includes(`data-root-id="${docId}"`);
+                }
+                return false;
+            });
+        });
+    }
+
+    /**
+     * 从 WebSocket 消息中提取受影响的文档ID列表
+     * @param msg WebSocket 消息
+     * @returns 受影响的文档ID列表
+     */
+    getAffectedDocumentIds(msg: any): string[] {
+        if (!msg.data || !Array.isArray(msg.data)) {
+            return [];
+        }
+
+        const docIds = new Set<string>();
+
+        msg.data.forEach((transaction: any) => {
+            if (!transaction.doOperations || !Array.isArray(transaction.doOperations)) {
+                return;
+            }
+
+            transaction.doOperations.forEach((operation: any) => {
+                if (operation.data && typeof operation.data === 'string') {
+                    // 提取 data-root-id 属性值
+                    const rootIdMatch = operation.data.match(/data-root-id="([^"]+)"/);
+                    if (rootIdMatch && rootIdMatch[1]) {
+                        docIds.add(rootIdMatch[1]);
+                    }
+                }
+            });
+        });
+
+        return Array.from(docIds);
+    }
 }

@@ -157,15 +157,16 @@ export class WebSocketManager implements IModule {
                 return;
             }
 
+            // 检查变更是否影响当前文档
+            const isCurrentDocAffected = this.documentManager.isCurrentDocumentAffected(msg);
+            if (!isCurrentDocAffected) return;
+
             // 获取当前聚焦的文档ID
-            const currentDocId = this.getCurrentDocId();
+            const currentDocId = this.documentManager.getCurrentDocId();
             if (!currentDocId) return;
 
             // 检查当前文档是否启用了编号
             if (!this.settingsManager.isDocumentEnabled(currentDocId)) return;
-
-            // 检查变更是否影响当前文档
-            const isCurrentDocAffected = this.isCurrentDocumentAffected(msg, currentDocId);
 
             if (isCurrentDocAffected) {
                 // 如果有标题变更，直接重新获取 Outline 并渲染
@@ -300,38 +301,7 @@ export class WebSocketManager implements IModule {
         this.activeListeners.clear();
     }
 
-    /**
-     * 获取当前聚焦的文档ID
-     */
-    private getCurrentDocId(): string | null {
-        return this.documentManager.getCurrentDocId();
-    }
 
-    /**
-     * 检查变更是否影响当前文档
-     * @param msg WebSocket 消息
-     * @param currentDocId 当前文档ID
-     */
-    private isCurrentDocumentAffected(msg: any, currentDocId: string): boolean {
-        if (!msg.data || !Array.isArray(msg.data)) {
-            return false;
-        }
-
-        // 检查 transaction 中是否包含当前文档的操作
-        return msg.data.some((transaction: any) => {
-            if (!transaction.doOperations || !Array.isArray(transaction.doOperations)) {
-                return false;
-            }
-
-            return transaction.doOperations.some((operation: any) => {
-                // 检查操作数据中是否包含当前文档的 root-id
-                if (operation.data && typeof operation.data === 'string') {
-                    return operation.data.includes(`data-root-id="${currentDocId}"`);
-                }
-                return false;
-            });
-        });
-    }
 
     /**
      * 更新指定文档的标题编号

@@ -93,7 +93,25 @@ function createMockDependencies(currentDocId: string = '20231201-current-doc') {
     } as any;
 
     const mockDocumentManager = {
-        getCurrentDocId: jest.fn().mockReturnValue(currentDocId)
+        getCurrentDocId: jest.fn().mockReturnValue(currentDocId),
+        isCurrentDocumentAffected: jest.fn().mockImplementation((msg: any) => {
+            // 模拟 isCurrentDocumentAffected 的逻辑
+            if (!msg.data || !Array.isArray(msg.data)) return false;
+            return msg.data.some((transaction: any) =>
+                transaction.doOperations?.some((operation: any) =>
+                    operation.data?.includes(`data-root-id="${currentDocId}"`)
+                )
+            );
+        }),
+        isDocumentAffected: jest.fn().mockImplementation((msg: any, docId: string) => {
+            // 模拟 isDocumentAffected 的逻辑
+            if (!msg.data || !Array.isArray(msg.data)) return false;
+            return msg.data.some((transaction: any) =>
+                transaction.doOperations?.some((operation: any) =>
+                    operation.data?.includes(`data-root-id="${docId}"`)
+                )
+            );
+        })
     } as any;
 
     const mockHeadingNumbering = {
@@ -211,25 +229,20 @@ describe('Current Document Focus Logic', () => {
             .toHaveBeenCalledTimes(1);
     });
 
-    test('isCurrentDocumentAffected 方法应该正确识别当前文档变更', () => {
-        const isCurrentDocumentAffected = (webSocketManager as any).isCurrentDocumentAffected.bind(webSocketManager);
-
+    test('DocumentManager.isCurrentDocumentAffected 方法应该正确识别当前文档变更', () => {
         // 测试当前文档变更
-        expect(isCurrentDocumentAffected(
-            mockTransactionMessages.currentDocHeadingChange,
-            '20231201-current-doc'
+        expect(mockDependencies.mockDocumentManager.isCurrentDocumentAffected(
+            mockTransactionMessages.currentDocHeadingChange
         )).toBe(true);
 
         // 测试其他文档变更
-        expect(isCurrentDocumentAffected(
-            mockTransactionMessages.otherDocHeadingChange,
-            '20231201-current-doc'
+        expect(mockDependencies.mockDocumentManager.isCurrentDocumentAffected(
+            mockTransactionMessages.otherDocHeadingChange
         )).toBe(false);
 
         // 测试混合变更
-        expect(isCurrentDocumentAffected(
-            mockTransactionMessages.mixedChanges,
-            '20231201-current-doc'
+        expect(mockDependencies.mockDocumentManager.isCurrentDocumentAffected(
+            mockTransactionMessages.mixedChanges
         )).toBe(true);
     });
 
