@@ -37,6 +37,8 @@ export class HeadingNumbering implements IHeadingNumbering {
     destroy(): void {
         // 清除样式
         this.styleManager.clearHeadingNumbering();
+        // 清除缓存
+        this.numberMapCache.clear();
     }
 
     async applyNumbering(protyle: any): Promise<void> {
@@ -74,12 +76,12 @@ export class HeadingNumbering implements IHeadingNumbering {
             const docSettings = await this.settingsManager.getDocumentSettings(docId);
             console.log('HeadingNumbering: 获取文档设置', docSettings);
 
-            // 获取标题编号映射
+            // 获取标题编号映射，只在必要时强制刷新
             const headingMap = await this.getHeadingNumberMap(
                 docId,
                 docSettings.numberingFormats,
                 docSettings.headingNumberStyles,
-                true // 强制刷新
+                false // 使用缓存，提升性能
             );
 
             // 应用CSS样式
@@ -113,12 +115,12 @@ export class HeadingNumbering implements IHeadingNumbering {
             const docSettings = await this.settingsManager.getDocumentSettings(docId);
             console.log('DocumentStyler: 文档设置', docSettings);
 
-            // 获取标题编号映射
+            // 获取标题编号映射，只在必要时强制刷新
             const headingMap = await this.getHeadingNumberMap(
                 docId,
                 docSettings.numberingFormats,
                 docSettings.headingNumberStyles,
-                true // 强制刷新
+                false // 使用缓存，提升性能
             );
             console.log('DocumentStyler: 标题编号映射获取成功', headingMap);
 
@@ -256,6 +258,19 @@ export class HeadingNumbering implements IHeadingNumbering {
     }
 
     /**
+     * 清除指定文档的缓存
+     * @param docId 文档ID
+     */
+    clearDocumentCache(docId: string): void {
+        // 清除所有与该文档相关的缓存
+        for (const key of this.numberMapCache.keys()) {
+            if (key.startsWith(docId + '_')) {
+                this.numberMapCache.delete(key);
+            }
+        }
+    }
+
+    /**
      * 处理 WebSocket transaction 消息
      * @param msg WebSocket 消息
      */
@@ -276,6 +291,8 @@ export class HeadingNumbering implements IHeadingNumbering {
 
             // 分析是否需要更新标题编号
             if (this.needsHeadingUpdate(msg)) {
+                // 清除缓存，确保获取最新数据
+                this.clearDocumentCache(currentDocId);
                 await this.updateNumberingForDoc(currentDocId);
             }
         } catch (error) {

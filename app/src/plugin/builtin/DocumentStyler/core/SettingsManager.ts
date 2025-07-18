@@ -36,6 +36,7 @@ const DEFAULT_SETTINGS: IDocumentStylerSettings = {
 export class SettingsManager implements ISettingsManager {
     private plugin: Plugin;
     private settings: IDocumentStylerSettings;
+    private documentSettingsCache: Map<string, { settings: IDocumentStylerDocumentSettings; timestamp: number }> = new Map();
 
     constructor(plugin: Plugin) {
         this.plugin = plugin;
@@ -47,7 +48,8 @@ export class SettingsManager implements ISettingsManager {
     }
 
     destroy(): void {
-        // 清理资源
+        // 清理缓存
+        this.documentSettingsCache.clear();
     }
 
     getSettings(): IDocumentStylerSettings {
@@ -151,15 +153,31 @@ export class SettingsManager implements ISettingsManager {
      * @returns 文档设置
      */
     async getDocumentSettings(docId: string): Promise<IDocumentStylerDocumentSettings> {
+        // 检查缓存（5秒有效期）
+        const cached = this.documentSettingsCache.get(docId);
+        if (cached && Date.now() - cached.timestamp < 5000) {
+            return cached.settings;
+        }
+
         try {
             const value = await getDocumentAttr(docId, DOCUMENT_ATTR_KEYS.DOCUMENT_STYLER_SETTINGS);
+            let settings: IDocumentStylerDocumentSettings;
+
             if (value === null) {
                 // 如果没有设置属性，返回默认设置
-                return this.getDefaultDocumentSettings();
+                settings = this.getDefaultDocumentSettings();
+            } else {
+                const parsedSettings = JSON.parse(value);
+                settings = this.validateAndFixDocumentSettings(parsedSettings);
             }
-            
-            const settings = JSON.parse(value);
-            return this.validateAndFixDocumentSettings(settings);
+
+            // 更新缓存
+            this.documentSettingsCache.set(docId, {
+                settings,
+                timestamp: Date.now()
+            });
+
+            return settings;
         } catch (error) {
             console.error('获取文档设置失败:', error);
             return this.getDefaultDocumentSettings();
@@ -178,6 +196,9 @@ export class SettingsManager implements ISettingsManager {
             await setDocumentAttr(docId, {
                 [DOCUMENT_ATTR_KEYS.DOCUMENT_STYLER_SETTINGS]: JSON.stringify(newSettings)
             });
+
+            // 清除缓存，确保下次获取最新数据
+            this.documentSettingsCache.delete(docId);
         } catch (error) {
             console.error('设置文档设置失败:', error);
         }
