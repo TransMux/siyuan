@@ -163,12 +163,6 @@ export class DocumentStylerPlugin extends Plugin {
             this.eventBus.off(eventName as any, listener as any);
         }
         this.eventListeners.clear();
-
-        // 清理防抖定时器
-        if (this.updateTimeout) {
-            clearTimeout(this.updateTimeout);
-            this.updateTimeout = null;
-        }
     }
 
     /**
@@ -235,7 +229,7 @@ export class DocumentStylerPlugin extends Plugin {
     }
 
     /**
-     * WebSocket消息处理 - 简化版本
+     * WebSocket消息处理 - 智能版本，使用组件的专门处理器
      */
     private async handleWebSocketMessage(event: MessageEvent): Promise<void> {
         try {
@@ -243,36 +237,16 @@ export class DocumentStylerPlugin extends Plugin {
 
             // 只处理transactions事件，用于实时更新
             if (data.cmd === 'transactions' && this.currentDocId) {
-                const isCurrentDocAffected = data.data?.some((transaction: any) =>
-                    transaction.doOperations?.some((op: any) =>
-                        op.id === this.currentDocId || op.parentID === this.currentDocId
-                    )
-                );
-
-                if (isCurrentDocAffected) {
-                    // 延迟更新，避免频繁调用
-                    this.debounceUpdate();
-                }
+                // 使用组件的专门处理器进行更精细的分析
+                await this.headingNumbering.handleTransactionMessage(data);
+                await this.crossReference.handleTransactionMessage(data);
             }
         } catch (error) {
             // 忽略解析错误，不是所有WebSocket消息都是JSON
         }
     }
 
-    private updateTimeout: NodeJS.Timeout | null = null;
 
-    /**
-     * 防抖更新
-     */
-    private debounceUpdate(): void {
-        if (this.updateTimeout) {
-            clearTimeout(this.updateTimeout);
-        }
-
-        this.updateTimeout = setTimeout(async () => {
-            await this.applyCurrentDocumentSettings();
-        }, 500); // 500ms延迟
-    }
 
     /**
      * 应用当前文档的设置
