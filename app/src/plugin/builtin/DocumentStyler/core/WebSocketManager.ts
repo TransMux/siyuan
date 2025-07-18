@@ -157,6 +157,8 @@ export class WebSocketManager implements IModule {
                 return;
             }
 
+            debugger
+
             // 检查变更是否影响当前文档
             const isCurrentDocAffected = this.documentManager.isCurrentDocumentAffected(msg);
             if (!isCurrentDocAffected) return;

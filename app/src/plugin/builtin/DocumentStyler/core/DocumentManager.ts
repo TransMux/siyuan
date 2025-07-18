@@ -285,11 +285,24 @@ export class DocumentManager implements IDocumentManager {
      * @returns 是否影响当前文档
      */
     isCurrentDocumentAffected(msg: any): boolean {
-        const currentDocId = this.getCurrentDocId();
-        if (!currentDocId) {
+        if (!this.currentDocId || !this.currentProtyle || !msg.data || !Array.isArray(msg.data)) {
             return false;
         }
-        return this.isDocumentAffected(msg, currentDocId);
+
+        // 检查 transaction 中的操作是否影响当前 protyle 中的块
+        return msg.data.some((transaction: any) => {
+            if (!transaction.doOperations || !Array.isArray(transaction.doOperations)) {
+                return false;
+            }
+
+            return transaction.doOperations.some((operation: any) => {
+                // 检查操作的块ID是否存在于当前protyle中
+                if (operation.id) {
+                    return this.isBlockInCurrentProtyle(operation.id);
+                }
+                return false;
+            });
+        });
     }
 
     /**
@@ -303,44 +316,30 @@ export class DocumentManager implements IDocumentManager {
             return false;
         }
 
-        // 获取指定文档的 protyle 实例
-        const protyle = this.getProtyleByDocId(docId);
-        if (!protyle) {
+        // 只检查当前文档，因为只有当前文档的 protyle 是可用的
+        if (docId !== this.currentDocId || !this.currentProtyle) {
             return false;
         }
 
-        // 检查 transaction 中的操作是否影响当前 protyle 中的块
-        return msg.data.some((transaction: any) => {
-            if (!transaction.doOperations || !Array.isArray(transaction.doOperations)) {
-                return false;
-            }
-
-            return transaction.doOperations.some((operation: any) => {
-                // 检查操作的块ID是否存在于当前protyle中
-                if (operation.id) {
-                    return this.isBlockInProtyle(operation.id, protyle);
-                }
-                return false;
-            });
-        });
+        // 直接调用当前文档检测方法
+        return this.isCurrentDocumentAffected(msg);
     }
 
 
 
     /**
-     * 检查指定的块ID是否存在于 protyle 中
+     * 检查指定的块ID是否存在于当前 protyle 中
      * @param blockId 块ID
-     * @param protyle protyle 实例
      * @returns 是否存在
      */
-    private isBlockInProtyle(blockId: string, protyle: any): boolean {
-        if (!blockId || !protyle?.wysiwyg?.element) {
+    private isBlockInCurrentProtyle(blockId: string): boolean {
+        if (!blockId || !this.currentProtyle?.wysiwyg?.element) {
             return false;
         }
 
         try {
-            // 在 protyle 的 DOM 中查找对应的块元素
-            const blockElement = protyle.wysiwyg.element.querySelector(`[data-node-id="${blockId}"]`);
+            // 在当前 protyle 的 DOM 中查找对应的块元素
+            const blockElement = this.currentProtyle.wysiwyg.element.querySelector(`[data-node-id="${blockId}"]`);
             return blockElement !== null;
         } catch (error) {
             console.warn('检查块是否存在失败:', error);
