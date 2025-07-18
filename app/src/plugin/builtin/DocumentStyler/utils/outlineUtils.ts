@@ -50,7 +50,6 @@ export function parseOutlineToNumberMap(
     formats: string[],
     useChineseNumbers: boolean[]
 ): IHeadingNumberMap {
-    debugger
     const numberMap: IHeadingNumberMap = {};
     const counters: number[] = [0, 0, 0, 0, 0, 0];
     
@@ -59,7 +58,7 @@ export function parseOutlineToNumberMap(
     
     // 递归处理大纲节点
     function processNode(node: IOutlineNode): void {
-        if (node.nodeType === 'NodeHeading') {
+        if (node.nodeType === 'NodeHeading' || (node as any).type === 'NodeHeading') {
             const level = getHeadingLevelFromSubType(node.subType);
             if (level > 0) {
                 const actualLevel = existingLevels.indexOf(level);
@@ -114,7 +113,7 @@ export function collectExistingLevels(outlineData: IOutlineNode[]): number[] {
     const levels = new Set<number>();
     
     function collectFromNode(node: IOutlineNode): void {
-        if (node.nodeType === 'NodeHeading') {
+        if (node.nodeType === 'NodeHeading' || (node as any).type === 'NodeHeading') {
             const level = getHeadingLevelFromSubType(node.subType);
             if (level > 0) {
                 levels.add(level);
@@ -257,7 +256,7 @@ function num2Chinese(num: number): string {
  */
 export function hasHeadingsInOutline(outlineData: IOutlineNode[]): boolean {
     function checkNode(node: IOutlineNode): boolean {
-        if (node.nodeType === 'NodeHeading') {
+        if (node.nodeType === 'NodeHeading' || (node as any).type === 'NodeHeading') {
             return true;
         }
 
@@ -290,7 +289,7 @@ export function getHeadingNodesFromOutline(outlineData: IOutlineNode[]): IOutlin
     const headingNodes: IOutlineNode[] = [];
 
     function collectFromNode(node: IOutlineNode): void {
-        if (node.nodeType === 'NodeHeading') {
+        if (node.nodeType === 'NodeHeading' || (node as any).type === 'NodeHeading') {
             headingNodes.push(node);
         }
 
