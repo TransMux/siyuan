@@ -284,7 +284,8 @@ function identifyFigureAndTextPair(children: Element[]): any | null {
 
     // 提取图表信息
     const figureId = figureElement.getAttribute('data-node-id');
-    if (!figureId) {
+    const textId = textElement.getAttribute('data-node-id');
+    if (!figureId || !textId) {
         return null;
     }
 
@@ -299,6 +300,8 @@ function identifyFigureAndTextPair(children: Element[]): any | null {
         content: content,
         figureType: figureType,
         caption: caption,
+        // 保存标题元素的ID，用于生成CSS样式
+        captionId: textId,
         // 保存DOM顺序信息，用于后续排序
         domOrder: Array.from(figureElement.parentElement?.parentElement?.children || []).indexOf(figureElement.parentElement!)
     };

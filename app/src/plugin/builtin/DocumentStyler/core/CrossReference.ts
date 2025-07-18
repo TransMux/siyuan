@@ -88,15 +88,29 @@ export class CrossReference implements ICrossReference {
 
     /**
      * 生成图表标题样式（基于DOM解析的数据）
-     * 由于图表数据已经从DOM解析并包含了标题信息，这里只需要生成基本的样式
-     * 实际的标题显示已经通过DOM解析时的处理完成
+     * 为每个图表的标题元素生成CSS样式，添加编号前缀
      * @param figuresData 图表数据（包含标题信息和编号）
      * @returns CSS样式字符串
      */
-    private generateFigureCaptionStyles(_figuresData: IFigureInfo[]): string {
-        // 由于现在图表和标题的关联已经在DOM解析时处理完成
-        // 这里只需要返回空字符串，或者可以添加一些通用的图表样式
-        return '';
+    private generateFigureCaptionStyles(figuresData: IFigureInfo[]): string {
+        let styles = '';
+
+        for (const figure of figuresData) {
+            // 检查是否有标题ID（从DOM解析时保存的）
+            const captionId = (figure as any).captionId;
+            if (captionId && figure.caption) {
+                const prefix = figure.type === 'image' ? '图' : '表';
+                styles += `
+                    .protyle-wysiwyg [data-node-id="${captionId}"] [contenteditable="true"]::before {
+                        content: "${prefix} ${figure.number}: ";
+                        color: var(--b3-theme-primary);
+                        font-weight: 500;
+                    }
+                `;
+            }
+        }
+
+        return styles;
     }
 
     /**
