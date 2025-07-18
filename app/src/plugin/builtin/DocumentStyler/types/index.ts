@@ -199,7 +199,7 @@ export interface ICrossReference extends IModule {
     /** 获取图片表格列表 */
     getFiguresList(docId: string): Promise<IFigureInfo[]>;
     /** 滚动到指定图片/表格 */
-    scrollToFigure(figureId: string): void;
+    scrollToFigure(figureId: string, figureType?: string, figureNumber?: string): void;
 }
 
 /**

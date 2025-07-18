@@ -38,10 +38,23 @@ export class CrossReference implements ICrossReference {
     async init(): Promise<void> {
         // 初始化时加载样式
         await this.loadCrossReferenceStyles();
+
+        // 注册@符号交叉引用功能
+        this.registerCrossReferenceHint();
+
+        // 注册交叉引用点击处理
+        this.registerCrossReferenceClickHandler();
     }
 
     destroy(): void {
         this.removeCrossReferenceStyles();
+        this.unregisterCrossReferenceHint();
+
+        // 清理observer
+        if ((this as any).protyleObserver) {
+            (this as any).protyleObserver.disconnect();
+            delete (this as any).protyleObserver;
+        }
     }
 
     async applyCrossReference(protyle: any): Promise<void> {
@@ -80,31 +93,7 @@ export class CrossReference implements ICrossReference {
         }
     }
 
-    scrollToFigure(figureId: string): void {
-        const protyle = this.documentManager.getCurrentProtyle();
-        if (!protyle) {
-            console.warn('没有找到活跃的编辑器');
-            return;
-        }
 
-        // 在当前编辑器中查找对应的块
-        const element = protyle.wysiwyg.element.querySelector(`[data-node-id="${figureId}"]`);
-        if (element) {
-            // 滚动到元素并高亮
-            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            // 添加高亮效果
-            element.style.transition = 'background-color 0.3s ease';
-            element.style.backgroundColor = 'var(--b3-theme-primary-lighter)';
-
-            // 2秒后移除高亮
-            setTimeout(() => {
-                element.style.backgroundColor = '';
-            }, 2000);
-        } else {
-            console.warn(`未找到ID为 ${figureId} 的元素`);
-        }
-    }
 
     /**
      * 解析protyle中的所有超级块，识别符合条件的图片/表格-标题组合
@@ -519,9 +508,7 @@ export class CrossReference implements ICrossReference {
             }
 
             // 分析是否需要更新图片表格索引或超级块结构
-            const needsUpdate = this.needsFigureUpdate(msg) || this.isSuperBlockStructureChange(msg);
-
-            if (needsUpdate) {
+            if (this.needsFigureUpdate(msg)) {
                 const currentProtyle = this.documentManager.getCurrentProtyle();
                 if (currentProtyle) {
                     // 延迟一小段时间以确保DOM更新完成
@@ -560,7 +547,6 @@ export class CrossReference implements ICrossReference {
                 if (operation.data && typeof operation.data === 'string') {
                     return operation.data.includes('data-type="NodeTable"') ||
                            operation.data.includes('<img') ||
-                           operation.data.includes('data-type="NodeParagraph"') ||
                            operation.data.includes('data-type="NodeSuperBlock"') ||
                            operation.data.includes('data-sb-layout'); // 超级块布局变化
                 }
@@ -579,34 +565,202 @@ export class CrossReference implements ICrossReference {
     }
 
     /**
-     * 检查是否为超级块结构变化
-     * @param msg WebSocket 消息
-     * @returns 是否为超级块结构变化
+     * 注册@符号交叉引用功能
      */
-    private isSuperBlockStructureChange(msg: any): boolean {
-        if (!msg.data || !Array.isArray(msg.data)) {
-            return false;
-        }
+    private registerCrossReferenceHint(): void {
+        // 检查是否已经有protyle实例可用
+        const protyles = document.querySelectorAll('.protyle');
+        protyles.forEach((protyleElement) => {
+            const protyle = (protyleElement as any).protyle;
+            if (protyle && protyle.options && protyle.options.hint) {
+                // 添加@符号的hint扩展
+                if (!protyle.options.hint.extend) {
+                    protyle.options.hint.extend = [];
+                }
 
-        return msg.data.some((transaction: any) => {
-            if (!transaction.doOperations || !Array.isArray(transaction.doOperations)) {
-                return false;
+                // 检查是否已经注册过
+                const existingIndex = protyle.options.hint.extend.findIndex((item: any) => item.key === '@');
+                if (existingIndex === -1) {
+                    protyle.options.hint.extend.push({
+                        key: '@',
+                        hint: this.generateCrossReferenceHints.bind(this)
+                    });
+                    console.log('CrossReference: 已注册@符号交叉引用功能');
+                }
             }
+        });
 
-            return transaction.doOperations.some((operation: any) => {
-                // 检查是否涉及超级块的创建、删除或修改
-                if (operation.data && typeof operation.data === 'string') {
-                    return operation.data.includes('data-type="NodeSuperBlock"') ||
-                           operation.data.includes('data-sb-layout');
+        // 监听新的protyle创建
+        this.setupProtyleListener();
+    }
+
+    /**
+     * 注销@符号交叉引用功能
+     */
+    private unregisterCrossReferenceHint(): void {
+        const protyles = document.querySelectorAll('.protyle');
+        protyles.forEach((protyleElement) => {
+            const protyle = (protyleElement as any).protyle;
+            if (protyle && protyle.options && protyle.options.hint && protyle.options.hint.extend) {
+                // 移除@符号的hint扩展
+                const index = protyle.options.hint.extend.findIndex((item: any) => item.key === '@');
+                if (index !== -1) {
+                    protyle.options.hint.extend.splice(index, 1);
+                    console.log('CrossReference: 已注销@符号交叉引用功能');
                 }
+            }
+        });
+    }
 
-                // 检查是否为影响超级块子元素的操作
-                if (operation.action === 'move' || operation.action === 'insert' || operation.action === 'delete') {
-                    return true;
-                }
+    /**
+     * 设置protyle监听器，为新创建的protyle添加hint扩展
+     */
+    private setupProtyleListener(): void {
+        // 监听DOM变化，当有新的protyle创建时自动注册hint
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        const element = node as Element;
+                        if (element.classList && element.classList.contains('protyle')) {
+                            // 延迟一下确保protyle完全初始化
+                            setTimeout(() => {
+                                const protyle = (element as any).protyle;
+                                if (protyle && protyle.options && protyle.options.hint) {
+                                    if (!protyle.options.hint.extend) {
+                                        protyle.options.hint.extend = [];
+                                    }
 
-                return false;
+                                    const existingIndex = protyle.options.hint.extend.findIndex((item: any) => item.key === '@');
+                                    if (existingIndex === -1) {
+                                        protyle.options.hint.extend.push({
+                                            key: '@',
+                                            hint: this.generateCrossReferenceHints.bind(this)
+                                        });
+                                        console.log('CrossReference: 为新protyle注册@符号交叉引用功能');
+                                    }
+                                }
+                            }, 100);
+                        }
+                    }
+                });
             });
         });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+
+        // 保存observer引用以便后续清理
+        (this as any).protyleObserver = observer;
+    }
+
+    /**
+     * 生成交叉引用提示
+     * @param key 输入的关键字
+     * @param protyle 编辑器实例
+     * @param source 来源
+     * @returns 提示数据数组
+     */
+    private async generateCrossReferenceHints(key: string, protyle: any, source?: string): Promise<any[]> {
+        if (!protyle || !protyle.block || !protyle.block.rootID) {
+            return [];
+        }
+
+        try {
+            const docId = protyle.block.rootID;
+            const figures = await this.getFiguresList(docId, protyle);
+
+            const hints: any[] = [];
+
+            // 过滤匹配的图片和表格
+            figures.forEach((figure) => {
+                const searchText = `${figure.type === 'image' ? '图' : '表'} ${figure.number}`;
+                const content = figure.content || figure.caption || '';
+
+                if (!key || searchText.includes(key) || content.includes(key)) {
+                    hints.push({
+                        value: `<span data-type="cross-ref" data-figure-id="${figure.id}" data-figure-type="${figure.type}" data-figure-number="${figure.number}">${searchText}</span>`,
+                        html: `<div class="b3-list-item__first">
+                            <svg class="b3-list-item__graphic">
+                                <use xlink:href="#icon${figure.type === 'image' ? 'Image' : 'Table'}"></use>
+                            </svg>
+                            <span class="b3-list-item__text">${searchText}${content ? ': ' + content : ''}</span>
+                        </div>`,
+                        id: figure.id,
+                        focus: false
+                    });
+                }
+            });
+
+            return hints;
+        } catch (error) {
+            console.error('CrossReference: 生成交叉引用提示失败:', error);
+            return [];
+        }
+    }
+
+    /**
+     * 注册交叉引用点击处理器
+     */
+    private registerCrossReferenceClickHandler(): void {
+        // 使用事件委托处理交叉引用点击
+        document.addEventListener('click', this.handleCrossReferenceClick.bind(this));
+    }
+
+    /**
+     * 处理交叉引用点击事件
+     * @param event 点击事件
+     */
+    private handleCrossReferenceClick(event: MouseEvent): void {
+        const target = event.target as HTMLElement;
+        const crossRefElement = target.closest('[data-type="cross-ref"]') as HTMLElement;
+
+        if (crossRefElement) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const figureId = crossRefElement.getAttribute('data-figure-id');
+            const figureType = crossRefElement.getAttribute('data-figure-type');
+            const figureNumber = crossRefElement.getAttribute('data-figure-number');
+
+            if (figureId) {
+                this.scrollToFigure(figureId, figureType, figureNumber);
+            }
+        }
+    }
+
+    /**
+     * 滚动到指定的图片或表格
+     * @param figureId 图片或表格的ID
+     * @param figureType 类型（image或table）
+     * @param figureNumber 编号
+     */
+    scrollToFigure(figureId: string, figureType?: string, figureNumber?: string): void {
+        const targetElement = document.querySelector(`[data-node-id="${figureId}"]`) as HTMLElement;
+
+        if (targetElement) {
+            // 滚动到目标元素
+            targetElement.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+
+            // 高亮显示目标元素
+            targetElement.style.transition = 'background-color 0.3s ease';
+            targetElement.style.backgroundColor = 'rgba(255, 255, 0, 0.3)';
+
+            setTimeout(() => {
+                targetElement.style.backgroundColor = '';
+                setTimeout(() => {
+                    targetElement.style.transition = '';
+                }, 300);
+            }, 1500);
+
+            console.log(`CrossReference: 跳转到${figureType === 'image' ? '图片' : '表格'} ${figureNumber}`);
+        } else {
+            console.warn(`CrossReference: 未找到ID为 ${figureId} 的${figureType === 'image' ? '图片' : '表格'}`);
+        }
     }
 }
