@@ -107,6 +107,48 @@ export interface IFigureInfo {
     number?: number;
     /** 标题元素ID */
     captionId?: string;
+    /** DOM顺序 */
+    domOrder?: number;
+    /** 原始数据 */
+    rawData?: any;
+}
+
+/**
+ * 原始图表数据（从DOM解析得到）
+ */
+export interface IRawFigureData {
+    /** 块ID */
+    id: string;
+    /** 节点类型 */
+    nodeType: string;
+    /** 子类型 */
+    subtype?: string;
+    /** 图表类型 */
+    figureType: 'image' | 'table';
+    /** 内容 */
+    content: string;
+    /** 标题 */
+    caption?: string;
+    /** 标题元素ID */
+    captionId?: string;
+    /** DOM顺序 */
+    domOrder: number;
+    /** 超级块ID */
+    superBlockId?: string;
+}
+
+/**
+ * 数据获取配置
+ */
+export interface IDataFetchConfig {
+    /** 是否使用缓存 */
+    useCache?: boolean;
+    /** 缓存过期时间（毫秒） */
+    cacheExpiry?: number;
+    /** 是否强制刷新 */
+    forceRefresh?: boolean;
+    /** 包含的图表类型 */
+    includeTypes?: ('image' | 'table')[];
 }
 
 /**
