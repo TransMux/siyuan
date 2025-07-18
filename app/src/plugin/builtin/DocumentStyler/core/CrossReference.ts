@@ -112,6 +112,7 @@ export class CrossReference implements ICrossReference {
      * @returns 超级块中的图片/表格信息数组
      */
     private parseSuperBlockFigures(protyle: any): ISuperBlockFigure[] {
+        debugger
         if (!protyle?.wysiwyg?.element) return [];
 
         const figures: ISuperBlockFigure[] = [];
@@ -136,7 +137,7 @@ export class CrossReference implements ICrossReference {
         const layout = superBlockElement.getAttribute('data-sb-layout') as 'row' | 'col';
 
         // 只处理竖直布局的超级块
-        if (layout !== 'col') return null;
+        if (layout !== 'row') return null;
 
         // 获取所有直接子元素（排除属性元素）
         const children = Array.from(superBlockElement.children).filter(child =>
@@ -248,7 +249,8 @@ export class CrossReference implements ICrossReference {
     }
 
     /**
-     * 生成超级块中图片/表格的自定义标题样式
+     * 生成超级块中图片/表格的标题样式
+     * 直接给文本块添加样式，让它成为图表的标题，并添加自动编号
      * @param figures 超级块中的图片/表格信息
      * @returns CSS样式字符串
      */
@@ -257,49 +259,50 @@ export class CrossReference implements ICrossReference {
 
         for (const figure of figures) {
             if (figure.captionElement && figure.captionText) {
-                const figureId = figure.id;
-                const escapedText = figure.captionText.replace(/"/g, '\\"');
+                const captionId = figure.captionElement.getAttribute('data-node-id');
 
                 if (figure.type === 'image') {
-                    // 为图片添加自定义标题，隐藏原始标题段落
+                    // 给图片标题文本块添加样式和自动编号
                     styles += `
-                        .protyle-wysiwyg [data-node-id="${figureId}"] [data-type="img"]::after {
-                            content: "${escapedText}";
-                            display: block;
+                        .protyle-wysiwyg [data-node-id="${captionId}"] {
                             text-align: center;
                             font-size: 0.9em;
                             color: var(--b3-theme-on-surface-light);
-                            margin-top: 8px;
                             font-style: italic;
                             font-weight: 500;
-                            padding: 4px 16px;
+                            padding: 8px 16px;
                             background-color: var(--b3-theme-surface-lightest);
                             border-radius: var(--b3-border-radius-b);
+                            margin: 8px 0;
+                            counter-increment: figure;
                         }
 
-                        .protyle-wysiwyg [data-node-id="${figure.captionElement.getAttribute('data-node-id')}"] {
-                            display: none !important;
+                        .protyle-wysiwyg [data-node-id="${captionId}"] [contenteditable="true"]::before {
+                            content: "图 " counter(figure) ": ";
+                            font-weight: 600;
+                            color: var(--b3-theme-primary);
                         }
                     `;
                 } else if (figure.type === 'table') {
-                    // 为表格添加自定义标题，隐藏原始标题段落
+                    // 给表格标题文本块添加样式和自动编号
                     styles += `
-                        .protyle-wysiwyg [data-node-id="${figureId}"]::before {
-                            content: "${escapedText}";
-                            display: block;
+                        .protyle-wysiwyg [data-node-id="${captionId}"] {
                             text-align: center;
                             font-size: 0.9em;
                             color: var(--b3-theme-on-surface-light);
-                            margin-bottom: 8px;
                             font-style: italic;
                             font-weight: 500;
-                            padding: 4px 16px;
+                            padding: 8px 16px;
                             background-color: var(--b3-theme-surface-lightest);
                             border-radius: var(--b3-border-radius-b);
+                            margin: 8px 0;
+                            counter-increment: table;
                         }
 
-                        .protyle-wysiwyg [data-node-id="${figure.captionElement.getAttribute('data-node-id')}"] {
-                            display: none !important;
+                        .protyle-wysiwyg [data-node-id="${captionId}"] [contenteditable="true"]::before {
+                            content: "表 " counter(table) ": ";
+                            font-weight: 600;
+                            color: var(--b3-theme-primary);
                         }
                     `;
                 }
@@ -315,6 +318,7 @@ export class CrossReference implements ICrossReference {
      */
     private loadCrossReferenceStyles(protyle?: any): void {
         // 解析超级块中的图片/表格
+        debugger
         const superBlockFigures = protyle ? this.parseSuperBlockFigures(protyle) : [];
 
         const css = `
