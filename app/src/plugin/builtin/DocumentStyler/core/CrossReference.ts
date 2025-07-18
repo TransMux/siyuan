@@ -323,93 +323,8 @@ export class CrossReference implements ICrossReference {
                 counter-reset: figure table;
             }
 
-            /* 图片自动编号 - 仅对非超级块中的图片 */
-            .protyle-wysiwyg [data-type="img"]:not(.sb [data-type="img"]) {
-                counter-increment: figure;
-                position: relative;
-            }
-
-            /* 表格自动编号 - 仅对非超级块中的表格 */
-            .protyle-wysiwyg [data-type="table"]:not(.sb [data-type="table"]) {
-                counter-increment: table;
-                position: relative;
-            }
-
-            /* 图片标题样式 - 仅对非超级块中的图片 */
-            .protyle-wysiwyg [data-type="img"]:not(.sb [data-type="img"])::after {
-                content: "Figure " counter(figure);
-                display: block;
-                text-align: center;
-                font-size: 0.9em;
-                color: var(--b3-theme-on-surface-light);
-                margin-top: 8px;
-                font-style: italic;
-                font-weight: 500;
-                padding: 4px 16px;
-                background-color: var(--b3-theme-surface-lightest);
-                border-radius: var(--b3-border-radius-b);
-            }
-
-            /* 表格标题样式 - 仅对非超级块中的表格 */
-            .protyle-wysiwyg [data-type="table"]:not(.sb [data-type="table"])::before {
-                content: "Table " counter(table);
-                display: block;
-                text-align: center;
-                font-size: 0.9em;
-                color: var(--b3-theme-on-surface-light);
-                margin-bottom: 8px;
-                font-style: italic;
-                font-weight: 500;
-                padding: 4px 16px;
-                background-color: var(--b3-theme-surface-lightest);
-                border-radius: var(--b3-border-radius-b);
-            }
-
             /* 超级块中的图片/表格自定义标题样式 */
             ${this.generateSuperBlockCaptionStyles(superBlockFigures)}
-
-            /* 增强图片容器样式 */
-            .protyle-wysiwyg [data-type="img"] {
-                margin: 16px 0;
-                padding: 8px;
-                border: 1px solid var(--b3-theme-surface-lighter);
-                border-radius: var(--b3-border-radius);
-                transition: all 0.2s ease;
-                background-color: var(--b3-theme-surface-lightest);
-            }
-
-            .protyle-wysiwyg [data-type="img"]:hover {
-                border-color: var(--b3-theme-primary-lighter);
-                box-shadow: 0 2px 8px var(--b3-theme-surface-light);
-            }
-
-            /* 增强表格容器样式 */
-            .protyle-wysiwyg [data-type="table"] {
-                margin: 16px 0;
-                padding: 8px;
-                border: 1px solid var(--b3-theme-surface-lighter);
-                border-radius: var(--b3-border-radius);
-                transition: all 0.2s ease;
-                background-color: var(--b3-theme-surface-lightest);
-            }
-
-            .protyle-wysiwyg [data-type="table"]:hover {
-                border-color: var(--b3-theme-primary-lighter);
-                box-shadow: 0 2px 8px var(--b3-theme-surface-light);
-            }
-
-            /* 图片内部样式调整 */
-            .protyle-wysiwyg [data-type="img"] img {
-                border-radius: var(--b3-border-radius-b);
-                max-width: 100%;
-                height: auto;
-            }
-
-            /* 表格内部样式调整 */
-            .protyle-wysiwyg [data-type="table"] table {
-                border-radius: var(--b3-border-radius-b);
-                overflow: hidden;
-            }
 
             /* 交叉引用链接样式 */
             .protyle-wysiwyg a[href^="#figure-"],
@@ -431,29 +346,6 @@ export class CrossReference implements ICrossReference {
                 color: var(--b3-theme-on-primary);
                 transform: translateY(-1px);
                 box-shadow: 0 2px 4px var(--b3-theme-surface-light);
-            }
-
-            /* 选中状态样式 */
-            .protyle-wysiwyg [data-type="img"].protyle-wysiwyg--select,
-            .protyle-wysiwyg [data-type="table"].protyle-wysiwyg--select {
-                border-color: var(--b3-theme-primary);
-                background-color: var(--b3-theme-primary-lightest);
-                box-shadow: 0 0 0 2px var(--b3-theme-primary-lighter);
-            }
-
-            /* 响应式设计 */
-            @media (max-width: 768px) {
-                .protyle-wysiwyg [data-type="img"]::after,
-                .protyle-wysiwyg [data-type="table"]::before {
-                    font-size: 0.8em;
-                    padding: 3px 12px;
-                }
-
-                .protyle-wysiwyg [data-type="img"],
-                .protyle-wysiwyg [data-type="table"] {
-                    margin: 12px 0;
-                    padding: 6px;
-                }
             }
         `;
 
