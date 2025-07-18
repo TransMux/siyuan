@@ -10,6 +10,8 @@ import { DocumentManager } from "../core/DocumentManager";
 import { HeadingNumbering } from "../core/HeadingNumbering";
 import { CrossReference } from "../core/CrossReference";
 import { DockPanel } from "./DockPanel";
+import { TransactionAnalyzer } from "../utils/transactionAnalyzer";
+import { debounce } from "../utils/domUtils";
 
 export class EventHandler implements IEventHandler {
     private plugin: Plugin;
@@ -21,6 +23,10 @@ export class EventHandler implements IEventHandler {
 
     // 事件监听器引用，用于清理
     private eventListeners: Map<string, Function> = new Map();
+
+    // 防抖更新函数
+    private debouncedUpdateHeadings = debounce(this.updateHeadingsForDoc.bind(this), 1000);
+    private debouncedUpdateFigures = debounce(this.updateFiguresForDoc.bind(this), 1000);
 
     constructor(
         plugin: Plugin,
@@ -157,18 +163,40 @@ export class EventHandler implements IEventHandler {
      */
     private onEdited = async (event: CustomEvent): Promise<void> => {
         try {
-            const docId = this.documentManager.getCurrentDocId();
-            if (!docId) return;
-
-            // 检查当前文档是否启用了编号
-            if (!this.settingsManager.isDocumentEnabled(docId)) return;
-
             // 检查是否启用了实时更新
             const settings = this.settingsManager.getSettings();
             if (!settings.realTimeUpdate) return;
 
-            // 处理编辑事件
-            this.headingNumbering.handleEditEvent(event);
+            // 分析transaction事件
+            const analysisResult = TransactionAnalyzer.analyzeTransactionEvent(event.detail);
+
+            // 如果没有需要更新的内容，直接返回
+            if (!TransactionAnalyzer.needsUpdate(analysisResult)) {
+                return;
+            }
+
+            // 获取受影响的文档
+            const affectedDocIds = TransactionAnalyzer.getAffectedDocuments(analysisResult);
+
+            // 处理每个受影响的文档
+            for (const docId of affectedDocIds) {
+                // 检查文档是否启用了编号
+                if (!this.settingsManager.isDocumentEnabled(docId)) continue;
+
+                // 根据分析结果决定更新内容
+                if (analysisResult.needUpdateHeadings) {
+                    this.debouncedUpdateHeadings(docId);
+                }
+
+                if (analysisResult.needUpdateFigures && settings.crossReference) {
+                    this.debouncedUpdateFigures(docId);
+                }
+            }
+
+            // 调试信息
+            if (process.env.NODE_ENV === 'development') {
+                console.log('Transaction分析结果:', TransactionAnalyzer.createDebugInfo(analysisResult));
+            }
         } catch (error) {
             console.error('处理编辑事件失败:', error);
         }
@@ -339,5 +367,45 @@ export class EventHandler implements IEventHandler {
      */
     isEventBound(eventName: string): boolean {
         return this.eventListeners.has(eventName);
+    }
+
+    /**
+     * 更新指定文档的标题编号
+     * @param docId 文档ID
+     */
+    private async updateHeadingsForDoc(docId: string): Promise<void> {
+        try {
+            // 这里将在重构HeadingNumbering模块时实现
+            // 暂时使用旧的方法
+            const currentDocId = this.documentManager.getCurrentDocId();
+            if (currentDocId === docId) {
+                const protyle = this.documentManager.getCurrentProtyle();
+                if (protyle) {
+                    await this.headingNumbering.updateNumbering(protyle);
+                }
+            }
+        } catch (error) {
+            console.error(`更新文档${docId}的标题编号失败:`, error);
+        }
+    }
+
+    /**
+     * 更新指定文档的图片表格索引
+     * @param docId 文档ID
+     */
+    private async updateFiguresForDoc(docId: string): Promise<void> {
+        try {
+            // 这里将在更新交叉引用功能时实现
+            // 暂时使用旧的方法
+            const currentDocId = this.documentManager.getCurrentDocId();
+            if (currentDocId === docId) {
+                const protyle = this.documentManager.getCurrentProtyle();
+                if (protyle) {
+                    await this.crossReference.applyCrossReference(protyle);
+                }
+            }
+        } catch (error) {
+            console.error(`更新文档${docId}的图片表格索引失败:`, error);
+        }
     }
 }

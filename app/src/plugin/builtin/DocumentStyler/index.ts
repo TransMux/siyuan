@@ -7,6 +7,7 @@ import { HeadingNumbering } from "./core/HeadingNumbering";
 import { CrossReference } from "./core/CrossReference";
 import { DocumentManager } from "./core/DocumentManager";
 import { SettingsManager } from "./core/SettingsManager";
+import { OutlineManager } from "./core/OutlineManager";
 import { DockPanel } from "./ui/DockPanel";
 import { StyleManager } from "./ui/StyleManager";
 import { EventHandler } from "./ui/EventHandler";
@@ -26,6 +27,7 @@ export class DocumentStylerPlugin extends Plugin {
     // 模块化组件
     private settingsManager: SettingsManager;
     private documentManager: DocumentManager;
+    private outlineManager: OutlineManager;
     private headingNumbering: HeadingNumbering;
     private crossReference: CrossReference;
     private styleManager: StyleManager;
@@ -50,11 +52,17 @@ export class DocumentStylerPlugin extends Plugin {
         // 创建核心模块
         this.settingsManager = new SettingsManager(this);
         this.documentManager = new DocumentManager(this.appRef);
-        this.headingNumbering = new HeadingNumbering(this.settingsManager, this.documentManager);
+        this.outlineManager = new OutlineManager();
+        this.styleManager = new StyleManager();
+        this.headingNumbering = new HeadingNumbering(
+            this.settingsManager,
+            this.documentManager,
+            this.outlineManager,
+            this.styleManager
+        );
         this.crossReference = new CrossReference(this.documentManager);
 
         // 创建UI模块
-        this.styleManager = new StyleManager();
         this.dockPanel = new DockPanel(this.settingsManager, this.documentManager, this.crossReference);
         this.eventHandler = new EventHandler(
             this,
@@ -107,6 +115,7 @@ export class DocumentStylerPlugin extends Plugin {
         // 按依赖顺序初始化模块
         await this.settingsManager.init();
         await this.documentManager.init();
+        await this.outlineManager.init();
         await this.styleManager.init();
         await this.headingNumbering.init();
         await this.crossReference.init();
@@ -124,6 +133,7 @@ export class DocumentStylerPlugin extends Plugin {
         this.crossReference?.destroy();
         this.headingNumbering?.destroy();
         this.styleManager?.destroy();
+        this.outlineManager?.destroy();
         this.documentManager?.destroy();
         this.settingsManager?.destroy();
     }

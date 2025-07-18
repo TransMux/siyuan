@@ -233,6 +233,27 @@ export async function checkApiAvailable(apiPath: string): Promise<boolean> {
 }
 
 /**
+ * 获取文档大纲
+ * @param docId 文档ID
+ * @param preview 是否为预览模式
+ * @returns 大纲数据
+ */
+export function getDocumentOutline(docId: string, preview: boolean = false): Promise<any[]> {
+    return new Promise((resolve, reject) => {
+        fetchPost("/api/outline/getDocOutline", {
+            id: docId,
+            preview: preview
+        }, (response) => {
+            if (response.code === 0) {
+                resolve(response.data || []);
+            } else {
+                reject(new Error(response.msg || "获取文档大纲失败"));
+            }
+        });
+    });
+}
+
+/**
  * 安全地执行API调用
  * @param apiCall API调用函数
  * @param fallback 失败时的回调函数

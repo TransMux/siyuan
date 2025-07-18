@@ -5,10 +5,16 @@
 
 import { IStyleManager } from "../types";
 import { createStyleElement, removeStyleElement } from "../utils/domUtils";
+import { CSSGenerator } from "../utils/cssGenerator";
+import { IHeadingNumberMap } from "../utils/outlineUtils";
 
 export class StyleManager implements IStyleManager {
     private readonly MAIN_STYLE_ID = 'document-styler-plugin-styles';
     private readonly HEADING_STYLE_ID = 'document-styler-heading-numbering';
+
+    // 当前应用的编号映射
+    private currentHeadingMap: IHeadingNumberMap = {};
+    private currentFigureMap: Record<string, { number: string; type: 'image' | 'table' }> = {};
 
     async init(): Promise<void> {
         this.loadStyles();
@@ -406,5 +412,117 @@ export class StyleManager implements IStyleManager {
      */
     getHeadingStyleId(): string {
         return this.HEADING_STYLE_ID;
+    }
+
+    /**
+     * 应用标题编号样式
+     * @param headingMap 标题编号映射
+     */
+    applyHeadingNumbering(headingMap: IHeadingNumberMap): void {
+        this.currentHeadingMap = headingMap;
+        this.updateNumberingStyles();
+    }
+
+    /**
+     * 清除标题编号样式
+     */
+    clearHeadingNumbering(): void {
+        this.currentHeadingMap = {};
+        this.updateNumberingStyles();
+    }
+
+    /**
+     * 应用图片表格编号样式
+     * @param figureMap 图片表格编号映射
+     */
+    applyFigureNumbering(figureMap: Record<string, { number: string; type: 'image' | 'table' }>): void {
+        this.currentFigureMap = figureMap;
+        this.updateNumberingStyles();
+    }
+
+    /**
+     * 清除图片表格编号样式
+     */
+    clearFigureNumbering(): void {
+        this.currentFigureMap = {};
+        this.updateNumberingStyles();
+    }
+
+    /**
+     * 批量更新编号样式
+     * @param options 更新选项
+     */
+    batchUpdateNumbering(options: {
+        headingMap?: IHeadingNumberMap;
+        figureMap?: Record<string, { number: string; type: 'image' | 'table' }>;
+        clearHeadings?: boolean;
+        clearFigures?: boolean;
+    }): void {
+        if (options.clearHeadings) {
+            this.currentHeadingMap = {};
+        } else if (options.headingMap) {
+            this.currentHeadingMap = options.headingMap;
+        }
+
+        if (options.clearFigures) {
+            this.currentFigureMap = {};
+        } else if (options.figureMap) {
+            this.currentFigureMap = options.figureMap;
+        }
+
+        this.updateNumberingStyles();
+    }
+
+    /**
+     * 更新编号样式
+     */
+    private updateNumberingStyles(): void {
+        const hasHeadings = Object.keys(this.currentHeadingMap).length > 0;
+        const hasFigures = Object.keys(this.currentFigureMap).length > 0;
+
+        if (!hasHeadings && !hasFigures) {
+            CSSGenerator.clearCSS();
+            return;
+        }
+
+        const css = CSSGenerator.generateCompleteCSS(
+            this.currentHeadingMap,
+            hasFigures ? this.currentFigureMap : undefined
+        );
+
+        CSSGenerator.applyCSS(css);
+    }
+
+    /**
+     * 清除所有编号样式
+     */
+    private clearNumberingStyles(): void {
+        CSSGenerator.removeCSS();
+        this.currentHeadingMap = {};
+        this.currentFigureMap = {};
+    }
+
+    /**
+     * 检查编号样式是否已应用
+     * @returns 是否已应用
+     */
+    isNumberingApplied(): boolean {
+        return CSSGenerator.isApplied();
+    }
+
+    /**
+     * 获取当前编号样式统计
+     * @returns 样式统计信息
+     */
+    getNumberingStats(): {
+        headingCount: number;
+        figureCount: number;
+        cssStats: ReturnType<typeof CSSGenerator.getStats>;
+    } {
+        return {
+            headingCount: Object.keys(this.currentHeadingMap).length,
+            figureCount: Object.keys(this.currentFigureMap).length,
+            cssStats: CSSGenerator.getStats()
+        };
     }
 }

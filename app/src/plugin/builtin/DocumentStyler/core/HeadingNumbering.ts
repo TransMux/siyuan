@@ -6,37 +6,27 @@
 import { IHeadingNumbering, IHeadingInfo } from "../types";
 import { SettingsManager } from "./SettingsManager";
 import { DocumentManager } from "./DocumentManager";
-import { 
-    generateHeaderNumber, 
-    hasHeaderNumber, 
-    removeHeaderNumber, 
-    getHeaderLevel,
-    getExistingHeaderLevels
-} from "../utils/numberUtils";
-import { 
-    getHeaderElements, 
-    getHtmlContent, 
-    setHtmlContent,
-    setCursorToEnd,
-    debounce
-} from "../utils/domUtils";
-import { batchUpdateBlockContent, getVersion } from "../utils/apiUtils";
+import { OutlineManager } from "./OutlineManager";
+import { StyleManager } from "../ui/StyleManager";
+import { getVersion } from "../utils/apiUtils";
 
 export class HeadingNumbering implements IHeadingNumbering {
     private settingsManager: SettingsManager;
     private documentManager: DocumentManager;
+    private outlineManager: OutlineManager;
+    private styleManager: StyleManager;
     private version: string = "";
-    private updateTimer: number | null = null;
-    private lastInputTime: number = 0;
-    private shouldUpdate: boolean = false;
-    private activeBlockId: string | null = null;
 
-    // 防抖更新函数
-    private debouncedUpdate = debounce(this.performUpdate.bind(this), 2000);
-
-    constructor(settingsManager: SettingsManager, documentManager: DocumentManager) {
+    constructor(
+        settingsManager: SettingsManager,
+        documentManager: DocumentManager,
+        outlineManager: OutlineManager,
+        styleManager: StyleManager
+    ) {
         this.settingsManager = settingsManager;
         this.documentManager = documentManager;
+        this.outlineManager = outlineManager;
+        this.styleManager = styleManager;
     }
 
     async init(): Promise<void> {
@@ -44,19 +34,18 @@ export class HeadingNumbering implements IHeadingNumbering {
     }
 
     destroy(): void {
-        this.clearUpdateTimer();
-        this.shouldUpdate = false;
-        this.activeBlockId = null;
+        // 清除样式
+        this.styleManager.clearHeadingNumbering();
     }
 
     async applyNumbering(protyle: any): Promise<void> {
         const docId = this.documentManager.getCurrentDocId();
-        if (!docId || !protyle) return;
+        if (!docId) return;
 
         try {
             // 先清除现有编号
             await this.clearNumbering(protyle);
-            
+
             // 应用新编号
             await this.updateNumbering(protyle);
         } catch (error) {
@@ -66,46 +55,9 @@ export class HeadingNumbering implements IHeadingNumbering {
     }
 
     async clearNumbering(protyle: any): Promise<void> {
-        if (!protyle) return;
-
         try {
-            const headerElements = getHeaderElements(protyle);
-            if (headerElements.length === 0) return;
-
-            const updates: Record<string, string> = {};
-            const settings = this.settingsManager.getSettings();
-
-            // 处理每个标题
-            for (const element of headerElements) {
-                const blockId = element.getAttribute("data-node-id");
-                if (!blockId) continue;
-
-                const htmlContent = getHtmlContent(element);
-                if (!htmlContent) continue;
-
-                // 检查所有可能的格式并移除编号
-                let contentUpdated = false;
-                let cleanContent = htmlContent;
-
-                for (let i = 0; i < settings.numberingFormats.length; i++) {
-                    const format = settings.numberingFormats[i];
-                    if (hasHeaderNumber(cleanContent, format)) {
-                        cleanContent = removeHeaderNumber(cleanContent, format);
-                        contentUpdated = true;
-                    }
-                }
-
-                // 如果内容被更新，则添加到更新列表中
-                if (contentUpdated) {
-                    setHtmlContent(element, cleanContent);
-                    updates[blockId] = element.outerHTML;
-                }
-            }
-
-            // 批量更新内容
-            if (Object.keys(updates).length > 0) {
-                await batchUpdateBlockContent(updates, "dom", this.canUseBulkApi());
-            }
+            // 使用CSS方式清除编号，只需要清除样式即可
+            this.styleManager.clearHeadingNumbering();
         } catch (error) {
             console.error('清除标题编号失败:', error);
             throw error;
@@ -113,71 +65,23 @@ export class HeadingNumbering implements IHeadingNumbering {
     }
 
     async updateNumbering(protyle: any): Promise<void> {
-        if (!protyle) return;
-
-        this.clearUpdateTimer();
+        const docId = this.documentManager.getCurrentDocId();
+        if (!docId) return;
 
         try {
-            const headerElements = getHeaderElements(protyle);
-            if (headerElements.length === 0) return;
-
-            // 收集所有存在的标题级别并排序
-            const existingLevels = getExistingHeaderLevels(protyle);
-            if (existingLevels.length === 0) return;
-
+            // 获取设置
             const settings = this.settingsManager.getSettings();
-            const updates: Record<string, string> = {};
-            const counters = [0, 0, 0, 0, 0, 0];
 
-            // 处理每个标题
-            for (const element of headerElements) {
-                const blockId = element.getAttribute("data-node-id");
-                if (!blockId) continue;
+            // 获取标题编号映射
+            const headingMap = await this.outlineManager.getHeadingNumberMap(
+                docId,
+                settings.numberingFormats,
+                settings.useChineseNumbers,
+                true // 强制刷新
+            );
 
-                const level = getHeaderLevel(element);
-                if (level === 0) continue;
-
-                const htmlContent = getHtmlContent(element);
-                if (!htmlContent) continue;
-
-                // 生成新序号
-                const [number, newCounters] = generateHeaderNumber(
-                    level,
-                    counters,
-                    settings.numberingFormats,
-                    settings.useChineseNumbers,
-                    existingLevels
-                );
-
-                // 更新计数器
-                Object.assign(counters, newCounters);
-
-                // 添加新序号到HTML内容
-                const numberedContent = number + htmlContent;
-                setHtmlContent(element, numberedContent);
-
-                // 添加到更新列表
-                updates[blockId] = element.outerHTML;
-            }
-
-            // 批量更新内容
-            if (Object.keys(updates).length > 0) {
-                await batchUpdateBlockContent(updates, "dom", this.canUseBulkApi());
-
-                // 如果有活动的块，将光标移动到其末尾
-                if (this.activeBlockId) {
-                    setTimeout(() => {
-                        const activeElement = document.querySelector(
-                            `[data-node-id="${this.activeBlockId}"]`
-                        );
-                        if (activeElement) {
-                            setCursorToEnd(activeElement);
-                        }
-                    }, 200);
-                }
-            }
-
-            this.shouldUpdate = false;
+            // 应用CSS样式
+            this.styleManager.applyHeadingNumbering(headingMap);
         } catch (error) {
             console.error('更新标题编号失败:', error);
             throw error;
@@ -185,162 +89,101 @@ export class HeadingNumbering implements IHeadingNumbering {
     }
 
     hasNumbering(protyle: any): boolean {
-        if (!protyle) return false;
-
         try {
-            const headerElements = getHeaderElements(protyle);
-            const settings = this.settingsManager.getSettings();
-
-            for (const element of headerElements) {
-                const htmlContent = getHtmlContent(element);
-                if (!htmlContent) continue;
-
-                // 检查是否包含任何格式的编号
-                for (const format of settings.numberingFormats) {
-                    if (hasHeaderNumber(htmlContent, format)) {
-                        return true;
-                    }
-                }
-            }
+            // 检查样式管理器中是否有应用的编号样式
+            return this.styleManager.isNumberingApplied();
         } catch (error) {
             console.error('检查标题编号失败:', error);
-        }
-
-        return false;
-    }
-
-    /**
-     * 处理编辑事件
-     * @param event 编辑事件
-     */
-    handleEditEvent(event: CustomEvent): void {
-        this.lastInputTime = Date.now();
-        
-        const docId = this.documentManager.getCurrentDocId();
-        if (!docId) return;
-
-        if (!event.detail || !event.detail.cmd || event.detail.cmd !== "transactions") {
-            return;
-        }
-
-        for (const transaction of event.detail.data) {
-            for (const operation of transaction.doOperations) {
-                if (operation.action === "insert") {
-                    this.activeBlockId = operation.id;
-                }
-
-                if (!this.shouldUpdate) {
-                    const blockHtml = operation.data;
-                    // 检查是否是标题
-                    if (/data-subtype="h\d"/.test(blockHtml)) {
-                        this.shouldUpdate = true;
-                    }
-                }
-
-                if (operation.action === "insert" && this.shouldUpdate) {
-                    this.queueUpdate();
-                }
-            }
+            return false;
         }
     }
 
     /**
-     * 队列更新
+     * 更新指定文档的标题编号
+     * @param docId 文档ID
      */
-    private queueUpdate(): void {
-        this.clearUpdateTimer();
+    async updateNumberingForDoc(docId: string): Promise<void> {
+        try {
+            // 获取设置
+            const settings = this.settingsManager.getSettings();
 
-        // 设置新的定时器
-        this.updateTimer = window.setTimeout(async () => {
-            // 检查是否距离最后一次输入已经过去2秒
-            if (Date.now() - this.lastInputTime >= 2000) {
-                if (this.shouldUpdate) {
-                    const protyle = this.documentManager.getCurrentProtyle();
-                    if (protyle) {
-                        await this.updateNumbering(protyle);
-                    }
-                }
-            } else {
-                // 如果还没到2秒，重新设置定时器
-                this.queueUpdate();
-            }
-        }, 2000) as unknown as number;
-    }
+            // 获取标题编号映射
+            const headingMap = await this.outlineManager.getHeadingNumberMap(
+                docId,
+                settings.numberingFormats,
+                settings.useChineseNumbers,
+                true // 强制刷新
+            );
 
-    /**
-     * 执行更新
-     */
-    private async performUpdate(): Promise<void> {
-        if (this.shouldUpdate) {
-            const protyle = this.documentManager.getCurrentProtyle();
-            if (protyle) {
-                await this.updateNumbering(protyle);
-            }
+            // 应用CSS样式
+            this.styleManager.applyHeadingNumbering(headingMap);
+        } catch (error) {
+            console.error(`更新文档${docId}的标题编号失败:`, error);
+            throw error;
         }
     }
 
     /**
-     * 清除更新定时器
+     * 检查文档是否包含标题
+     * @param docId 文档ID
+     * @returns 是否包含标题
      */
-    private clearUpdateTimer(): void {
-        if (this.updateTimer) {
-            clearTimeout(this.updateTimer);
-            this.updateTimer = null;
+    async hasHeadingsInDoc(docId: string): Promise<boolean> {
+        try {
+            return await this.outlineManager.hasHeadings(docId);
+        } catch (error) {
+            console.error(`检查文档${docId}是否包含标题失败:`, error);
+            return false;
         }
     }
 
     /**
-     * 检查是否可以使用批量API
-     * @returns 是否可以使用
+     * 获取文档的标题统计信息
+     * @param docId 文档ID
+     * @returns 标题统计信息
      */
-    private canUseBulkApi(): boolean {
-        return this.version >= "3.1.25";
-    }
-
-    /**
-     * 获取标题信息列表
-     * @param protyle 编辑器实例
-     * @returns 标题信息数组
-     */
-    getHeaderInfoList(protyle: any): IHeadingInfo[] {
-        if (!protyle) return [];
-
-        const headerInfos: IHeadingInfo[] = [];
-        const headerElements = getHeaderElements(protyle);
-
-        for (const element of headerElements) {
-            const blockId = element.getAttribute("data-node-id");
-            if (!blockId) continue;
-
-            const level = getHeaderLevel(element);
-            if (level === 0) continue;
-
-            const originalContent = getHtmlContent(element);
-            if (!originalContent) continue;
-
-            headerInfos.push({
-                element: element as HTMLElement,
-                blockId,
-                level,
-                originalContent
-            });
+    async getHeadingStats(docId: string): Promise<{
+        totalCount: number;
+        levelCounts: Record<number, number>;
+        maxLevel: number;
+        minLevel: number;
+    }> {
+        try {
+            return await this.outlineManager.getHeadingStats(docId);
+        } catch (error) {
+            console.error(`获取文档${docId}的标题统计失败:`, error);
+            return {
+                totalCount: 0,
+                levelCounts: {},
+                maxLevel: 0,
+                minLevel: 0
+            };
         }
-
-        return headerInfos;
     }
 
     /**
-     * 启用实时更新
+     * 获取当前编号样式统计
+     * @returns 样式统计信息
+     */
+    getNumberingStats(): {
+        headingCount: number;
+        figureCount: number;
+        cssStats: ReturnType<typeof import("../utils/cssGenerator").CSSGenerator.getStats>;
+    } {
+        return this.styleManager.getNumberingStats();
+    }
+
+    /**
+     * 启用实时更新（保留接口兼容性）
      */
     enableRealTimeUpdate(): void {
-        // 这个方法需要在主插件类中调用，以便绑定事件监听器
+        // 新架构中实时更新由EventHandler处理
     }
 
     /**
-     * 禁用实时更新
+     * 禁用实时更新（保留接口兼容性）
      */
     disableRealTimeUpdate(): void {
-        this.clearUpdateTimer();
-        this.shouldUpdate = false;
+        // 新架构中实时更新由EventHandler处理
     }
 }
