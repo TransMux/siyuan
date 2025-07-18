@@ -68,6 +68,11 @@ export class DocumentStylerPlugin extends Plugin {
             this.crossReference,
             this
         );
+
+        // 设置交叉引用的面板更新回调
+        this.crossReference.setPanelUpdateCallback(async () => {
+            await this.dockPanel.updatePanel();
+        });
     }
 
     /**

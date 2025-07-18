@@ -11,9 +11,18 @@ import { queryDocumentFigures } from "../utils/apiUtils";
 
 export class CrossReference implements ICrossReference {
     private documentManager: DocumentManager;
+    private panelUpdateCallback: (() => Promise<void>) | null = null;
 
     constructor(documentManager: DocumentManager) {
         this.documentManager = documentManager;
+    }
+
+    /**
+     * 设置面板更新回调函数
+     * @param callback 面板更新回调函数
+     */
+    setPanelUpdateCallback(callback: () => Promise<void>): void {
+        this.panelUpdateCallback = callback;
     }
 
     async init(): Promise<void> {
@@ -317,6 +326,12 @@ export class CrossReference implements ICrossReference {
                     setTimeout(async () => {
                         try {
                             await this.applyCrossReference(currentProtyle);
+
+                            // 通知侧边栏面板更新图表列表
+                            if (this.panelUpdateCallback) {
+                                await this.panelUpdateCallback();
+                                console.log('CrossReference: 侧边栏面板已更新');
+                            }
                         } catch (error) {
                             console.error('CrossReference: 延迟更新失败:', error);
                         }
