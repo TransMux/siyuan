@@ -168,6 +168,7 @@ export class EventHandler implements IEventHandler {
 
     /**
      * 编辑事件处理（实时更新）
+     * 注意：现在实时更新由 WebSocketManager 处理，这里保留作为备用
      */
     private onEdited = async (event: CustomEvent): Promise<void> => {
         try {
@@ -203,10 +204,10 @@ export class EventHandler implements IEventHandler {
 
             // 调试信息
             if (process.env.NODE_ENV === 'development') {
-                console.log('Transaction分析结果:', TransactionAnalyzer.createDebugInfo(analysisResult));
+                console.log('EventHandler: Transaction分析结果:', TransactionAnalyzer.createDebugInfo(analysisResult));
             }
         } catch (error) {
-            console.error('处理编辑事件失败:', error);
+            console.error('EventHandler: 处理编辑事件失败:', error);
         }
     };
 
@@ -295,23 +296,29 @@ export class EventHandler implements IEventHandler {
 
     /**
      * 启用实时更新
+     * 注意：现在实时更新由 WebSocketManager 处理，这里保留作为备用
      */
     private enableRealTimeUpdate(): void {
+        // 实时更新现在由 WebSocketManager 处理
+        // 这里保留旧的事件监听作为备用
         if (!this.eventListeners.has('ws-main')) {
-            this.plugin.eventBus.on("ws-main", this.onEdited);
-            this.eventListeners.set('ws-main', this.onEdited);
+            // this.plugin.eventBus.on("ws-main", this.onEdited);
+            // this.eventListeners.set('ws-main', this.onEdited);
         }
     }
 
     /**
      * 禁用实时更新
+     * 注意：现在实时更新由 WebSocketManager 处理，这里保留作为备用
      */
     private disableRealTimeUpdate(): void {
+        // 实时更新现在由 WebSocketManager 处理
+        // 这里保留旧的事件监听清理作为备用
         if (this.eventListeners.has('ws-main')) {
-            this.plugin.eventBus.off("ws-main", this.onEdited);
-            this.eventListeners.delete('ws-main');
+            // this.plugin.eventBus.off("ws-main", this.onEdited);
+            // this.eventListeners.delete('ws-main');
         }
-        
+
         // 禁用标题编号的实时更新
         this.headingNumbering.disableRealTimeUpdate();
     }

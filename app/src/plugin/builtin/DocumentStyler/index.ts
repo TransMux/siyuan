@@ -8,6 +8,7 @@ import { CrossReference } from "./core/CrossReference";
 import { DocumentManager } from "./core/DocumentManager";
 import { SettingsManager } from "./core/SettingsManager";
 import { OutlineManager } from "./core/OutlineManager";
+import { WebSocketManager } from "./core/WebSocketManager";
 import { DockPanel } from "./ui/DockPanel";
 import { StyleManager } from "./ui/StyleManager";
 import { EventHandler } from "./ui/EventHandler";
@@ -28,6 +29,7 @@ export class DocumentStylerPlugin extends Plugin {
     private settingsManager: SettingsManager;
     private documentManager: DocumentManager;
     private outlineManager: OutlineManager;
+    private webSocketManager: WebSocketManager;
     private headingNumbering: HeadingNumbering;
     private crossReference: CrossReference;
     private styleManager: StyleManager;
@@ -61,6 +63,11 @@ export class DocumentStylerPlugin extends Plugin {
             this.styleManager
         );
         this.crossReference = new CrossReference(this.documentManager);
+        this.webSocketManager = new WebSocketManager(
+            this.settingsManager,
+            this.headingNumbering,
+            this.crossReference
+        );
 
         // 创建UI模块
         this.dockPanel = new DockPanel(this.settingsManager, this.documentManager, this.crossReference);
@@ -119,6 +126,7 @@ export class DocumentStylerPlugin extends Plugin {
         await this.styleManager.init();
         await this.headingNumbering.init();
         await this.crossReference.init();
+        await this.webSocketManager.init();
         await this.dockPanel.init();
         await this.eventHandler.init();
     }
@@ -130,6 +138,7 @@ export class DocumentStylerPlugin extends Plugin {
         // 按相反顺序销毁模块
         this.eventHandler?.destroy();
         this.dockPanel?.destroy();
+        this.webSocketManager?.destroy();
         this.crossReference?.destroy();
         this.headingNumbering?.destroy();
         this.styleManager?.destroy();
