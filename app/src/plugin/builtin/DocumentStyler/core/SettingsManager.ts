@@ -23,8 +23,6 @@ const DEFAULT_SETTINGS: IDocumentStylerSettings = {
     ],
     useChineseNumbers: [false, false, false, false, false, false],
     defaultEnabled: true,
-    realTimeUpdate: false,
-    docEnableStatus: {},
 };
 
 export class SettingsManager implements ISettingsManager {
@@ -79,40 +77,13 @@ export class SettingsManager implements ISettingsManager {
 
     /**
      * 重置设置为默认值
-     * @param preserveDocStatus 是否保留文档启用状态
      */
-    async resetSettings(preserveDocStatus: boolean = true): Promise<void> {
-        const docEnableStatus = preserveDocStatus ? this.settings.docEnableStatus : {};
-        this.settings = {
-            ...DEFAULT_SETTINGS,
-            docEnableStatus
-        };
+    async resetSettings(): Promise<void> {
+        this.settings = { ...DEFAULT_SETTINGS };
         await this.saveSettings();
     }
 
-    /**
-     * 获取文档的启用状态
-     * @param docId 文档ID
-     * @returns 是否启用
-     */
-    isDocumentEnabled(docId: string): boolean {
-        if (!docId) return false;
-        return docId in this.settings.docEnableStatus
-            ? this.settings.docEnableStatus[docId]
-            : this.settings.defaultEnabled;
-    }
 
-    /**
-     * 设置文档的启用状态
-     * @param docId 文档ID
-     * @param enabled 是否启用
-     */
-    async setDocumentEnabled(docId: string, enabled: boolean): Promise<void> {
-        if (!docId) return;
-        
-        this.settings.docEnableStatus[docId] = enabled;
-        await this.saveSettings();
-    }
 
     /**
      * 获取标题编号格式
@@ -190,9 +161,7 @@ export class SettingsManager implements ISettingsManager {
             'crossReference',
             'numberingFormats',
             'useChineseNumbers',
-            'defaultEnabled',
-            'realTimeUpdate',
-            'docEnableStatus'
+            'defaultEnabled'
         ];
 
         for (const prop of requiredProps) {
@@ -232,17 +201,11 @@ export class SettingsManager implements ISettingsManager {
             if (typeof settings.defaultEnabled === 'boolean') {
                 fixed.defaultEnabled = settings.defaultEnabled;
             }
-            if (typeof settings.realTimeUpdate === 'boolean') {
-                fixed.realTimeUpdate = settings.realTimeUpdate;
-            }
             if (Array.isArray(settings.numberingFormats) && settings.numberingFormats.length === 6) {
                 fixed.numberingFormats = [...settings.numberingFormats];
             }
             if (Array.isArray(settings.useChineseNumbers) && settings.useChineseNumbers.length === 6) {
                 fixed.useChineseNumbers = [...settings.useChineseNumbers];
-            }
-            if (settings.docEnableStatus && typeof settings.docEnableStatus === 'object') {
-                fixed.docEnableStatus = { ...settings.docEnableStatus };
             }
         }
 

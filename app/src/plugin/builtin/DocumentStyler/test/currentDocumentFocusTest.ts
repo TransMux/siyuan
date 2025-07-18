@@ -85,11 +85,9 @@ const mockTransactionMessages = {
 function createMockDependencies(currentDocId: string = '20231201-current-doc') {
     const mockSettingsManager = {
         getSettings: jest.fn().mockReturnValue({
-            realTimeUpdate: true,
             headingNumbering: true,
             crossReference: true
-        }),
-        isDocumentEnabled: jest.fn().mockReturnValue(true)
+        })
     } as any;
 
     const mockDocumentManager = {
@@ -289,39 +287,7 @@ describe('Current Document Focus Logic', () => {
             .not.toHaveBeenCalled();
     });
 
-    test('应该在文档未启用编号时跳过处理', async () => {
-        // 设置文档未启用编号
-        mockDependencies.mockSettingsManager.isDocumentEnabled.mockReturnValue(false);
 
-        await webSocketManager.init();
-
-        // 模拟接收消息
-        const handleTransactionMessage = (webSocketManager as any).handleTransactionMessage.bind(webSocketManager);
-        await handleTransactionMessage(mockTransactionMessages.currentDocHeadingChange);
-
-        // 验证没有调用更新
-        expect(mockDependencies.mockHeadingNumbering.updateNumberingForDoc)
-            .not.toHaveBeenCalled();
-    });
-
-    test('应该在实时更新关闭时跳过处理', async () => {
-        // 设置实时更新关闭
-        mockDependencies.mockSettingsManager.getSettings.mockReturnValue({
-            realTimeUpdate: false,
-            headingNumbering: true,
-            crossReference: true
-        });
-
-        await webSocketManager.init();
-
-        // 模拟接收消息
-        const handleTransactionMessage = (webSocketManager as any).handleTransactionMessage.bind(webSocketManager);
-        await handleTransactionMessage(mockTransactionMessages.currentDocHeadingChange);
-
-        // 验证没有调用更新
-        expect(mockDependencies.mockHeadingNumbering.updateNumberingForDoc)
-            .not.toHaveBeenCalled();
-    });
 });
 
 /**

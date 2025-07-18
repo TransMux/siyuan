@@ -135,12 +135,9 @@ export class WebSocketManager implements IModule {
      */
     private async handleTransactionMessage(msg: any): Promise<void> {
         try {
-            // 检查是否启用了实时更新
-            const settings = this.settingsManager.getSettings();
-            if (!settings.realTimeUpdate) return;
-
             // 直接将消息传递给各个管理器处理
             // 让各个管理器自己决定是否需要处理和如何处理
+            const settings = this.settingsManager.getSettings();
 
             // 传递给标题编号管理器
             if (settings.headingNumbering) {

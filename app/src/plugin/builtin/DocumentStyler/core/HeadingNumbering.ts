@@ -202,9 +202,6 @@ export class HeadingNumbering implements IHeadingNumbering {
             const currentDocId = this.documentManager.getCurrentDocId();
             if (!currentDocId) return;
 
-            // 检查当前文档是否启用了编号
-            if (!this.settingsManager.isDocumentEnabled(currentDocId)) return;
-
             // 分析是否需要更新标题编号
             if (this.needsHeadingUpdate(msg)) {
                 await this.updateNumberingForDoc(currentDocId);

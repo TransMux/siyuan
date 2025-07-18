@@ -19,10 +19,6 @@ export interface IDocumentStylerSettings {
     useChineseNumbers: boolean[];
     /** 默认启用状态 */
     defaultEnabled: boolean;
-    /** 实时更新 */
-    realTimeUpdate: boolean;
-    /** 文档启用状态映射 */
-    docEnableStatus: Record<string, boolean>;
 }
 
 /**
