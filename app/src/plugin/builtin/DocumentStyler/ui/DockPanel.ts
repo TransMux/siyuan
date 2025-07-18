@@ -18,6 +18,7 @@ export class DockPanel implements IDockPanel {
     private panelElement: Element | null = null;
     private pluginInstance: any; // 主插件实例
     private eventsInitialized: boolean = false; // 标记事件是否已初始化
+    private updateTimeout: NodeJS.Timeout | null = null; // 防抖定时器
 
     constructor(
         settingsManager: SettingsManager,
@@ -38,6 +39,12 @@ export class DockPanel implements IDockPanel {
     destroy(): void {
         // 清理事件监听器
         this.clearPanelEvents();
+
+        // 清理防抖定时器
+        if (this.updateTimeout) {
+            clearTimeout(this.updateTimeout);
+            this.updateTimeout = null;
+        }
 
         this.customElement = null;
         this.panelElement = null;
@@ -87,6 +94,25 @@ export class DockPanel implements IDockPanel {
 
     hidePanel(): void {
         // 隐藏面板的逻辑由思源的dock系统处理
+    }
+
+    /**
+     * 防抖更新标题编号
+     */
+    private debounceApplyHeadingNumbering(): void {
+        if (this.updateTimeout) {
+            clearTimeout(this.updateTimeout);
+        }
+
+        this.updateTimeout = setTimeout(async () => {
+            if (this.pluginInstance) {
+                try {
+                    await this.pluginInstance.applyHeadingNumbering();
+                } catch (error) {
+                    console.error('防抖应用标题编号失败:', error);
+                }
+            }
+        }, 300); // 300ms延迟
     }
 
     /**
@@ -278,15 +304,10 @@ export class DockPanel implements IDockPanel {
                     await this.settingsManager.setDocumentHeadingNumberStyle(docId, i, style);
                     this.updateStyleExample(i, style);
 
-                    // 如果标题编号功能已启用，立即应用新样式
+                    // 如果标题编号功能已启用，使用防抖更新
                     const docSettings = await this.settingsManager.getDocumentSettings(docId);
-                    console.log(`DocumentStyler: 文档设置 - 标题编号启用: ${docSettings.headingNumberingEnabled}, 插件实例可用: ${!!this.pluginInstance}`);
-
-                    if (docSettings.headingNumberingEnabled && this.pluginInstance) {
-                        console.log('DocumentStyler: 应用标题编号样式更新');
-                        await this.pluginInstance.applyHeadingNumbering();
-                    } else {
-                        console.log('DocumentStyler: 跳过标题编号样式更新 - 功能未启用或插件实例不可用');
+                    if (docSettings.headingNumberingEnabled) {
+                        this.debounceApplyHeadingNumbering();
                     }
                 };
                 styleSelect.addEventListener('change', handler);
@@ -305,15 +326,10 @@ export class DockPanel implements IDockPanel {
 
                     await this.settingsManager.setDocumentNumberingFormat(docId, i, format);
 
-                    // 如果标题编号功能已启用，立即应用新格式
+                    // 如果标题编号功能已启用，使用防抖更新
                     const docSettings = await this.settingsManager.getDocumentSettings(docId);
-                    console.log(`DocumentStyler: 文档设置 - 标题编号启用: ${docSettings.headingNumberingEnabled}, 插件实例可用: ${!!this.pluginInstance}`);
-
-                    if (docSettings.headingNumberingEnabled && this.pluginInstance) {
-                        console.log('DocumentStyler: 应用编号格式更新');
-                        await this.pluginInstance.applyHeadingNumbering();
-                    } else {
-                        console.log('DocumentStyler: 跳过编号格式更新 - 功能未启用或插件实例不可用');
+                    if (docSettings.headingNumberingEnabled) {
+                        this.debounceApplyHeadingNumbering();
                     }
                 };
                 formatInput.addEventListener('change', handler);
