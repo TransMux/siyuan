@@ -171,15 +171,15 @@ export class DocumentStylerPlugin extends Plugin {
     /**
      * 初始化侧边栏面板
      */
-    private initDockPanel(custom: Custom): void {
-        this.dockPanel.initPanel(custom);
+    private async initDockPanel(custom: Custom): Promise<void> {
+        await this.dockPanel.initPanel(custom);
     }
 
     /**
      * 更新侧边栏面板
      */
-    private updateDockPanel(): void {
-        this.dockPanel.updatePanel();
+    private async updateDockPanel(): Promise<void> {
+        await this.dockPanel.updatePanel();
     }
 
     /**
@@ -206,15 +206,17 @@ export class DocumentStylerPlugin extends Plugin {
         const docId = this.documentManager.getCurrentDocId();
         if (!docId) return;
 
-        const currentEnabled = this.settingsManager.isDocumentEnabled(docId);
-
         try {
+            const currentEnabled = await this.settingsManager.isDocumentHeadingNumberingEnabled(docId);
+
             if (currentEnabled) {
+                // 关闭编号
                 await this.headingNumbering.clearNumbering(null);
-                await this.settingsManager.setDocumentEnabled(docId, false);
+                await this.settingsManager.setDocumentHeadingNumberingEnabled(docId, false);
             } else {
+                // 开启编号
                 await this.headingNumbering.updateNumberingForDoc(docId);
-                await this.settingsManager.setDocumentEnabled(docId, true);
+                await this.settingsManager.setDocumentHeadingNumberingEnabled(docId, true);
             }
 
             // 更新面板
@@ -257,6 +259,38 @@ export class DocumentStylerPlugin extends Plugin {
     }
 
     /**
+     * 获取当前文档的编号启用状态
+     */
+    public async getCurrentDocumentNumberingStatus(): Promise<{
+        headingNumbering: boolean;
+        crossReference: boolean;
+    }> {
+        const docId = this.documentManager.getCurrentDocId();
+        if (!docId) {
+            return {
+                headingNumbering: false,
+                crossReference: false
+            };
+        }
+
+        try {
+            const headingNumbering = await this.settingsManager.isDocumentHeadingNumberingEnabled(docId);
+            const crossReference = await this.settingsManager.isDocumentCrossReferenceEnabled(docId);
+
+            return {
+                headingNumbering,
+                crossReference
+            };
+        } catch (error) {
+            console.error('获取文档编号状态失败:', error);
+            return {
+                headingNumbering: false,
+                crossReference: false
+            };
+        }
+    }
+
+    /**
      * 更新设置
      */
     public async updateSettings(settings: Partial<IDocumentStylerSettings>): Promise<void> {
@@ -271,6 +305,63 @@ export class DocumentStylerPlugin extends Plugin {
         const docId = this.documentManager.getCurrentDocId();
         if (!docId) return null;
         return await this.documentManager.getDocumentInfo(docId);
+    }
+
+    /**
+     * 应用标题编号（供DockPanel调用）
+     */
+    public async applyHeadingNumbering(): Promise<void> {
+        const docId = this.documentManager.getCurrentDocId();
+        if (!docId) return;
+
+        try {
+            // 获取文档设置
+            const docSettings = await this.settingsManager.getDocumentSettings(docId);
+            
+            // 使用文档的设置更新编号
+            await this.headingNumbering.updateNumberingForDoc(docId);
+        } catch (error) {
+            console.error('应用标题编号失败:', error);
+        }
+    }
+
+    /**
+     * 清除标题编号（供DockPanel调用）
+     */
+    public async clearHeadingNumbering(): Promise<void> {
+        try {
+            await this.headingNumbering.clearNumbering(null);
+        } catch (error) {
+            console.error('清除标题编号失败:', error);
+        }
+    }
+
+    /**
+     * 应用交叉引用（供DockPanel调用）
+     */
+    public async applyCrossReference(): Promise<void> {
+        const protyle = this.documentManager.getCurrentProtyle();
+        if (!protyle) return;
+
+        try {
+            await this.crossReference.applyCrossReference(protyle);
+        } catch (error) {
+            console.error('应用交叉引用失败:', error);
+        }
+    }
+
+    /**
+     * 清除交叉引用（供DockPanel调用）
+     */
+    public async clearCrossReference(): Promise<void> {
+        const protyle = this.documentManager.getCurrentProtyle();
+        if (!protyle) return;
+
+        try {
+            await this.crossReference.clearCrossReference(protyle);
+        } catch (error) {
+            console.error('清除交叉引用失败:', error);
+        }
     }
 
 }

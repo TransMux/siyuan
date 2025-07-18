@@ -242,8 +242,22 @@ export interface IEventHandler extends IModule {
  * 文档属性常量
  */
 export const DOCUMENT_ATTR_KEYS = {
-    /** 标题编号启用状态 */
-    HEADING_NUMBERING_ENABLED: 'custom-heading-numbering-enabled',
-    /** 交叉引用启用状态 */
-    CROSS_REFERENCE_ENABLED: 'custom-cross-reference-enabled'
+    /** 文档样式设置 */
+    DOCUMENT_STYLER_SETTINGS: 'custom-document-styler-settings'
 } as const;
+
+/**
+ * 文档样式设置接口
+ */
+export interface IDocumentStylerDocumentSettings {
+    /** 标题自动编号启用状态 */
+    headingNumberingEnabled: boolean;
+    /** 交叉引用启用状态 */
+    crossReferenceEnabled: boolean;
+    /** 标题编号格式配置 */
+    numberingFormats: string[];
+    /** 标题编号样式配置 (6个级别) */
+    headingNumberStyles: HeadingNumberStyle[];
+    /** 默认启用状态（用于新建文档） */
+    defaultEnabled: boolean;
+}

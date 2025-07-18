@@ -264,15 +264,28 @@ export class EventHandler implements IEventHandler {
         try {
             const settings = this.settingsManager.getSettings();
 
-            // 应用标题编号
+            // 检查文档的标题编号启用状态
             if (settings.headingNumbering) {
-                await this.headingNumbering.applyNumbering(protyle);
+                const isHeadingEnabled = await this.settingsManager.isDocumentHeadingNumberingEnabled(docId);
+                if (isHeadingEnabled) {
+                    await this.headingNumbering.applyNumbering(protyle);
+                } else {
+                    await this.headingNumbering.clearNumbering(protyle);
+                }
             }
 
-            // 应用交叉引用
+            // 检查文档的交叉引用启用状态
             if (settings.crossReference) {
-                await this.crossReference.applyCrossReference(protyle);
+                const isCrossRefEnabled = await this.settingsManager.isDocumentCrossReferenceEnabled(docId);
+                if (isCrossRefEnabled) {
+                    await this.crossReference.applyCrossReference(protyle);
+                } else {
+                    await this.crossReference.clearCrossReference(protyle);
+                }
             }
+
+            // 更新面板显示
+            this.dockPanel.updatePanel();
         } catch (error) {
             console.error('应用文档设置失败:', error);
         }

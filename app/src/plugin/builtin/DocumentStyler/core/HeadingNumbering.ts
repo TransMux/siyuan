@@ -105,14 +105,14 @@ export class HeadingNumbering implements IHeadingNumbering {
      */
     async updateNumberingForDoc(docId: string): Promise<void> {
         try {
-            // 获取设置
-            const settings = this.settingsManager.getSettings();
+            // 获取文档设置
+            const docSettings = await this.settingsManager.getDocumentSettings(docId);
 
             // 获取标题编号映射
             const headingMap = await this.outlineManager.getHeadingNumberMap(
                 docId,
-                settings.numberingFormats,
-                settings.headingNumberStyles,
+                docSettings.numberingFormats,
+                docSettings.headingNumberStyles,
                 true // 强制刷新
             );
 
