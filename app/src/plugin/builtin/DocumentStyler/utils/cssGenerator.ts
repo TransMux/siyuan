@@ -10,7 +10,7 @@ import { IHeadingNumberMap } from './outlineUtils';
  */
 export class CSSGenerator {
     private static readonly STYLE_ID = 'document-styler-heading-numbers';
-    
+
     /**
      * 根据标题编号映射生成CSS规则
      * @param numberMap 标题编号映射
@@ -18,39 +18,37 @@ export class CSSGenerator {
      */
     static generateHeadingNumberCSS(numberMap: IHeadingNumberMap): string {
         const cssRules: string[] = [];
-        
+
         // 为每个标题生成CSS规则
         for (const [blockId, numberInfo] of Object.entries(numberMap)) {
-            const rule = `
-[data-node-id="${blockId}"][data-type="NodeHeading"] .protyle-wysiwyg [contenteditable]:before {
+            const rule = `.protyle-wysiwyg [data-node-id="${blockId}"][data-type="NodeHeading"] [contenteditable]:before {
     content: "${this.escapeCSS(numberInfo.number)}";
     color: var(--b3-theme-on-surface);
     font-weight: inherit;
-    margin-right: 0.5em;
 }`;
             cssRules.push(rule);
         }
-        
+
         return cssRules.join('\n');
     }
-    
+
     /**
      * 应用CSS样式到页面
      * @param css CSS字符串
      */
     static applyCSS(css: string): void {
         let styleElement = document.getElementById(this.STYLE_ID) as HTMLStyleElement;
-        
+
         if (!styleElement) {
             styleElement = document.createElement('style');
             styleElement.id = this.STYLE_ID;
             styleElement.type = 'text/css';
             document.head.appendChild(styleElement);
         }
-        
+
         styleElement.textContent = css;
     }
-    
+
     /**
      * 移除CSS样式
      */
@@ -60,7 +58,7 @@ export class CSSGenerator {
             styleElement.remove();
         }
     }
-    
+
     /**
      * 转义CSS字符串中的特殊字符
      * @param str 要转义的字符串
@@ -77,7 +75,7 @@ export class CSSGenerator {
             .replace(/\f/g, '\\C ')  // 换页符
             .replace(/\v/g, '\\B '); // 垂直制表符
     }
-    
+
     /**
      * 检查CSS样式是否已应用
      * @returns 是否已应用
@@ -85,7 +83,7 @@ export class CSSGenerator {
     static isApplied(): boolean {
         return document.getElementById(this.STYLE_ID) !== null;
     }
-    
+
     /**
      * 获取当前应用的CSS内容
      * @returns CSS内容，如果未应用则返回空字符串
@@ -94,7 +92,7 @@ export class CSSGenerator {
         const styleElement = document.getElementById(this.STYLE_ID) as HTMLStyleElement;
         return styleElement ? styleElement.textContent || '' : '';
     }
-    
+
     /**
      * 清空CSS内容但保留样式元素
      */
@@ -104,7 +102,7 @@ export class CSSGenerator {
             styleElement.textContent = '';
         }
     }
-    
+
     /**
      * 生成图片表格编号CSS（为交叉引用功能准备）
      * @param figureMap 图片表格编号映射
@@ -112,12 +110,12 @@ export class CSSGenerator {
      */
     static generateFigureNumberCSS(figureMap: Record<string, { number: string; type: 'image' | 'table' }>): string {
         const cssRules: string[] = [];
-        
+
         for (const [blockId, figureInfo] of Object.entries(figureMap)) {
-            const selector = figureInfo.type === 'image' 
+            const selector = figureInfo.type === 'image'
                 ? `[data-node-id="${blockId}"] img`
                 : `[data-node-id="${blockId}"] table`;
-                
+
             const rule = `
 ${selector}:after {
     content: "${this.escapeCSS(figureInfo.number)}";
@@ -129,10 +127,10 @@ ${selector}:after {
 }`;
             cssRules.push(rule);
         }
-        
+
         return cssRules.join('\n');
     }
-    
+
     /**
      * 生成完整的样式CSS（包括标题和图片表格）
      * @param headingMap 标题编号映射
@@ -144,13 +142,13 @@ ${selector}:after {
         figureMap?: Record<string, { number: string; type: 'image' | 'table' }>
     ): string {
         const cssRules: string[] = [];
-        
+
         // 添加标题编号CSS
         const headingCSS = this.generateHeadingNumberCSS(headingMap);
         if (headingCSS) {
             cssRules.push(headingCSS);
         }
-        
+
         // 添加图片表格编号CSS
         if (figureMap) {
             const figureCSS = this.generateFigureNumberCSS(figureMap);
@@ -158,10 +156,10 @@ ${selector}:after {
                 cssRules.push(figureCSS);
             }
         }
-        
+
         return cssRules.join('\n\n');
     }
-    
+
     /**
      * 批量更新样式
      * @param updates 样式更新配置
@@ -175,11 +173,11 @@ ${selector}:after {
             this.clearCSS();
             return;
         }
-        
+
         const css = this.generateCompleteCSS(updates.headingMap || {}, updates.figureMap);
         this.applyCSS(css);
     }
-    
+
     /**
      * 获取样式元素的统计信息
      * @returns 统计信息
@@ -191,10 +189,10 @@ ${selector}:after {
     } {
         const styleElement = document.getElementById(this.STYLE_ID) as HTMLStyleElement;
         const css = styleElement ? styleElement.textContent || '' : '';
-        
+
         // 简单计算CSS规则数量（通过大括号对数量）
         const ruleCount = (css.match(/\{[^}]*\}/g) || []).length;
-        
+
         return {
             applied: styleElement !== null,
             cssLength: css.length,
@@ -220,7 +218,7 @@ export class CSSUtils {
             return false;
         }
     }
-    
+
     /**
      * 检查元素是否匹配选择器
      * @param element 目标元素
@@ -234,7 +232,7 @@ export class CSSUtils {
             return false;
         }
     }
-    
+
     /**
      * 获取元素的计算样式
      * @param element 目标元素
@@ -244,7 +242,7 @@ export class CSSUtils {
     static getComputedStyle(element: Element, property: string): string {
         return window.getComputedStyle(element).getPropertyValue(property);
     }
-    
+
     /**
      * 检查CSS属性是否被支持
      * @param property CSS属性名
