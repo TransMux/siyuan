@@ -303,20 +303,49 @@ export class DocumentManager implements IDocumentManager {
             return false;
         }
 
-        // 检查 transaction 中是否包含指定文档的操作
+        // 获取指定文档的 protyle 实例
+        const protyle = this.getProtyleByDocId(docId);
+        if (!protyle) {
+            return false;
+        }
+
+        // 检查 transaction 中的操作是否影响当前 protyle 中的块
         return msg.data.some((transaction: any) => {
             if (!transaction.doOperations || !Array.isArray(transaction.doOperations)) {
                 return false;
             }
 
             return transaction.doOperations.some((operation: any) => {
-                // 检查操作数据中是否包含指定文档的 root-id
-                if (operation.data && typeof operation.data === 'string') {
-                    return operation.data.includes(`data-root-id="${docId}"`);
+                // 检查操作的块ID是否存在于当前protyle中
+                if (operation.id) {
+                    return this.isBlockInProtyle(operation.id, protyle);
                 }
                 return false;
             });
         });
+    }
+
+
+
+    /**
+     * 检查指定的块ID是否存在于 protyle 中
+     * @param blockId 块ID
+     * @param protyle protyle 实例
+     * @returns 是否存在
+     */
+    private isBlockInProtyle(blockId: string, protyle: any): boolean {
+        if (!blockId || !protyle?.wysiwyg?.element) {
+            return false;
+        }
+
+        try {
+            // 在 protyle 的 DOM 中查找对应的块元素
+            const blockElement = protyle.wysiwyg.element.querySelector(`[data-node-id="${blockId}"]`);
+            return blockElement !== null;
+        } catch (error) {
+            console.warn('检查块是否存在失败:', error);
+            return false;
+        }
     }
 
     /**

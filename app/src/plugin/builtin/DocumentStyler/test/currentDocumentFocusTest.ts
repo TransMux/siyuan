@@ -94,22 +94,66 @@ function createMockDependencies(currentDocId: string = '20231201-current-doc') {
 
     const mockDocumentManager = {
         getCurrentDocId: jest.fn().mockReturnValue(currentDocId),
+        getProtyleByDocId: jest.fn().mockImplementation((docId: string) => {
+            // 模拟 protyle 实例
+            if (docId === currentDocId) {
+                return {
+                    wysiwyg: {
+                        element: {
+                            querySelector: jest.fn().mockImplementation((selector: string) => {
+                                // 模拟查找块元素
+                                const blockIdMatch = selector.match(/data-node-id="([^"]+)"/);
+                                if (blockIdMatch) {
+                                    const blockId = blockIdMatch[1];
+                                    // 模拟当前文档包含的块ID
+                                    const currentDocBlocks = [
+                                        '20231201-heading-001',
+                                        '20231201-para-001',
+                                        '20231201-table-001',
+                                        '20231201-heading-003'
+                                    ];
+                                    return currentDocBlocks.includes(blockId) ? {} : null;
+                                }
+                                return null;
+                            })
+                        }
+                    }
+                };
+            }
+            return null;
+        }),
         isCurrentDocumentAffected: jest.fn().mockImplementation((msg: any) => {
-            // 模拟 isCurrentDocumentAffected 的逻辑
+            // 使用新的逻辑：检查操作的块ID是否在当前protyle中
             if (!msg.data || !Array.isArray(msg.data)) return false;
+
+            const protyle = mockDocumentManager.getProtyleByDocId(currentDocId);
+            if (!protyle) return false;
+
             return msg.data.some((transaction: any) =>
-                transaction.doOperations?.some((operation: any) =>
-                    operation.data?.includes(`data-root-id="${currentDocId}"`)
-                )
+                transaction.doOperations?.some((operation: any) => {
+                    if (operation.id) {
+                        const element = protyle.wysiwyg.element.querySelector(`[data-node-id="${operation.id}"]`);
+                        return element !== null;
+                    }
+                    return false;
+                })
             );
         }),
         isDocumentAffected: jest.fn().mockImplementation((msg: any, docId: string) => {
-            // 模拟 isDocumentAffected 的逻辑
+            // 使用新的逻辑：检查操作的块ID是否在指定protyle中
             if (!msg.data || !Array.isArray(msg.data)) return false;
+
+            const protyle = mockDocumentManager.getProtyleByDocId(docId);
+            if (!protyle) return false;
+
             return msg.data.some((transaction: any) =>
-                transaction.doOperations?.some((operation: any) =>
-                    operation.data?.includes(`data-root-id="${docId}"`)
-                )
+                transaction.doOperations?.some((operation: any) => {
+                    if (operation.id) {
+                        const element = protyle.wysiwyg.element.querySelector(`[data-node-id="${operation.id}"]`);
+                        return element !== null;
+                    }
+                    return false;
+                })
             );
         })
     } as any;
