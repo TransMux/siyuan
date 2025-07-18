@@ -121,7 +121,7 @@ export class DockPanel implements IDockPanel {
     private async generatePanelHTML(): Promise<string> {
         const docId = this.documentManager.getCurrentDocId();
         let docSettings = null;
-        
+
         if (docId) {
             try {
                 docSettings = await this.settingsManager.getDocumentSettings(docId);
@@ -129,12 +129,12 @@ export class DockPanel implements IDockPanel {
                 console.error('获取文档设置失败:', error);
             }
         }
-        
+
         // 如果没有文档设置，使用默认设置
         if (!docSettings) {
             docSettings = this.settingsManager.getDefaultDocumentSettings();
         }
-        
+
         return `
             <div class="document-styler-panel">
                 <div class="block__icons">
@@ -148,41 +148,24 @@ export class DockPanel implements IDockPanel {
                     <!-- 当前文档状态 -->
                     <div class="document-styler-section">
                         <h3 class="document-styler-section-title">当前文档状态</h3>
-                        <div id="current-doc-status">
-                            <div class="document-styler-option">
-                                <label class="fn__flex b3-label">
-                                    <div class="fn__flex-1">
-                                        标题自动编号
-                                        <code class="fn__code fn__none"></code>
-                                        <div class="b3-label__text">启用标题编号功能</div>
-                                    </div>
-                                    <span class="fn__space"></span>
-                                    <input class="b3-switch fn__flex-center" id="doc-heading-enabled" type="checkbox">
-                                </label>
+
+                        <label class="fn__flex b3-label">
+                            <div class="fn__flex-1">
+                                标题自动编号
+                                <div class="b3-label__text">启用标题编号功能</div>
                             </div>
-                            <div class="document-styler-option">
-                                <label class="fn__flex b3-label">
-                                    <div class="fn__flex-1">
-                                        交叉引用
-                                        <code class="fn__code fn__none"></code>
-                                        <div class="b3-label__text">为图片和表格添加编号标签</div>
-                                    </div>
-                                    <span class="fn__space"></span>
-                                    <input class="b3-switch fn__flex-center" id="doc-crossref-enabled" type="checkbox">
-                                </label>
+                            <span class="fn__space"></span>
+                            <input class="b3-switch fn__flex-center" id="doc-heading-enabled" type="checkbox" checked="">
+                        </label>
+
+                        <label class="fn__flex b3-label">
+                            <div class="fn__flex-1">
+                                交叉引用
+                                <div class="b3-label__text">为图片和表格添加编号标签</div>
                             </div>
-                            <div class="document-styler-option">
-                                <label class="fn__flex b3-label">
-                                    <div class="fn__flex-1">
-                                        默认启用
-                                        <code class="fn__code fn__none"></code>
-                                        <div class="b3-label__text">新建文档时默认启用编号</div>
-                                    </div>
-                                    <span class="fn__space"></span>
-                                    <input class="b3-switch fn__flex-center" id="doc-default-enabled" type="checkbox">
-                                </label>
-                            </div>
-                        </div>
+                            <span class="fn__space"></span>
+                            <input class="b3-switch fn__flex-center" id="doc-crossref-enabled" type="checkbox" checked="">
+                        </label>
                     </div>
 
 
@@ -191,15 +174,7 @@ export class DockPanel implements IDockPanel {
                     <div class="document-styler-section" id="heading-styles-section" style="${docSettings.headingNumberingEnabled ? '' : 'display: none;'}">
                         <h3 class="document-styler-section-title">标题编号样式</h3>
                         <div id="heading-styles-container">
-                            ${this.generateHeadingStylesHTML(docSettings.headingNumberStyles)}
-                        </div>
-                    </div>
-
-                    <!-- 编号格式设置 -->
-                    <div class="document-styler-section" id="numbering-formats-section" style="${docSettings.headingNumberingEnabled ? '' : 'display: none;'}">
-                        <h3 class="document-styler-section-title">编号格式</h3>
-                        <div id="numbering-formats-container">
-                            ${this.generateNumberingFormatsHTML(docSettings.numberingFormats)}
+                            ${this.generateHeadingStylesHTML(docSettings.numberingFormats, docSettings.headingNumberStyles)}
                         </div>
                     </div>
 
@@ -226,54 +201,33 @@ export class DockPanel implements IDockPanel {
     /**
      * 生成标题编号样式设置HTML
      */
-    private generateHeadingStylesHTML(headingNumberStyles: HeadingNumberStyle[]): string {
+    private generateHeadingStylesHTML(numberingFormats: string[], headingNumberStyles: HeadingNumberStyle[]): string {
         const styleOptions = NumberStyleConverter.getStyleOptions();
         let html = '';
 
         for (let i = 0; i < 6; i++) {
             const level = i + 1;
             const currentStyle = headingNumberStyles[i];
-
-            html += `
-                <div class="document-styler-option">
-                    <div class="document-styler-option-header">
-                        <span class="document-styler-level-label">H${level} 样式</span>
-                        <span class="document-styler-style-example">${NumberStyleConverter.getExample(currentStyle)}</span>
-                    </div>
-                    <select class="b3-select" id="heading-style-${i}">
-                        ${styleOptions.map(option => 
-                            `<option value="${option.value}" ${option.value === currentStyle ? 'selected' : ''}>
-                                ${option.label} (${option.example})
-                            </option>`
-                        ).join('')}
-                    </select>
-                </div>
-            `;
-        }
-
-        return html;
-    }
-
-    /**
-     * 生成编号格式设置HTML
-     */
-    private generateNumberingFormatsHTML(numberingFormats: string[]): string {
-        let html = '';
-
-        for (let i = 0; i < 6; i++) {
-            const level = i + 1;
             const format = numberingFormats[i];
 
             html += `
                 <div class="document-styler-option">
                     <div class="document-styler-option-header">
-                        <span class="document-styler-level-label">H${level} 格式</span>
-                        <span class="document-styler-format-help">使用 {1}, {2} 等占位符</span>
+                        <span class="document-styler-level-label">H${level} 样式</span>
                     </div>
+                    
                     <input type="text" class="b3-text-field" 
                             id="format-${i}" 
                             value="${format}" 
                             placeholder="例如: {1}. 或 第{1}章">
+
+                    <select class="b3-select" id="heading-style-${i}">
+                        ${styleOptions.map(option =>
+                `<option value="${option.value}" ${option.value === currentStyle ? 'selected' : ''}>
+                                ${option.example}
+                            </option>`
+            ).join('')}
+                    </select>
                 </div>
             `;
         }
@@ -299,7 +253,7 @@ export class DockPanel implements IDockPanel {
             if (styleSelect) {
                 const handler = async (e: Event) => {
                     const style = (e.target as HTMLSelectElement).value as HeadingNumberStyle;
-                    console.log(`DocumentStyler: 标题编号样式改变 - 级别${i+1}, 样式: ${style}`);
+                    console.log(`DocumentStyler: 标题编号样式改变 - 级别${i + 1}, 样式: ${style}`);
 
                     await this.settingsManager.setDocumentHeadingNumberStyle(docId, i, style);
                     this.updateStyleExample(i, style);
@@ -322,7 +276,7 @@ export class DockPanel implements IDockPanel {
             if (formatInput) {
                 const handler = async (e: Event) => {
                     const format = (e.target as HTMLInputElement).value;
-                    console.log(`DocumentStyler: 编号格式改变 - 级别${i+1}, 格式: ${format}`);
+                    console.log(`DocumentStyler: 编号格式改变 - 级别${i + 1}, 格式: ${format}`);
 
                     await this.settingsManager.setDocumentNumberingFormat(docId, i, format);
 
@@ -374,7 +328,7 @@ export class DockPanel implements IDockPanel {
     private async applyDocumentSettings(docId: string): Promise<void> {
         try {
             const settings = await this.settingsManager.getDocumentSettings(docId);
-            
+
             // 应用标题编号
             if (settings.headingNumberingEnabled) {
                 if (this.pluginInstance) {
@@ -389,7 +343,7 @@ export class DockPanel implements IDockPanel {
                     console.warn('DocumentStyler: 插件实例不可用，无法清除标题编号');
                 }
             }
-            
+
             // 应用交叉引用
             if (settings.crossReferenceEnabled) {
                 if (this.pluginInstance) {
@@ -417,9 +371,9 @@ export class DockPanel implements IDockPanel {
         if (exampleElement) {
             const example = NumberStyleConverter.getExample(style);
             exampleElement.textContent = example;
-            console.log(`DocumentStyler: 更新样式示例 - 级别${level+1}, 样式: ${style}, 示例: ${example}`);
+            console.log(`DocumentStyler: 更新样式示例 - 级别${level + 1}, 样式: ${style}, 示例: ${example}`);
         } else {
-            console.warn(`DocumentStyler: 未找到样式示例元素 - 级别${level+1}`);
+            console.warn(`DocumentStyler: 未找到样式示例元素 - 级别${level + 1}`);
         }
     }
 
