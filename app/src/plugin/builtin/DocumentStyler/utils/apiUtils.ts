@@ -200,14 +200,78 @@ export function getDocumentBlockOrderFromDOM(protyle: any): Record<string, numbe
 }
 
 /**
+ * 获取文档的完整内容和结构
+ * @param docId 文档ID
+ * @returns 文档的完整DOM内容
+ */
+export async function getDocumentFullContent(docId: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        fetchPost("/api/filetree/getDoc", {
+            id: docId,
+            mode: 3, // 上下都加载
+            size: 2147483647, // 最大值，加载所有内容
+            isBacklink: false
+        }, (response) => {
+            if (response.code === 0) {
+                resolve(response.data.content || "");
+            } else {
+                reject(new Error(response.msg || "获取文档内容失败"));
+            }
+        });
+    });
+}
+
+/**
+ * 从HTML内容中提取块的真实顺序
+ * @param htmlContent 文档的HTML内容
+ * @returns 块ID到真实顺序的映射
+ */
+export function extractBlockOrderFromHTML(htmlContent: string): Record<string, number> {
+    const orderMap: Record<string, number> = {};
+
+    try {
+        // 创建一个临时的DOM解析器
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlContent, 'text/html');
+
+        // 查找所有具有data-node-id属性的元素
+        const blockElements = doc.querySelectorAll('[data-node-id]');
+
+        blockElements.forEach((element, index) => {
+            const nodeId = element.getAttribute('data-node-id');
+            if (nodeId) {
+                orderMap[nodeId] = index;
+            }
+        });
+
+        console.log('CrossReference: 从HTML提取的块顺序:', Object.keys(orderMap).length, '个块');
+
+    } catch (error) {
+        console.error('解析HTML内容失败:', error);
+    }
+
+    return orderMap;
+}
+
+/**
  * 获取文档中所有块的真实顺序映射（通过API）
  * @param docId 文档ID
  * @returns 块ID到真实顺序的映射
  */
 export async function getDocumentBlockOrder(docId: string): Promise<Record<string, number>> {
     try {
-        // 通过SQL查询获取所有块，但这里的sort字段可能不准确
-        // 我们需要一个更好的方法来获取真实顺序
+        // 首先尝试通过API获取完整文档内容
+        const htmlContent = await getDocumentFullContent(docId);
+        if (htmlContent) {
+            const orderMap = extractBlockOrderFromHTML(htmlContent);
+            if (Object.keys(orderMap).length > 0) {
+                console.log('CrossReference: 成功通过API获取文档块顺序');
+                return orderMap;
+            }
+        }
+
+        // 如果API方法失败，回退到SQL查询
+        console.log('CrossReference: API方法失败，回退到SQL查询');
         const allBlocks = await querySQL(
             `SELECT id FROM blocks WHERE root_id = '${docId}' AND type != 'd' ORDER BY sort`
         );

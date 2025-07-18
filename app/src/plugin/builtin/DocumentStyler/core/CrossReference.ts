@@ -5,7 +5,7 @@
 
 import { ICrossReference, IFigureInfo } from "../types";
 import { DocumentManager } from "./DocumentManager";
-import { queryDocumentFigures, getDocumentBlockOrderFromDOM } from "../utils/apiUtils";
+import { queryDocumentFigures, getDocumentBlockOrderFromDOM, getDocumentBlockOrder } from "../utils/apiUtils";
 
 /**
  * 超级块中的图片/表格信息
@@ -73,7 +73,7 @@ export class CrossReference implements ICrossReference {
 
         try {
             const figures = await queryDocumentFigures(docId);
-            return this.processFiguresData(figures, protyle);
+            return await this.processFiguresData(figures, protyle, docId);
         } catch (error) {
             console.error('获取图片表格列表失败:', error);
             return [];
@@ -347,31 +347,44 @@ export class CrossReference implements ICrossReference {
      * 处理图片表格数据
      * @param figures 原始数据
      * @param protyle 编辑器实例，用于获取DOM中的真实顺序
+     * @param docId 文档ID，用于通过API获取完整顺序
      * @returns 处理后的数据
      */
-    private processFiguresData(figures: any[], protyle?: any): IFigureInfo[] {
+    private async processFiguresData(figures: any[], protyle?: any, docId?: string): Promise<IFigureInfo[]> {
         const result: IFigureInfo[] = [];
         let imageCount = 0;
         let tableCount = 0;
 
-        // 获取DOM中的真实顺序
-        let domOrder: Record<string, number> = {};
+        // 获取真实顺序的多种方法
+        let realOrder: Record<string, number> = {};
+
+        // 方法1: 如果有protyle，尝试从DOM获取
         if (protyle) {
-            domOrder = getDocumentBlockOrderFromDOM(protyle);
-            console.log('CrossReference: DOM顺序映射:', domOrder);
+            realOrder = getDocumentBlockOrderFromDOM(protyle);
+            console.log('CrossReference: 从DOM获取的顺序映射:', Object.keys(realOrder).length, '个块');
+        }
+
+        // 方法2: 如果DOM方法没有获取到足够的数据，或者没有protyle，尝试通过API获取
+        if (Object.keys(realOrder).length === 0 && docId) {
+            try {
+                realOrder = await getDocumentBlockOrder(docId);
+                console.log('CrossReference: 从API获取的顺序映射:', Object.keys(realOrder).length, '个块');
+            } catch (error) {
+                console.error('CrossReference: 通过API获取顺序失败:', error);
+            }
         }
 
         // 按照在文档中的真实顺序排序
-        console.log('CrossReference: 排序前的图片表格:', figures.map(f => ({ id: f.id, type: f.figureType, sort: f.sort, domOrder: domOrder[f.id] })));
+        console.log('CrossReference: 排序前的图片表格:', figures.map(f => ({ id: f.id, type: f.figureType, sort: f.sort, realOrder: realOrder[f.id] })));
 
         figures.sort((a, b) => {
-            // 优先使用DOM中的真实顺序
-            if (domOrder[a.id] !== undefined && domOrder[b.id] !== undefined) {
-                const result = domOrder[a.id] - domOrder[b.id];
-                console.log(`CrossReference: DOM排序 ${a.id}(${domOrder[a.id]}) vs ${b.id}(${domOrder[b.id]}) = ${result}`);
+            // 优先使用真实顺序
+            if (realOrder[a.id] !== undefined && realOrder[b.id] !== undefined) {
+                const result = realOrder[a.id] - realOrder[b.id];
+                console.log(`CrossReference: 真实顺序排序 ${a.id}(${realOrder[a.id]}) vs ${b.id}(${realOrder[b.id]}) = ${result}`);
                 return result;
             }
-            // 如果DOM顺序不可用，回退到sort字段
+            // 如果真实顺序不可用，回退到sort字段
             if (a.sort && b.sort) {
                 const result = a.sort - b.sort;
                 console.log(`CrossReference: Sort字段排序 ${a.id}(${a.sort}) vs ${b.id}(${b.sort}) = ${result}`);
@@ -383,7 +396,7 @@ export class CrossReference implements ICrossReference {
             return result;
         });
 
-        console.log('CrossReference: 排序后的图片表格:', figures.map(f => ({ id: f.id, type: f.figureType, sort: f.sort, domOrder: domOrder[f.id] })));
+        console.log('CrossReference: 排序后的图片表格:', figures.map(f => ({ id: f.id, type: f.figureType, sort: f.sort, realOrder: realOrder[f.id] })));
 
         for (const figure of figures) {
             if (figure.figureType === 'image') {
