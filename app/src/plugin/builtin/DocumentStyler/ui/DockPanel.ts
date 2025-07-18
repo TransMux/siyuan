@@ -344,10 +344,11 @@ export class DockPanel implements IDockPanel {
         if (images.length > 0) {
             html += '<div class="document-styler-subsection"><h4>图片</h4>';
             images.forEach((figure) => {
+                const displayText = figure.caption || figure.content || `图片 ${figure.number}`;
                 html += `
                     <div class="document-styler-figure-item" data-id="${figure.id}" onclick="window.documentStylerPlugin?.scrollToFigure('${figure.id}')">
                         <span class="figure-label">Figure ${figure.number}</span>
-                        <span class="figure-content">${this.truncateText(figure.content, 50)}</span>
+                        <span class="figure-content">${this.truncateText(displayText, 50)}</span>
                     </div>
                 `;
             });
@@ -357,10 +358,11 @@ export class DockPanel implements IDockPanel {
         if (tables.length > 0) {
             html += '<div class="document-styler-subsection"><h4>表格</h4>';
             tables.forEach((table) => {
+                const displayText = table.caption || table.content || `表格 ${table.number}`;
                 html += `
                     <div class="document-styler-figure-item" data-id="${table.id}" onclick="window.documentStylerPlugin?.scrollToFigure('${table.id}')">
                         <span class="table-label">Table ${table.number}</span>
-                        <span class="figure-content">${this.truncateText(table.content, 50)}</span>
+                        <span class="figure-content">${this.truncateText(displayText, 50)}</span>
                     </div>
                 `;
             });

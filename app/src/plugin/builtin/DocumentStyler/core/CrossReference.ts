@@ -38,15 +38,8 @@ export class CrossReference implements ICrossReference {
         if (!protyle) return;
 
         try {
-            // 重置计数器
-            this.figureCounter = 0;
-            this.tableCounter = 0;
-
-            // 处理图片
-            await this.processImages(protyle);
-            
-            // 处理表格
-            await this.processTables(protyle);
+            // 通过CSS样式实现图片和表格的自动编号
+            this.loadCrossReferenceStyles();
         } catch (error) {
             console.error('应用交叉引用失败:', error);
             throw error;
@@ -57,14 +50,8 @@ export class CrossReference implements ICrossReference {
         if (!protyle) return;
 
         try {
-            // 清除图片标题
-            this.clearImageCaptions(protyle);
-            
-            // 清除表格标题
-            this.clearTableCaptions(protyle);
-            
-            // 清除处理标记
-            this.clearProcessedMarkers(protyle);
+            // 移除CSS样式
+            this.removeCrossReferenceStyles();
         } catch (error) {
             console.error('清除交叉引用失败:', error);
             throw error;
@@ -100,119 +87,148 @@ export class CrossReference implements ICrossReference {
     }
 
     /**
-     * 处理图片元素
-     * @param protyle 编辑器实例
+     * 加载交叉引用样式
+     * 基于思源原有的图片和表格结构，通过CSS实现自动编号
      */
-    private async processImages(protyle: any): Promise<void> {
-        const images = getImageElements(protyle);
-        
-        for (const img of images) {
-            if (img.classList.contains('figure-processed')) continue;
-            
-            this.figureCounter++;
-            this.addFigureCaption(img as HTMLElement, 'figure', this.figureCounter);
-        }
-    }
+    private loadCrossReferenceStyles(): void {
+        const css = `
+            /* 图片和表格计数器 */
+            .protyle-wysiwyg {
+                counter-reset: figure table;
+            }
 
-    /**
-     * 处理表格元素
-     * @param protyle 编辑器实例
-     */
-    private async processTables(protyle: any): Promise<void> {
-        const tables = getTableElements(protyle);
-        
-        for (const table of tables) {
-            if (table.classList.contains('table-processed')) continue;
-            
-            this.tableCounter++;
-            this.addTableCaption(table as HTMLElement, 'table', this.tableCounter);
-        }
-    }
+            /* 图片自动编号 */
+            .protyle-wysiwyg [data-type="img"] {
+                counter-increment: figure;
+                position: relative;
+            }
 
-    /**
-     * 添加图片标题
-     * @param element 图片元素
-     * @param type 类型
-     * @param number 编号
-     */
-    private addFigureCaption(element: HTMLElement, type: 'figure' | 'table', number: number): void {
-        if (element.classList.contains(`${type}-processed`)) return;
+            /* 表格自动编号 */
+            .protyle-wysiwyg [data-type="table"] {
+                counter-increment: table;
+                position: relative;
+            }
 
-        element.classList.add(`${type}-processed`);
-        element.setAttribute(`data-${type}-id`, `${type}-${number}`);
+            /* 图片标题样式 - 在图片下方添加标题 */
+            .protyle-wysiwyg [data-type="img"]::after {
+                content: "Figure " counter(figure);
+                display: block;
+                text-align: center;
+                font-size: 0.9em;
+                color: var(--b3-theme-on-surface-light);
+                margin-top: 8px;
+                font-style: italic;
+                font-weight: 500;
+                padding: 4px 16px;
+                background-color: var(--b3-theme-surface-lightest);
+                border-radius: var(--b3-border-radius-b);
+            }
 
-        const captionClass = type === 'figure' ? 'figure-caption' : 'table-caption';
-        const labelClass = type === 'figure' ? 'figure-label' : 'table-label';
-        const labelText = type === 'figure' ? 'Figure' : 'Table';
+            /* 表格标题样式 - 在表格上方添加标题 */
+            .protyle-wysiwyg [data-type="table"]::before {
+                content: "Table " counter(table);
+                display: block;
+                text-align: center;
+                font-size: 0.9em;
+                color: var(--b3-theme-on-surface-light);
+                margin-bottom: 8px;
+                font-style: italic;
+                font-weight: 500;
+                padding: 4px 16px;
+                background-color: var(--b3-theme-surface-lightest);
+                border-radius: var(--b3-border-radius-b);
+            }
 
-        const caption = document.createElement('div');
-        caption.className = captionClass;
-        caption.innerHTML = `<span class="${labelClass}">${labelText} ${number}:</span> <span class="caption-text">Caption text</span>`;
+            /* 增强图片容器样式 */
+            .protyle-wysiwyg [data-type="img"] {
+                margin: 16px 0;
+                padding: 8px;
+                border: 1px solid var(--b3-theme-surface-lighter);
+                border-radius: var(--b3-border-radius);
+                transition: all 0.2s ease;
+                background-color: var(--b3-theme-surface-lightest);
+            }
 
-        if (type === 'figure') {
-            element.appendChild(caption);
-        } else {
-            element.insertBefore(caption, element.firstChild);
-        }
-    }
+            .protyle-wysiwyg [data-type="img"]:hover {
+                border-color: var(--b3-theme-primary-lighter);
+                box-shadow: 0 2px 8px var(--b3-theme-surface-light);
+            }
 
-    /**
-     * 添加表格标题
-     * @param element 表格元素
-     * @param type 类型
-     * @param number 编号
-     */
-    private addTableCaption(element: HTMLElement, type: 'table', number: number): void {
-        this.addFigureCaption(element, type, number);
-    }
+            /* 增强表格容器样式 */
+            .protyle-wysiwyg [data-type="table"] {
+                margin: 16px 0;
+                padding: 8px;
+                border: 1px solid var(--b3-theme-surface-lighter);
+                border-radius: var(--b3-border-radius);
+                transition: all 0.2s ease;
+                background-color: var(--b3-theme-surface-lightest);
+            }
 
-    /**
-     * 清除图片标题
-     * @param protyle 编辑器实例
-     */
-    private clearImageCaptions(protyle: any): void {
-        if (!protyle?.wysiwyg?.element) return;
+            .protyle-wysiwyg [data-type="table"]:hover {
+                border-color: var(--b3-theme-primary-lighter);
+                box-shadow: 0 2px 8px var(--b3-theme-surface-light);
+            }
 
-        const captions = protyle.wysiwyg.element.querySelectorAll('.figure-caption');
-        captions.forEach((caption: Element) => caption.remove());
+            /* 图片内部样式调整 */
+            .protyle-wysiwyg [data-type="img"] img {
+                border-radius: var(--b3-border-radius-b);
+                max-width: 100%;
+                height: auto;
+            }
 
-        const processedImages = protyle.wysiwyg.element.querySelectorAll('.figure-processed');
-        processedImages.forEach((img: Element) => {
-            img.classList.remove('figure-processed');
-            img.removeAttribute('data-figure-id');
-        });
-    }
+            /* 表格内部样式调整 */
+            .protyle-wysiwyg [data-type="table"] table {
+                border-radius: var(--b3-border-radius-b);
+                overflow: hidden;
+            }
 
-    /**
-     * 清除表格标题
-     * @param protyle 编辑器实例
-     */
-    private clearTableCaptions(protyle: any): void {
-        if (!protyle?.wysiwyg?.element) return;
+            /* 交叉引用链接样式 */
+            .protyle-wysiwyg a[href^="#figure-"],
+            .protyle-wysiwyg a[href^="#table-"] {
+                color: var(--b3-theme-primary);
+                text-decoration: none;
+                font-weight: 500;
+                padding: 2px 6px;
+                border-radius: 4px;
+                background-color: var(--b3-theme-primary-lightest);
+                border: 1px solid var(--b3-theme-primary-lighter);
+                transition: all 0.2s ease;
+                font-size: 0.9em;
+            }
 
-        const captions = protyle.wysiwyg.element.querySelectorAll('.table-caption');
-        captions.forEach((caption: Element) => caption.remove());
+            .protyle-wysiwyg a[href^="#figure-"]:hover,
+            .protyle-wysiwyg a[href^="#table-"]:hover {
+                background-color: var(--b3-theme-primary-light);
+                color: var(--b3-theme-on-primary);
+                transform: translateY(-1px);
+                box-shadow: 0 2px 4px var(--b3-theme-surface-light);
+            }
 
-        const processedTables = protyle.wysiwyg.element.querySelectorAll('.table-processed');
-        processedTables.forEach((table: Element) => {
-            table.classList.remove('table-processed');
-            table.removeAttribute('data-table-id');
-        });
-    }
+            /* 选中状态样式 */
+            .protyle-wysiwyg [data-type="img"].protyle-wysiwyg--select,
+            .protyle-wysiwyg [data-type="table"].protyle-wysiwyg--select {
+                border-color: var(--b3-theme-primary);
+                background-color: var(--b3-theme-primary-lightest);
+                box-shadow: 0 0 0 2px var(--b3-theme-primary-lighter);
+            }
 
-    /**
-     * 清除处理标记
-     * @param protyle 编辑器实例
-     */
-    private clearProcessedMarkers(protyle: any): void {
-        if (!protyle?.wysiwyg?.element) return;
+            /* 响应式设计 */
+            @media (max-width: 768px) {
+                .protyle-wysiwyg [data-type="img"]::after,
+                .protyle-wysiwyg [data-type="table"]::before {
+                    font-size: 0.8em;
+                    padding: 3px 12px;
+                }
 
-        const processed = protyle.wysiwyg.element.querySelectorAll('.figure-processed, .table-processed');
-        processed.forEach((element: Element) => {
-            element.classList.remove('figure-processed', 'table-processed');
-            element.removeAttribute('data-figure-id');
-            element.removeAttribute('data-table-id');
-        });
+                .protyle-wysiwyg [data-type="img"],
+                .protyle-wysiwyg [data-type="table"] {
+                    margin: 12px 0;
+                    padding: 6px;
+                }
+            }
+        `;
+
+        createStyleElement('document-styler-cross-reference', css);
     }
 
     /**
@@ -225,13 +241,23 @@ export class CrossReference implements ICrossReference {
         let imageCount = 0;
         let tableCount = 0;
 
+        // 按照在文档中的顺序排序
+        figures.sort((a, b) => {
+            // 如果有sort字段，按sort排序，否则按id排序
+            if (a.sort && b.sort) {
+                return a.sort - b.sort;
+            }
+            return a.id.localeCompare(b.id);
+        });
+
         for (const figure of figures) {
             if (figure.figureType === 'image') {
                 imageCount++;
                 result.push({
                     id: figure.id,
                     type: 'image',
-                    content: this.extractImageAlt(figure.content),
+                    content: this.extractImageAlt(figure.content || figure.markdown || ''),
+                    caption: this.extractImageCaption(figure.content || figure.markdown || ''),
                     number: imageCount
                 });
             } else if (figure.figureType === 'table') {
@@ -239,7 +265,8 @@ export class CrossReference implements ICrossReference {
                 result.push({
                     id: figure.id,
                     type: 'table',
-                    content: this.extractTableSummary(figure.content),
+                    content: this.extractTableSummary(figure.content || ''),
+                    caption: this.extractTableCaption(figure.content || ''),
                     number: tableCount
                 });
             }
@@ -254,8 +281,30 @@ export class CrossReference implements ICrossReference {
      * @returns alt文本
      */
     private extractImageAlt(content: string): string {
+        // 匹配 ![alt](url) 格式
         const match = content.match(/!\[([^\]]*)\]/);
         return match ? match[1] || '图片' : '图片';
+    }
+
+    /**
+     * 提取图片标题（从HTML或markdown中）
+     * @param content 内容
+     * @returns 标题文本
+     */
+    private extractImageCaption(content: string): string {
+        // 尝试从HTML title属性中提取
+        const titleMatch = content.match(/title="([^"]*)"/);
+        if (titleMatch && titleMatch[1]) {
+            return titleMatch[1];
+        }
+
+        // 尝试从markdown alt文本中提取
+        const altMatch = content.match(/!\[([^\]]*)\]/);
+        if (altMatch && altMatch[1]) {
+            return altMatch[1];
+        }
+
+        return '';
     }
 
     /**
@@ -266,64 +315,43 @@ export class CrossReference implements ICrossReference {
     private extractTableSummary(content: string): string {
         const lines = content.split('\n').filter(line => line.trim());
         if (lines.length > 0) {
-            const firstLine = lines[0].replace(/\|/g, ' ').trim();
+            // 取第一行作为表格描述，移除markdown表格语法
+            const firstLine = lines[0].replace(/\|/g, ' ').replace(/[-:]/g, '').trim();
             return firstLine || '表格';
         }
         return '表格';
     }
 
     /**
-     * 加载交叉引用样式
+     * 提取表格标题（从HTML属性或内容中）
+     * @param content 内容
+     * @returns 标题文本
      */
-    private loadCrossReferenceStyles(): void {
-        const css = `
-            .protyle-wysiwyg {
-                counter-reset: figure table;
-            }
-            
-            .protyle-wysiwyg [data-type="img"]:not(.figure-processed) {
-                counter-increment: figure;
-            }
-            
-            .protyle-wysiwyg [data-type="table"]:not(.table-processed) {
-                counter-increment: table;
-            }
-            
-            .figure-caption {
-                text-align: center;
-                font-size: 0.9em;
-                color: var(--b3-theme-on-surface-light);
-                margin-top: 8px;
-                font-style: italic;
-            }
-            
-            .figure-caption .figure-label {
-                font-weight: bold;
-                color: var(--b3-theme-on-surface);
-            }
-            
-            .table-caption {
-                text-align: center;
-                font-size: 0.9em;
-                color: var(--b3-theme-on-surface-light);
-                margin-bottom: 8px;
-                font-style: italic;
-            }
-            
-            .table-caption .table-label {
-                font-weight: bold;
-                color: var(--b3-theme-on-surface);
-            }
-        `;
+    private extractTableCaption(content: string): string {
+        // 尝试从HTML data-table-title属性中提取
+        const titleMatch = content.match(/data-table-title="([^"]*)"/);
+        if (titleMatch && titleMatch[1]) {
+            return titleMatch[1];
+        }
 
-        createStyleElement('document-styler-figure-captions', css);
+        // 尝试从表格第一行提取（如果看起来像标题）
+        const lines = content.split('\n').filter(line => line.trim());
+        if (lines.length > 0) {
+            const firstLine = lines[0].replace(/\|/g, '').trim();
+            // 如果第一行不包含分隔符，可能是标题
+            if (firstLine && !firstLine.includes('---') && !firstLine.includes(':::')) {
+                return firstLine;
+            }
+        }
+
+        return '';
     }
 
     /**
      * 移除交叉引用样式
      */
     private removeCrossReferenceStyles(): void {
-        removeStyleElement('document-styler-figure-captions');
+        removeStyleElement('document-styler-cross-reference');
     }
 
     /**
