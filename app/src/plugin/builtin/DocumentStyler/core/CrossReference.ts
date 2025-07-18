@@ -367,4 +367,55 @@ export class CrossReference implements ICrossReference {
         if (text.length <= maxLength) return text;
         return text.substring(0, maxLength) + '...';
     }
+
+    /**
+     * 处理 WebSocket transaction 消息
+     * @param msg WebSocket 消息
+     */
+    async handleTransactionMessage(msg: any): Promise<void> {
+        try {
+            // 检查当前文档是否受影响
+            if (!this.documentManager.isCurrentDocumentAffected(msg)) {
+                return;
+            }
+
+            // 分析是否需要更新图片表格索引
+            if (this.needsFigureUpdate(msg)) {
+                const currentProtyle = this.documentManager.getCurrentProtyle();
+                if (currentProtyle) {
+                    await this.applyCrossReference(currentProtyle);
+                }
+            }
+        } catch (error) {
+            console.error('CrossReference: 处理 transaction 消息失败:', error);
+        }
+    }
+
+    /**
+     * 检查消息是否需要更新图片表格索引
+     * @param msg WebSocket 消息
+     * @returns 是否需要更新
+     */
+    private needsFigureUpdate(msg: any): boolean {
+        if (!msg.data || !Array.isArray(msg.data)) {
+            return false;
+        }
+
+        // 检查是否包含图片或表格相关的操作
+        return msg.data.some((transaction: any) => {
+            if (!transaction.doOperations || !Array.isArray(transaction.doOperations)) {
+                return false;
+            }
+
+            return transaction.doOperations.some((operation: any) => {
+                // 检查操作数据中是否包含图片或表格节点
+                if (operation.data && typeof operation.data === 'string') {
+                    return operation.data.includes('data-type="NodeTable"') ||
+                           operation.data.includes('<img') ||
+                           operation.data.includes('data-type="NodeParagraph"'); // 段落中可能包含图片
+                }
+                return false;
+            });
+        });
+    }
 }

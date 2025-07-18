@@ -4,12 +4,9 @@
  */
 
 import { IModule } from "../types";
-import { TransactionAnalyzer } from "../utils/transactionAnalyzer";
 import { SettingsManager } from "./SettingsManager";
-import { DocumentManager } from "./DocumentManager";
 import { HeadingNumbering } from "./HeadingNumbering";
 import { CrossReference } from "./CrossReference";
-import { debounce } from "../utils/domUtils";
 
 /**
  * WebSocket 事件过滤器接口
@@ -35,17 +32,12 @@ export interface IWebSocketListenerOptions {
  */
 export class WebSocketManager implements IModule {
     private settingsManager: SettingsManager;
-    private documentManager: DocumentManager;
     private headingNumbering: HeadingNumbering;
     private crossReference: CrossReference;
-    
+
     private ws: WebSocket | null = null;
     private isConnected: boolean = false;
     private messageHandler: ((event: MessageEvent) => void) | null = null;
-    
-    // 防抖更新函数
-    private debouncedUpdateHeadings = debounce(this.updateHeadingsForDoc.bind(this), 1000);
-    private debouncedUpdateFigures = debounce(this.updateFiguresForDoc.bind(this), 1000);
     
     // 活跃的监听器
     private activeListeners: Map<string, {
@@ -57,12 +49,10 @@ export class WebSocketManager implements IModule {
 
     constructor(
         settingsManager: SettingsManager,
-        documentManager: DocumentManager,
         headingNumbering: HeadingNumbering,
         crossReference: CrossReference
     ) {
         this.settingsManager = settingsManager;
-        this.documentManager = documentManager;
         this.headingNumbering = headingNumbering;
         this.crossReference = crossReference;
     }
@@ -149,48 +139,22 @@ export class WebSocketManager implements IModule {
             const settings = this.settingsManager.getSettings();
             if (!settings.realTimeUpdate) return;
 
-            // 分析 transaction 事件
-            const analysisResult = TransactionAnalyzer.analyzeTransactionEvent(msg);
+            // 直接将消息传递给各个管理器处理
+            // 让各个管理器自己决定是否需要处理和如何处理
 
-            // 如果没有需要更新的内容，直接返回
-            if (!TransactionAnalyzer.needsUpdate(analysisResult)) {
-                return;
+            // 传递给标题编号管理器
+            if (settings.headingNumbering) {
+                await this.headingNumbering.handleTransactionMessage(msg);
             }
 
-            debugger
-
-            // 检查变更是否影响当前文档
-            const isCurrentDocAffected = this.documentManager.isCurrentDocumentAffected(msg);
-            if (!isCurrentDocAffected) return;
-
-            // 获取当前聚焦的文档ID
-            const currentDocId = this.documentManager.getCurrentDocId();
-            if (!currentDocId) return;
-
-            // 检查当前文档是否启用了编号
-            if (!this.settingsManager.isDocumentEnabled(currentDocId)) return;
-
-            if (isCurrentDocAffected) {
-                // 如果有标题变更，直接重新获取 Outline 并渲染
-                if (analysisResult.needUpdateHeadings) {
-                    this.debouncedUpdateHeadings(currentDocId);
-                }
-
-                // 如果有图片表格变更，更新索引
-                if (analysisResult.needUpdateFigures && settings.crossReference) {
-                    this.debouncedUpdateFigures(currentDocId);
-                }
+            // 传递给交叉引用管理器
+            if (settings.crossReference) {
+                await this.crossReference.handleTransactionMessage(msg);
             }
 
             // 调试信息
             if (process.env.NODE_ENV === 'development') {
-                console.log('WebSocketManager: Transaction分析结果:', {
-                    currentDocId,
-                    isCurrentDocAffected,
-                    needUpdateHeadings: analysisResult.needUpdateHeadings,
-                    needUpdateFigures: analysisResult.needUpdateFigures,
-                    changeTypes: analysisResult.changeTypes
-                });
+                console.log('WebSocketManager: 已将 transaction 消息分发给各管理器');
             }
         } catch (error) {
             console.error('WebSocketManager: 处理 transaction 消息失败:', error);
@@ -305,30 +269,7 @@ export class WebSocketManager implements IModule {
 
 
 
-    /**
-     * 更新指定文档的标题编号
-     * @param docId 文档ID
-     */
-    private async updateHeadingsForDoc(docId: string): Promise<void> {
-        try {
-            await this.headingNumbering.updateNumberingForDoc(docId);
-        } catch (error) {
-            console.error(`WebSocketManager: 更新文档${docId}的标题编号失败:`, error);
-        }
-    }
 
-    /**
-     * 更新指定文档的图片表格索引
-     * @param docId 文档ID
-     */
-    private async updateFiguresForDoc(docId: string): Promise<void> {
-        try {
-            // 这里将在更新交叉引用功能时实现
-            console.log(`WebSocketManager: 更新文档${docId}的图片表格索引`);
-        } catch (error) {
-            console.error(`WebSocketManager: 更新文档${docId}的图片表格索引失败:`, error);
-        }
-    }
 
     /**
      * 检查 WebSocket 连接状态

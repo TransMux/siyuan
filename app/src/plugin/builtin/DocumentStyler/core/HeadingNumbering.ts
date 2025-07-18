@@ -186,4 +186,57 @@ export class HeadingNumbering implements IHeadingNumbering {
     disableRealTimeUpdate(): void {
         // 新架构中实时更新由EventHandler处理
     }
+
+    /**
+     * 处理 WebSocket transaction 消息
+     * @param msg WebSocket 消息
+     */
+    async handleTransactionMessage(msg: any): Promise<void> {
+        try {
+            // 检查当前文档是否受影响
+            if (!this.documentManager.isCurrentDocumentAffected(msg)) {
+                return;
+            }
+
+            // 获取当前文档ID
+            const currentDocId = this.documentManager.getCurrentDocId();
+            if (!currentDocId) return;
+
+            // 检查当前文档是否启用了编号
+            if (!this.settingsManager.isDocumentEnabled(currentDocId)) return;
+
+            // 分析是否需要更新标题编号
+            if (this.needsHeadingUpdate(msg)) {
+                await this.updateNumberingForDoc(currentDocId);
+            }
+        } catch (error) {
+            console.error('HeadingNumbering: 处理 transaction 消息失败:', error);
+        }
+    }
+
+    /**
+     * 检查消息是否需要更新标题编号
+     * @param msg WebSocket 消息
+     * @returns 是否需要更新
+     */
+    private needsHeadingUpdate(msg: any): boolean {
+        if (!msg.data || !Array.isArray(msg.data)) {
+            return false;
+        }
+
+        // 检查是否包含标题相关的操作
+        return msg.data.some((transaction: any) => {
+            if (!transaction.doOperations || !Array.isArray(transaction.doOperations)) {
+                return false;
+            }
+
+            return transaction.doOperations.some((operation: any) => {
+                // 检查操作数据中是否包含标题节点
+                if (operation.data && typeof operation.data === 'string') {
+                    return operation.data.includes('data-type="NodeHeading"');
+                }
+                return false;
+            });
+        });
+    }
 }

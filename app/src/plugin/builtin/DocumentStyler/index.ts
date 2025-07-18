@@ -65,7 +65,6 @@ export class DocumentStylerPlugin extends Plugin {
         this.crossReference = new CrossReference(this.documentManager);
         this.webSocketManager = new WebSocketManager(
             this.settingsManager,
-            this.documentManager,
             this.headingNumbering,
             this.crossReference
         );
