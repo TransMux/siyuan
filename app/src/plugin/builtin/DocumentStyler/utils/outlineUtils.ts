@@ -3,6 +3,9 @@
  * 用于处理从API获取的大纲数据
  */
 
+import { HeadingNumberStyle } from "../types";
+import { NumberStyleConverter } from "./numberStyleConverter";
+
 /**
  * 大纲节点接口
  */
@@ -42,13 +45,13 @@ export interface IHeadingNumberMap {
  * 解析大纲数据，生成标题编号映射
  * @param outlineData 从API获取的大纲数据
  * @param formats 编号格式配置
- * @param useChineseNumbers 是否使用中文数字配置
+ * @param numberStyles 标题编号样式配置
  * @returns 标题编号映射
  */
 export function parseOutlineToNumberMap(
     outlineData: IOutlineNode[],
     formats: string[],
-    useChineseNumbers: boolean[]
+    numberStyles: import("../types").HeadingNumberStyle[]
 ): IHeadingNumberMap {
     const numberMap: IHeadingNumberMap = {};
     const counters: number[] = [0, 0, 0, 0, 0, 0];
@@ -68,7 +71,7 @@ export function parseOutlineToNumberMap(
                         level,
                         counters,
                         formats,
-                        useChineseNumbers,
+                        numberStyles,
                         existingLevels
                     );
 
@@ -155,7 +158,7 @@ export function getHeadingLevelFromSubType(subType: string): number {
  * @param level 标题级别（1-6）
  * @param counters 当前计数器状态
  * @param formats 序号格式配置
- * @param useChineseNumbers 是否使用中文数字
+ * @param numberStyles 标题编号样式配置
  * @param existingLevels 文档中已存在的标题级别列表，必须是排序后的
  * @returns [生成的序号, 更新后的计数器]
  */
@@ -163,7 +166,7 @@ function generateHeaderNumber(
     level: number,
     counters: number[],
     formats: string[],
-    useChineseNumbers: boolean[],
+    numberStyles: HeadingNumberStyle[],
     existingLevels: number[] = []
 ): [string, number[]] {
     // 获取实际层级
@@ -196,10 +199,10 @@ function generateHeaderNumber(
 
         // 确保占位符级别不超过当前实际级别
         if (placeholderLevel <= actualLevel && placeholderLevel < newCounters.length) {
-            // 使用占位符对应级别的 useChineseNumbers 设置
-            const shouldUseChinese = useChineseNumbers[placeholderLevel] || false;
+            // 使用占位符对应级别的编号样式设置
+            const style = numberStyles[placeholderLevel] || HeadingNumberStyle.ARABIC;
             const num = newCounters[placeholderLevel];
-            const numStr = shouldUseChinese ? num2Chinese(num) : num.toString();
+            const numStr = NumberStyleConverter.convert(num, style);
             result = result.replace(placeholder, numStr);
         }
     }
@@ -207,47 +210,7 @@ function generateHeaderNumber(
     return [result, newCounters];
 }
 
-/**
- * 将数字转换为中文数字（从numberUtils.ts复制）
- * @param num 要转换的数字
- * @returns 转换后的中文数字
- */
-function num2Chinese(num: number): string {
-    const units = ['', '十', '百', '千', '万'];
-    const numbers = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
-    
-    if (num === 0) return numbers[0];
-    if (num < 0) return '负' + num2Chinese(-num);
-    if (num < 10) return numbers[num];
-    
-    let result = '';
-    let temp = num;
-    let unitIndex = 0;
-    
-    while (temp > 0) {
-        const digit = temp % 10;
-        if (digit === 0) {
-            if (result && result[0] !== numbers[0]) {
-                result = numbers[0] + result;
-            }
-        } else {
-            result = numbers[digit] + units[unitIndex] + result;
-        }
-        temp = Math.floor(temp / 10);
-        unitIndex++;
-    }
-    
-    // 处理特殊情况
-    result = result.replace(/零+$/, ''); // 移除末尾的零
-    result = result.replace(/零+/g, '零'); // 多个零合并为一个
-    
-    // 处理"一十"开头的情况
-    if (result.startsWith('一十')) {
-        result = result.substring(1);
-    }
-    
-    return result;
-}
+
 
 /**
  * 检查大纲数据是否包含标题

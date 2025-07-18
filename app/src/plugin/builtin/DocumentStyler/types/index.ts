@@ -6,6 +6,44 @@ import { App } from "../../../../index";
 import { Plugin } from "../../../index";
 
 /**
+ * 标题编号样式枚举
+ */
+export enum HeadingNumberStyle {
+    /** 阿拉伯数字：1, 2, 3 */
+    ARABIC = 'arabic',
+    /** 中文数字：一, 二, 三 */
+    CHINESE = 'chinese',
+    /** 中文大写：壹, 贰, 叁 */
+    CHINESE_UPPER = 'chinese_upper',
+    /** 圆圈数字：①, ②, ③ */
+    CIRCLED = 'circled',
+    /** 圆圈中文：❶, ❷, ❸ */
+    CIRCLED_CHINESE = 'circled_chinese',
+    /** 表情数字：1️⃣, 2️⃣, 3️⃣ */
+    EMOJI = 'emoji',
+    /** 英文大写：A, B, C */
+    UPPER_ALPHA = 'upper_alpha',
+    /** 英文小写：a, b, c */
+    LOWER_ALPHA = 'lower_alpha',
+    /** 罗马数字大写：I, II, III */
+    UPPER_ROMAN = 'upper_roman',
+    /** 罗马数字小写：i, ii, iii */
+    LOWER_ROMAN = 'lower_roman',
+    /** 带括号数字：(1), (2), (3) */
+    PARENTHESES = 'parentheses',
+    /** 方括号数字：[1], [2], [3] */
+    BRACKETS = 'brackets',
+    /** 点号数字：1., 2., 3. */
+    DOT = 'dot',
+    /** 双点号数字：1), 2), 3) */
+    DOUBLE_DOT = 'double_dot',
+    /** 天干：甲, 乙, 丙 */
+    HEAVENLY_STEMS = 'heavenly_stems',
+    /** 地支：子, 丑, 寅 */
+    EARTHLY_BRANCHES = 'earthly_branches'
+}
+
+/**
  * 插件设置接口
  */
 export interface IDocumentStylerSettings {
@@ -15,8 +53,8 @@ export interface IDocumentStylerSettings {
     crossReference: boolean;
     /** 标题编号格式配置 */
     numberingFormats: string[];
-    /** 是否使用中文数字 */
-    useChineseNumbers: boolean[];
+    /** 标题编号样式配置 (6个级别) */
+    headingNumberStyles: HeadingNumberStyle[];
     /** 默认启用状态 */
     defaultEnabled: boolean;
 }
@@ -29,10 +67,10 @@ export interface IDocumentInfo {
     id: string;
     /** 文档标题 */
     title: string;
-    /** 是否启用编号 */
-    numberingEnabled: boolean;
-    /** 是否启用交叉引用 */
-    crossReferenceEnabled: boolean;
+    /** 文档路径 */
+    path: string;
+    /** 最后修改时间 */
+    lastModified: Date;
 }
 
 /**
@@ -199,3 +237,13 @@ export interface IEventHandler extends IModule {
     /** 解绑事件 */
     unbindEvents(): void;
 }
+
+/**
+ * 文档属性常量
+ */
+export const DOCUMENT_ATTR_KEYS = {
+    /** 标题编号启用状态 */
+    HEADING_NUMBERING_ENABLED: 'custom-heading-numbering-enabled',
+    /** 交叉引用启用状态 */
+    CROSS_REFERENCE_ENABLED: 'custom-cross-reference-enabled'
+} as const;

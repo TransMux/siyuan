@@ -273,3 +273,37 @@ export async function safeApiCall<T>(
         return undefined;
     }
 }
+
+/**
+ * 获取文档属性
+ * @param docId 文档ID
+ * @param attrName 属性名
+ * @returns 属性值
+ */
+export async function getDocumentAttr(docId: string, attrName: string): Promise<string | null> {
+    try {
+        const attrs = await getBlockAttrs(docId);
+        return attrs[attrName] || null;
+    } catch (error) {
+        console.error('获取文档属性失败:', error);
+        return null;
+    }
+}
+
+/**
+ * 设置文档属性
+ * @param docId 文档ID
+ * @param attrs 属性对象
+ * @returns 是否成功
+ */
+export async function setDocumentAttr(docId: string, attrs: Record<string, string>): Promise<boolean> {
+    try {
+        await setBlockAttrs(docId, attrs);
+        return true;
+    } catch (error) {
+        console.error('设置文档属性失败:', error);
+        return false;
+    }
+}
+
+

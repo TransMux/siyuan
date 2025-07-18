@@ -87,10 +87,6 @@ export class StyleManager implements IStyleManager {
                 border-radius: 2px;
             }
 
-            .document-styler-option {
-                margin-bottom: 12px;
-            }
-
             .document-styler-option .b3-switch {
                 align-items: center;
             }
@@ -191,14 +187,14 @@ export class StyleManager implements IStyleManager {
                 margin-top: 4px;
             }
 
-            .document-styler-format-input {
+            .document-styler-option {
                 display: flex;
                 align-items: center;
                 gap: 8px;
                 margin-bottom: 8px;
             }
 
-            .document-styler-format-input input {
+            .document-styler-option input {
                 flex: 1;
             }
 

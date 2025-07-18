@@ -3,15 +3,16 @@
  * 负责获取和管理文档大纲数据
  */
 
-import { IModule } from "../types";
+import { IModule, HeadingNumberStyle } from "../types";
 import { getDocumentOutline } from "../utils/apiUtils";
-import { 
-    IOutlineNode, 
-    IHeadingNumberMap, 
+import {
+    IOutlineNode,
+    IHeadingNumberMap,
     parseOutlineToNumberMap,
     hasHeadingsInOutline,
     getHeadingNodesFromOutline
 } from "../utils/outlineUtils";
+import { NumberStyleConverter } from "../utils/numberStyleConverter";
 
 export class OutlineManager implements IModule {
     private outlineCache: Map<string, IOutlineNode[]> = new Map();
@@ -70,18 +71,18 @@ export class OutlineManager implements IModule {
      * 获取标题编号映射
      * @param docId 文档ID
      * @param formats 编号格式配置
-     * @param useChineseNumbers 是否使用中文数字配置
+     * @param numberStyles 标题编号样式配置
      * @param forceRefresh 是否强制刷新
      * @returns 标题编号映射
      */
     async getHeadingNumberMap(
         docId: string,
         formats: string[],
-        useChineseNumbers: boolean[],
+        numberStyles: HeadingNumberStyle[],
         forceRefresh: boolean = false
     ): Promise<IHeadingNumberMap> {
-        const cacheKey = `${docId}_${JSON.stringify(formats)}_${JSON.stringify(useChineseNumbers)}`;
-        
+        const cacheKey = `${docId}_${JSON.stringify(formats)}_${JSON.stringify(numberStyles)}`;
+
         // 检查缓存
         if (!forceRefresh && this.isNumberMapCacheValid(cacheKey)) {
             const cached = this.numberMapCache.get(cacheKey);
@@ -93,9 +94,9 @@ export class OutlineManager implements IModule {
         try {
             // 获取大纲数据
             const outlineData = await this.getOutline(docId, forceRefresh);
-            
+
             // 解析生成编号映射
-            const numberMap = parseOutlineToNumberMap(outlineData, formats, useChineseNumbers);
+            const numberMap = parseOutlineToNumberMap(outlineData, formats, numberStyles);
             
             // 更新缓存
             this.numberMapCache.set(cacheKey, numberMap);

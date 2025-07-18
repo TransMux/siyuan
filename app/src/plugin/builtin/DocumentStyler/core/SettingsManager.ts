@@ -4,7 +4,8 @@
  */
 
 import { Plugin } from "../../../index";
-import { ISettingsManager, IDocumentStylerSettings } from "../types";
+import { ISettingsManager, IDocumentStylerSettings, HeadingNumberStyle, DOCUMENT_ATTR_KEYS } from "../types";
+import { getDocumentAttr, setDocumentAttr } from "../utils/apiUtils";
 
 // 存储配置的键名
 const STORAGE_NAME = "document-styler-settings";
@@ -21,7 +22,14 @@ const DEFAULT_SETTINGS: IDocumentStylerSettings = {
         "{1}.{2}.{3}.{4}.{5} ", // h5
         "{1}.{2}.{3}.{4}.{5}.{6} ", // h6
     ],
-    useChineseNumbers: [false, false, false, false, false, false],
+    headingNumberStyles: [
+        HeadingNumberStyle.ARABIC,    // h1: 1, 2, 3
+        HeadingNumberStyle.ARABIC,    // h2: 1, 2, 3
+        HeadingNumberStyle.ARABIC,    // h3: 1, 2, 3
+        HeadingNumberStyle.ARABIC,    // h4: 1, 2, 3
+        HeadingNumberStyle.ARABIC,    // h5: 1, 2, 3
+        HeadingNumberStyle.ARABIC,    // h6: 1, 2, 3
+    ],
     defaultEnabled: true,
 };
 
@@ -112,29 +120,63 @@ export class SettingsManager implements ISettingsManager {
     }
 
     /**
-     * 获取是否使用中文数字
+     * 获取指定级别的标题编号样式
      * @param level 标题级别 (0-5)
-     * @returns 是否使用中文数字
+     * @returns 标题编号样式
      */
-    getUseChineseNumbers(level: number): boolean {
-        if (level < 0 || level >= this.settings.useChineseNumbers.length) {
-            return false;
+    getHeadingNumberStyle(level: number): HeadingNumberStyle {
+        if (level < 0 || level >= this.settings.headingNumberStyles.length) {
+            return HeadingNumberStyle.ARABIC;
         }
-        return this.settings.useChineseNumbers[level];
+        return this.settings.headingNumberStyles[level];
     }
 
     /**
-     * 设置是否使用中文数字
+     * 设置指定级别的标题编号样式
      * @param level 标题级别 (0-5)
-     * @param useChinese 是否使用中文数字
+     * @param style 标题编号样式
      */
-    async setUseChineseNumbers(level: number, useChinese: boolean): Promise<void> {
-        if (level < 0 || level >= this.settings.useChineseNumbers.length) {
+    async setHeadingNumberStyle(level: number, style: HeadingNumberStyle): Promise<void> {
+        if (level < 0 || level >= this.settings.headingNumberStyles.length) {
             return;
         }
-        
-        this.settings.useChineseNumbers[level] = useChinese;
+
+        this.settings.headingNumberStyles[level] = style;
         await this.saveSettings();
+    }
+
+    /**
+     * 获取文档的标题编号启用状态
+     * @param docId 文档ID
+     * @returns 是否启用标题编号
+     */
+    async isDocumentHeadingNumberingEnabled(docId: string): Promise<boolean> {
+        try {
+            const value = await getDocumentAttr(docId, DOCUMENT_ATTR_KEYS.HEADING_NUMBERING_ENABLED);
+            if (value === null) {
+                // 如果没有设置属性，使用默认值
+                return this.settings.defaultEnabled;
+            }
+            return value === 'true';
+        } catch (error) {
+            console.error('获取文档标题编号状态失败:', error);
+            return this.settings.defaultEnabled;
+        }
+    }
+
+    /**
+     * 设置文档的标题编号启用状态
+     * @param docId 文档ID
+     * @param enabled 是否启用
+     */
+    async setDocumentHeadingNumberingEnabled(docId: string, enabled: boolean): Promise<void> {
+        try {
+            await setDocumentAttr(docId, {
+                [DOCUMENT_ATTR_KEYS.HEADING_NUMBERING_ENABLED]: enabled.toString()
+            });
+        } catch (error) {
+            console.error('设置文档标题编号状态失败:', error);
+        }
     }
 
     /**
@@ -160,7 +202,7 @@ export class SettingsManager implements ISettingsManager {
             'headingNumbering',
             'crossReference',
             'numberingFormats',
-            'useChineseNumbers',
+            'headingNumberStyles',
             'defaultEnabled'
         ];
 
@@ -204,8 +246,8 @@ export class SettingsManager implements ISettingsManager {
             if (Array.isArray(settings.numberingFormats) && settings.numberingFormats.length === 6) {
                 fixed.numberingFormats = [...settings.numberingFormats];
             }
-            if (Array.isArray(settings.useChineseNumbers) && settings.useChineseNumbers.length === 6) {
-                fixed.useChineseNumbers = [...settings.useChineseNumbers];
+            if (Array.isArray(settings.headingNumberStyles) && settings.headingNumberStyles.length === 6) {
+                fixed.headingNumberStyles = [...settings.headingNumberStyles];
             }
         }
 

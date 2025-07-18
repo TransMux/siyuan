@@ -174,22 +174,18 @@ export class DockPanel implements IDockPanel {
 
             html += `
                 <div class="document-styler-option">
-                    <label class="b3-label">
-                        <div class="fn__flex-1">
-                            H${level} 格式
-                        </div>
-                        <div class="document-styler-format-input">
-                            <input type="text" class="b3-text-field" 
-                                   id="format-${i}" 
-                                   value="${format}" 
-                                   placeholder="例如: {1}. 或 第{1}章">
-                            <label class="document-styler-chinese-option">
-                                <input type="checkbox" class="b3-switch" 
-                                       id="chinese-${i}" 
-                                       ${useChinese ? 'checked' : ''}>
-                                <span>中文数字</span>
-                            </label>
-                        </div>
+                    <div>
+                        H${level} 格式
+                    </div>
+                    <input type="text" class="b3-text-field" 
+                            id="format-${i}" 
+                            value="${format}" 
+                            placeholder="例如: {1}. 或 第{1}章">
+                    <label class="document-styler-chinese-option">
+                        <input type="checkbox" class="b3-switch" 
+                                id="chinese-${i}" 
+                                ${useChinese ? 'checked' : ''}>
+                        <span>中文数字</span>
                     </label>
                 </div>
             `;

@@ -3,12 +3,13 @@
  * 基于 siyuan-auto-seq-number 插件的设计思路重新实现
  */
 
-import { IHeadingNumbering } from "../types";
+import { IHeadingNumbering, HeadingNumberStyle } from "../types";
 import { SettingsManager } from "./SettingsManager";
 import { DocumentManager } from "./DocumentManager";
 import { OutlineManager } from "./OutlineManager";
 import { StyleManager } from "../ui/StyleManager";
 import { getVersion } from "../utils/apiUtils";
+import { NumberStyleConverter } from "../utils/numberStyleConverter";
 
 export class HeadingNumbering implements IHeadingNumbering {
     private settingsManager: SettingsManager;
@@ -76,7 +77,7 @@ export class HeadingNumbering implements IHeadingNumbering {
             const headingMap = await this.outlineManager.getHeadingNumberMap(
                 docId,
                 settings.numberingFormats,
-                settings.useChineseNumbers,
+                settings.headingNumberStyles,
                 true // 强制刷新
             );
 
@@ -111,7 +112,7 @@ export class HeadingNumbering implements IHeadingNumbering {
             const headingMap = await this.outlineManager.getHeadingNumberMap(
                 docId,
                 settings.numberingFormats,
-                settings.useChineseNumbers,
+                settings.headingNumberStyles,
                 true // 强制刷新
             );
 
@@ -201,6 +202,10 @@ export class HeadingNumbering implements IHeadingNumbering {
             // 获取当前文档ID
             const currentDocId = this.documentManager.getCurrentDocId();
             if (!currentDocId) return;
+
+            // 检查当前文档是否启用了标题编号
+            const isEnabled = await this.settingsManager.isDocumentHeadingNumberingEnabled(currentDocId);
+            if (!isEnabled) return;
 
             // 分析是否需要更新标题编号
             if (this.needsHeadingUpdate(msg)) {
