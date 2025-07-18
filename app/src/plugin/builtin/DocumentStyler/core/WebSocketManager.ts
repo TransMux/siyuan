@@ -4,8 +4,9 @@
  */
 
 import { IModule } from "../types";
-import { TransactionAnalyzer, ITransactionAnalysisResult } from "../utils/transactionAnalyzer";
+import { TransactionAnalyzer } from "../utils/transactionAnalyzer";
 import { SettingsManager } from "./SettingsManager";
+import { DocumentManager } from "./DocumentManager";
 import { HeadingNumbering } from "./HeadingNumbering";
 import { CrossReference } from "./CrossReference";
 import { debounce } from "../utils/domUtils";
@@ -34,6 +35,7 @@ export interface IWebSocketListenerOptions {
  */
 export class WebSocketManager implements IModule {
     private settingsManager: SettingsManager;
+    private documentManager: DocumentManager;
     private headingNumbering: HeadingNumbering;
     private crossReference: CrossReference;
     
@@ -55,10 +57,12 @@ export class WebSocketManager implements IModule {
 
     constructor(
         settingsManager: SettingsManager,
+        documentManager: DocumentManager,
         headingNumbering: HeadingNumbering,
         crossReference: CrossReference
     ) {
         this.settingsManager = settingsManager;
+        this.documentManager = documentManager;
         this.headingNumbering = headingNumbering;
         this.crossReference = crossReference;
     }
@@ -153,28 +157,37 @@ export class WebSocketManager implements IModule {
                 return;
             }
 
-            // 获取受影响的文档
-            const affectedDocIds = TransactionAnalyzer.getAffectedDocuments(analysisResult);
+            // 获取当前聚焦的文档ID
+            const currentDocId = this.getCurrentDocId();
+            if (!currentDocId) return;
 
-            // 处理每个受影响的文档
-            for (const docId of affectedDocIds) {
-                // 检查文档是否启用了编号
-                if (!this.settingsManager.isDocumentEnabled(docId)) continue;
+            // 检查当前文档是否启用了编号
+            if (!this.settingsManager.isDocumentEnabled(currentDocId)) return;
 
-                // 根据分析结果决定更新内容
+            // 检查变更是否影响当前文档
+            const isCurrentDocAffected = this.isCurrentDocumentAffected(msg, currentDocId);
+
+            if (isCurrentDocAffected) {
+                // 如果有标题变更，直接重新获取 Outline 并渲染
                 if (analysisResult.needUpdateHeadings) {
-                    this.debouncedUpdateHeadings(docId);
+                    this.debouncedUpdateHeadings(currentDocId);
                 }
 
+                // 如果有图片表格变更，更新索引
                 if (analysisResult.needUpdateFigures && settings.crossReference) {
-                    this.debouncedUpdateFigures(docId);
+                    this.debouncedUpdateFigures(currentDocId);
                 }
             }
 
             // 调试信息
             if (process.env.NODE_ENV === 'development') {
-                console.log('WebSocketManager: Transaction分析结果:', 
-                    TransactionAnalyzer.createDebugInfo(analysisResult));
+                console.log('WebSocketManager: Transaction分析结果:', {
+                    currentDocId,
+                    isCurrentDocAffected,
+                    needUpdateHeadings: analysisResult.needUpdateHeadings,
+                    needUpdateFigures: analysisResult.needUpdateFigures,
+                    changeTypes: analysisResult.changeTypes
+                });
             }
         } catch (error) {
             console.error('WebSocketManager: 处理 transaction 消息失败:', error);
@@ -285,6 +298,39 @@ export class WebSocketManager implements IModule {
             listener.reject(new Error('WebSocketManager 已销毁'));
         }
         this.activeListeners.clear();
+    }
+
+    /**
+     * 获取当前聚焦的文档ID
+     */
+    private getCurrentDocId(): string | null {
+        return this.documentManager.getCurrentDocId();
+    }
+
+    /**
+     * 检查变更是否影响当前文档
+     * @param msg WebSocket 消息
+     * @param currentDocId 当前文档ID
+     */
+    private isCurrentDocumentAffected(msg: any, currentDocId: string): boolean {
+        if (!msg.data || !Array.isArray(msg.data)) {
+            return false;
+        }
+
+        // 检查 transaction 中是否包含当前文档的操作
+        return msg.data.some((transaction: any) => {
+            if (!transaction.doOperations || !Array.isArray(transaction.doOperations)) {
+                return false;
+            }
+
+            return transaction.doOperations.some((operation: any) => {
+                // 检查操作数据中是否包含当前文档的 root-id
+                if (operation.data && typeof operation.data === 'string') {
+                    return operation.data.includes(`data-root-id="${currentDocId}"`);
+                }
+                return false;
+            });
+        });
     }
 
     /**
