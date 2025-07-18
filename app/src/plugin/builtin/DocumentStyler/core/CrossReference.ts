@@ -37,7 +37,7 @@ export class CrossReference implements ICrossReference {
 
     async init(): Promise<void> {
         // 初始化时加载样式
-        this.loadCrossReferenceStyles();
+        await this.loadCrossReferenceStyles();
     }
 
     destroy(): void {
@@ -49,7 +49,7 @@ export class CrossReference implements ICrossReference {
 
         try {
             // 通过CSS样式实现图片和表格的自动编号和超级块自定义标题
-            this.loadCrossReferenceStyles(protyle);
+            await this.loadCrossReferenceStyles(protyle);
         } catch (error) {
             console.error('应用交叉引用失败:', error);
             throw error;
@@ -250,19 +250,24 @@ export class CrossReference implements ICrossReference {
 
     /**
      * 生成超级块中图片/表格的标题样式
-     * 直接给文本块添加样式，让它成为图表的标题，并添加自动编号
+     * 直接给文本块添加样式，让它成为图表的标题，并添加基于SQL查询的真实编号
      * @param figures 超级块中的图片/表格信息
+     * @param figuresData 从SQL查询获取的所有图片表格数据（包含正确编号）
      * @returns CSS样式字符串
      */
-    private generateSuperBlockCaptionStyles(figures: ISuperBlockFigure[]): string {
+    private generateSuperBlockCaptionStyles(figures: ISuperBlockFigure[], figuresData: IFigureInfo[]): string {
         let styles = '';
 
         for (const figure of figures) {
             if (figure.captionElement && figure.captionText) {
                 const captionId = figure.captionElement.getAttribute('data-node-id');
 
+                // 从SQL查询结果中找到对应的图片/表格，获取正确的编号
+                const figureData = figuresData.find(f => f.id === figure.id);
+                const figureNumber = figureData ? figureData.number : 1;
+
                 if (figure.type === 'image') {
-                    // 给图片标题文本块添加样式和自动编号
+                    // 给图片标题文本块添加样式和真实编号
                     styles += `
                         .protyle-wysiwyg [data-node-id="${captionId}"] {
                             text-align: center;
@@ -274,17 +279,16 @@ export class CrossReference implements ICrossReference {
                             background-color: var(--b3-theme-surface-lightest);
                             border-radius: var(--b3-border-radius-b);
                             margin: 8px 0;
-                            counter-increment: figure;
                         }
 
                         .protyle-wysiwyg [data-node-id="${captionId}"] [contenteditable="true"]::before {
-                            content: "图 " counter(figure) ": ";
+                            content: "图 ${figureNumber}: ";
                             font-weight: 600;
                             color: var(--b3-theme-primary);
                         }
                     `;
                 } else if (figure.type === 'table') {
-                    // 给表格标题文本块添加样式和自动编号
+                    // 给表格标题文本块添加样式和真实编号
                     styles += `
                         .protyle-wysiwyg [data-node-id="${captionId}"] {
                             text-align: center;
@@ -296,11 +300,10 @@ export class CrossReference implements ICrossReference {
                             background-color: var(--b3-theme-surface-lightest);
                             border-radius: var(--b3-border-radius-b);
                             margin: 8px 0;
-                            counter-increment: table;
                         }
 
                         .protyle-wysiwyg [data-node-id="${captionId}"] [contenteditable="true"]::before {
-                            content: "表 " counter(table) ": ";
+                            content: "表 ${figureNumber}: ";
                             font-weight: 600;
                             color: var(--b3-theme-primary);
                         }
@@ -316,19 +319,23 @@ export class CrossReference implements ICrossReference {
      * 加载交叉引用样式
      * 基于思源原有的图片和表格结构，通过CSS实现自动编号和自定义标题
      */
-    private loadCrossReferenceStyles(protyle?: any): void {
+    private async loadCrossReferenceStyles(protyle?: any): Promise<void> {
         // 解析超级块中的图片/表格
-        debugger
         const superBlockFigures = protyle ? this.parseSuperBlockFigures(protyle) : [];
 
-        const css = `
-            /* 图片和表格计数器 */
-            .protyle-wysiwyg {
-                counter-reset: figure table;
+        // 获取当前文档的所有图片表格数据（包含正确编号）
+        let figuresData: IFigureInfo[] = [];
+        if (protyle?.block?.rootID) {
+            try {
+                figuresData = await this.getFiguresList(protyle.block.rootID);
+            } catch (error) {
+                console.error('获取图片表格数据失败:', error);
             }
+        }
 
+        const css = `
             /* 超级块中的图片/表格自定义标题样式 */
-            ${this.generateSuperBlockCaptionStyles(superBlockFigures)}
+            ${this.generateSuperBlockCaptionStyles(superBlockFigures, figuresData)}
 
             /* 交叉引用链接样式 */
             .protyle-wysiwyg a[href^="#figure-"],
