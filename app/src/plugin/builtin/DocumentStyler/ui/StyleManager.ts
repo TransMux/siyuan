@@ -521,7 +521,6 @@ export class StyleManager implements IStyleManager {
                 content: "${number}";
                 margin-right: 4px;
                 color: var(--b3-theme-on-surface-light);
-                font-weight: normal;
             }\n`;
         }
         return css;
