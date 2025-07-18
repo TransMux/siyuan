@@ -5,28 +5,9 @@
 
 import { ICrossReference, IFigureInfo } from "../types";
 import { DocumentManager } from "./DocumentManager";
-import { queryDocumentFigures, getDocumentBlockOrderFromDOM, getDocumentBlockOrder } from "../utils/apiUtils";
+import { queryDocumentFigures } from "../utils/apiUtils";
 
-/**
- * 超级块中的图片/表格信息
- */
-interface ISuperBlockFigure {
-    id: string;
-    type: 'image' | 'table';
-    element: Element;
-    captionElement: Element | null;
-    captionText: string;
-}
 
-/**
- * 超级块解析结果
- */
-interface ISuperBlockInfo {
-    element: Element;
-    layout: 'row' | 'col';
-    children: Element[];
-    figures: ISuperBlockFigure[];
-}
 
 export class CrossReference implements ICrossReference {
     private documentManager: DocumentManager;
@@ -81,12 +62,12 @@ export class CrossReference implements ICrossReference {
         }
     }
 
-    async getFiguresList(docId: string, protyle?: any): Promise<IFigureInfo[]> {
+    async getFiguresList(docId: string): Promise<IFigureInfo[]> {
         if (!docId) return [];
 
         try {
             const figures = await queryDocumentFigures(docId);
-            return await this.processFiguresData(figures, protyle, docId);
+            return await this.processFiguresData(figures);
         } catch (error) {
             console.error('获取图片表格列表失败:', error);
             return [];
@@ -95,250 +76,27 @@ export class CrossReference implements ICrossReference {
 
 
 
-    /**
-     * 解析protyle中的所有超级块，识别符合条件的图片/表格-标题组合
-     * @param protyle 编辑器实例
-     * @returns 超级块中的图片/表格信息数组
-     */
-    private parseSuperBlockFigures(protyle: any): ISuperBlockFigure[] {
-        debugger
-        if (!protyle?.wysiwyg?.element) return [];
 
-        const figures: ISuperBlockFigure[] = [];
-        const superBlocks = protyle.wysiwyg.element.querySelectorAll('[data-type="NodeSuperBlock"]');
 
-        for (const sb of superBlocks) {
-            const sbInfo = this.analyzeSuperBlock(sb);
-            if (sbInfo) {
-                figures.push(...sbInfo.figures);
-            }
-        }
 
-        return figures;
-    }
+
+
+
+
+
+
 
     /**
-     * 分析单个超级块的结构
-     * @param superBlockElement 超级块DOM元素
-     * @returns 超级块信息，如果不符合条件则返回null
-     */
-    private analyzeSuperBlock(superBlockElement: Element): ISuperBlockInfo | null {
-        const layout = superBlockElement.getAttribute('data-sb-layout') as 'row' | 'col';
-
-        // 只处理竖直布局的超级块
-        if (layout !== 'row') return null;
-
-        // 获取所有直接子元素（排除属性元素）
-        const children = Array.from(superBlockElement.children).filter(child =>
-            !child.classList.contains('protyle-attr')
-        );
-
-        // 必须恰好有两个子元素
-        if (children.length !== 2) return null;
-
-        const figures = this.identifyFiguresInSuperBlock(children);
-
-        // 如果没有找到符合条件的图片/表格-标题组合，返回null
-        if (figures.length === 0) return null;
-
-        return {
-            element: superBlockElement,
-            layout,
-            children,
-            figures
-        };
-    }
-
-    /**
-     * 在超级块的子元素中识别图片/表格和对应的标题
-     * @param children 子元素数组
-     * @returns 识别出的图片/表格信息数组
-     */
-    private identifyFiguresInSuperBlock(children: Element[]): ISuperBlockFigure[] {
-        const figures: ISuperBlockFigure[] = [];
-
-        for (let i = 0; i < children.length; i++) {
-            const child = children[i];
-            const figureInfo = this.identifyFigureElement(child);
-
-            if (figureInfo) {
-                // 寻找对应的标题元素
-                const captionElement = this.findCaptionForFigure(children, i);
-                const captionText = captionElement ? this.extractTextFromElement(captionElement) : '';
-
-                figures.push({
-                    id: child.getAttribute('data-node-id') || '',
-                    type: figureInfo.type,
-                    element: child,
-                    captionElement,
-                    captionText
-                });
-            }
-        }
-
-        return figures;
-    }
-
-    /**
-     * 识别元素是否为图片或表格
-     * @param element DOM元素
-     * @returns 图片/表格信息，如果不是则返回null
-     */
-    private identifyFigureElement(element: Element): { type: 'image' | 'table' } | null {
-        const nodeType = element.getAttribute('data-type');
-
-        if (nodeType === 'NodeParagraph') {
-            // 检查段落中是否包含图片
-            const imgElement = element.querySelector('[data-type="img"]');
-            if (imgElement) {
-                return { type: 'image' };
-            }
-        } else if (nodeType === 'NodeTable') {
-            return { type: 'table' };
-        }
-
-        return null;
-    }
-
-    /**
-     * 为图片/表格寻找对应的标题元素
-     * @param children 所有子元素
-     * @param figureIndex 图片/表格元素的索引
-     * @returns 标题元素，如果没有找到则返回null
-     */
-    private findCaptionForFigure(children: Element[], figureIndex: number): Element | null {
-        // 在两个元素的超级块中，另一个元素就是潜在的标题
-        const otherIndex = figureIndex === 0 ? 1 : 0;
-        const otherElement = children[otherIndex];
-
-        // 检查另一个元素是否为文本段落
-        if (otherElement && otherElement.getAttribute('data-type') === 'NodeParagraph') {
-            // 确保这个段落不包含图片（避免两个都是图片段落的情况）
-            const hasImg = otherElement.querySelector('[data-type="img"]');
-            if (!hasImg) {
-                return otherElement;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * 从元素中提取纯文本内容
-     * @param element DOM元素
-     * @returns 文本内容
-     */
-    private extractTextFromElement(element: Element): string {
-        // 获取可编辑div中的文本内容
-        const editableDiv = element.querySelector('[contenteditable="true"]');
-        if (editableDiv) {
-            return editableDiv.textContent?.trim() || '';
-        }
-        return element.textContent?.trim() || '';
-    }
-
-    /**
-     * 生成超级块中图片/表格的标题样式
-     * 直接给文本块添加样式，让它成为图表的标题，并添加基于SQL查询的真实编号
-     * @param figures 超级块中的图片/表格信息
-     * @param figuresData 从SQL查询获取的所有图片表格数据（包含正确编号）
-     * @returns CSS样式字符串
-     */
-    private generateSuperBlockCaptionStyles(figures: ISuperBlockFigure[], figuresData: IFigureInfo[]): string {
-        let styles = '';
-
-        for (const figure of figures) {
-            if (figure.captionElement && figure.captionText) {
-                const captionId = figure.captionElement.getAttribute('data-node-id');
-
-                // 从SQL查询结果中找到对应的图片/表格，获取正确的编号
-                const figureData = figuresData.find(f => f.id === figure.id);
-                const figureNumber = figureData ? figureData.number : 1;
-
-                if (figure.type === 'image') {
-                    // 给图片标题文本块添加样式和真实编号
-                    styles += `
-                        .protyle-wysiwyg [data-node-id="${captionId}"] [contenteditable="true"]::before {
-                            content: "图 ${figureNumber}: ";
-                            color: var(--b3-theme-primary);
-                        }
-                    `;
-                } else if (figure.type === 'table') {
-                    // 给表格标题文本块添加样式和真实编号
-                    styles += `
-                        .protyle-wysiwyg [data-node-id="${captionId}"] [contenteditable="true"]::before {
-                            content: "表 ${figureNumber}: ";
-                            color: var(--b3-theme-primary);
-                        }
-                    `;
-                }
-            }
-        }
-
-        return styles;
-    }
-
-    /**
-     * 生成图表标题样式（新版本，基于DOM解析的数据）
-     * 为从DOM解析出来的图表生成标题样式
+     * 生成图表标题样式（基于DOM解析的数据）
+     * 由于图表数据已经从DOM解析并包含了标题信息，这里只需要生成基本的样式
+     * 实际的标题显示已经通过DOM解析时的处理完成
      * @param figuresData 图表数据（包含标题信息和编号）
-     * @param protyle 编辑器实例，用于查找标题元素
      * @returns CSS样式字符串
      */
-    private generateFigureCaptionStyles(figuresData: IFigureInfo[], protyle?: any): string {
-        let styles = '';
-
-        if (!protyle?.wysiwyg?.element) {
-            return styles;
-        }
-
-        // 为每个图表生成标题样式
-        for (const figure of figuresData) {
-            // 查找图表对应的超级块
-            const figureElement = protyle.wysiwyg.element.querySelector(`[data-node-id="${figure.id}"]`);
-            if (!figureElement) continue;
-
-            // 查找图表所在的超级块
-            const superBlock = figureElement.closest('[data-type="NodeSuperBlock"]');
-            if (!superBlock) continue;
-
-            // 检查超级块是否符合条件（竖直布局，两个子元素）
-            const layout = superBlock.getAttribute('data-sb-layout');
-            if (layout !== 'row') continue;
-
-            const children = Array.from(superBlock.children).filter((child: Element) =>
-                !child.classList.contains('protyle-attr')
-            );
-            if (children.length !== 2) continue;
-
-            // 找到标题元素（不是图表元素的那个）
-            let captionElement: Element | null = null;
-            for (const child of children) {
-                if (child !== figureElement.parentElement) {
-                    const nodeType = child.getAttribute('data-type');
-                    if (nodeType === 'NodeParagraph' && !child.querySelector('[data-type="img"]')) {
-                        captionElement = child;
-                        break;
-                    }
-                }
-            }
-
-            if (captionElement && figure.caption) {
-                const captionId = captionElement.getAttribute('data-node-id');
-                if (captionId) {
-                    const prefix = figure.type === 'image' ? '图' : '表';
-                    styles += `
-                        .protyle-wysiwyg [data-node-id="${captionId}"] [contenteditable="true"]::before {
-                            content: "${prefix} ${figure.number}: ";
-                            color: var(--b3-theme-primary);
-                            font-weight: 500;
-                        }
-                    `;
-                }
-            }
-        }
-
-        return styles;
+    private generateFigureCaptionStyles(_figuresData: IFigureInfo[]): string {
+        // 由于现在图表和标题的关联已经在DOM解析时处理完成
+        // 这里只需要返回空字符串，或者可以添加一些通用的图表样式
+        return '';
     }
 
     /**
@@ -352,7 +110,7 @@ export class CrossReference implements ICrossReference {
         if (protyle?.block?.rootID) {
             try {
                 // 从完整DOM结构获取图表数据
-                figuresData = await this.getFiguresList(protyle.block.rootID, protyle);
+                figuresData = await this.getFiguresList(protyle.block.rootID);
 
                 // 由于现在图表数据已经包含了标题信息，我们可以直接使用
                 // 不再需要复杂的超级块解析，因为标题信息已经在figuresData中了
@@ -363,7 +121,7 @@ export class CrossReference implements ICrossReference {
 
         const css = `
             /* 超级块中的图片/表格自定义标题样式 */
-            ${this.generateFigureCaptionStyles(figuresData, protyle)}
+            ${this.generateFigureCaptionStyles(figuresData)}
 
             /* 交叉引用链接样式 */
             .protyle-wysiwyg a[href^="#figure-"],
@@ -399,67 +157,24 @@ export class CrossReference implements ICrossReference {
 
     /**
      * 处理图片表格数据
-     * 现在主要处理从DOM解析出来的符合条件的图表数据
-     * @param figures 原始数据（现在来自DOM解析，已经包含正确顺序）
-     * @param protyle 编辑器实例，用于获取DOM中的真实顺序（作为备用）
-     * @param docId 文档ID，用于通过API获取完整顺序（作为备用）
+     * 处理从DOM解析出来的符合条件的图表数据
+     * @param figures 从DOM解析的图表数据（已经包含正确顺序和标题信息）
      * @returns 处理后的数据
      */
-    private async processFiguresData(figures: any[], protyle?: any, docId?: string): Promise<IFigureInfo[]> {
+    private async processFiguresData(figures: any[]): Promise<IFigureInfo[]> {
         const result: IFigureInfo[] = [];
         let imageCount = 0;
         let tableCount = 0;
 
-        // 检查数据来源，如果是从DOM解析的数据，直接使用其顺序
-        const isFromDOM = figures.length > 0 && figures[0].hasOwnProperty('domOrder');
-
-        if (isFromDOM) {
-            // 从DOM解析的数据，按照domOrder排序
-            console.log('CrossReference: 使用DOM解析的数据，按domOrder排序');
-            figures.sort((a, b) => {
-                if (a.domOrder !== undefined && b.domOrder !== undefined) {
-                    return a.domOrder - b.domOrder;
-                }
-                // 如果没有domOrder，回退到ID排序
-                return a.id.localeCompare(b.id);
-            });
-        } else {
-            // 传统的SQL数据，使用原有的排序逻辑
-            console.log('CrossReference: 使用SQL数据，使用传统排序逻辑');
-
-            // 获取真实顺序的多种方法
-            let realOrder: Record<string, number> = {};
-
-            // 方法1: 如果有protyle，尝试从DOM获取
-            if (protyle) {
-                realOrder = getDocumentBlockOrderFromDOM(protyle);
-                console.log('CrossReference: 从DOM获取的顺序映射:', Object.keys(realOrder).length, '个块');
+        // 从DOM解析的数据，按照domOrder排序
+        console.log('CrossReference: 使用DOM解析的数据，按domOrder排序');
+        figures.sort((a, b) => {
+            if (a.domOrder !== undefined && b.domOrder !== undefined) {
+                return a.domOrder - b.domOrder;
             }
-
-            // 方法2: 如果DOM方法没有获取到足够的数据，或者没有protyle，尝试通过API获取
-            if (Object.keys(realOrder).length === 0 && docId) {
-                try {
-                    realOrder = await getDocumentBlockOrder(docId);
-                    console.log('CrossReference: 从API获取的顺序映射:', Object.keys(realOrder).length, '个块');
-                } catch (error) {
-                    console.error('CrossReference: 通过API获取顺序失败:', error);
-                }
-            }
-
-            // 按照在文档中的真实顺序排序
-            figures.sort((a, b) => {
-                // 优先使用真实顺序
-                if (realOrder[a.id] !== undefined && realOrder[b.id] !== undefined) {
-                    return realOrder[a.id] - realOrder[b.id];
-                }
-                // 如果真实顺序不可用，回退到sort字段
-                if (a.sort && b.sort) {
-                    return a.sort - b.sort;
-                }
-                // 最后回退到ID排序
-                return a.id.localeCompare(b.id);
-            });
-        }
+            // 如果没有domOrder，回退到ID排序
+            return a.id.localeCompare(b.id);
+        });
 
         console.log('CrossReference: 排序后的图片表格:', figures.map(f => ({
             id: f.id,
@@ -753,7 +468,7 @@ export class CrossReference implements ICrossReference {
 
         try {
             const docId = protyle.block.rootID;
-            const figures = await this.getFiguresList(docId, protyle);
+            const figures = await this.getFiguresList(docId);
 
             const hints: any[] = [];
 

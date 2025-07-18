@@ -148,61 +148,24 @@ export function querySQL(sql: string): Promise<any[]> {
 
 /**
  * 查询文档中的图片和表格
- * 现在使用getDoc API获取完整DOM结构，并从中解析符合条件的图表
+ * 使用getDoc API获取完整DOM结构，并从中解析符合条件的图表
+ * 只处理在超级块内，且超级块只有图表和文本两个元素的情况
  * @param docId 文档ID
  * @returns 图片和表格信息数组
  */
 export async function queryDocumentFigures(docId: string): Promise<any[]> {
-    const results: any[] = [];
-
-    try {
-        // 使用getDoc API获取完整的文档DOM结构
-        const htmlContent = await getDocumentFullContent(docId);
-        if (!htmlContent) {
-            console.warn('无法获取文档内容，回退到SQL查询');
-            return await queryDocumentFiguresFromSQL(docId);
-        }
-
-        // 从DOM结构中解析符合条件的图表
-        const figuresFromDOM = await parseFiguresFromDOM(htmlContent);
-        results.push(...figuresFromDOM);
-
-        console.log(`从DOM解析到 ${results.length} 个符合条件的图表`);
-
-    } catch (error) {
-        console.error('从DOM解析图片表格失败，回退到SQL查询:', error);
-        return await queryDocumentFiguresFromSQL(docId);
+    // 使用getDoc API获取完整的文档DOM结构
+    const htmlContent = await getDocumentFullContent(docId);
+    if (!htmlContent) {
+        throw new Error('无法获取文档内容');
     }
 
-    return results;
-}
+    // 从DOM结构中解析符合条件的图表
+    const figuresFromDOM = await parseFiguresFromDOM(htmlContent);
 
-/**
- * 从SQL查询获取图片和表格（回退方案）
- * @param docId 文档ID
- * @returns 图片和表格信息数组
- */
-async function queryDocumentFiguresFromSQL(docId: string): Promise<any[]> {
-    const results: any[] = [];
+    console.log(`从DOM解析到 ${figuresFromDOM.length} 个符合条件的图表`);
 
-    try {
-        // 查询表格块
-        const tables = await querySQL(
-            `SELECT id, type, subtype, content FROM blocks WHERE root_id = '${docId}' AND type = 't'`
-        );
-        results.push(...tables.map(item => ({ ...item, figureType: 'table' })));
-
-        // 查询包含图片的段落块
-        const images = await querySQL(
-            `SELECT id, type, subtype, content FROM blocks WHERE root_id = '${docId}' AND type = 'p' AND markdown LIKE '![%'`
-        );
-        results.push(...images.map(item => ({ ...item, figureType: 'image' })));
-
-    } catch (error) {
-        console.error('SQL查询文档图片表格失败:', error);
-    }
-
-    return results;
+    return figuresFromDOM;
 }
 
 /**
@@ -375,30 +338,7 @@ function extractElementText(element: Element): string {
     return element.textContent?.trim() || '';
 }
 
-/**
- * 获取文档中所有块的真实顺序映射
- * @param protyle 编辑器实例
- * @returns 块ID到真实顺序的映射
- */
-export function getDocumentBlockOrderFromDOM(protyle: any): Record<string, number> {
-    const orderMap: Record<string, number> = {};
 
-    if (!protyle?.wysiwyg?.element) {
-        return orderMap;
-    }
-
-    // 遍历DOM中所有具有data-node-id属性的块级元素
-    const blockElements = protyle.wysiwyg.element.querySelectorAll('[data-node-id]');
-
-    blockElements.forEach((element: Element, index: number) => {
-        const nodeId = element.getAttribute('data-node-id');
-        if (nodeId) {
-            orderMap[nodeId] = index;
-        }
-    });
-
-    return orderMap;
-}
 
 /**
  * 获取文档的完整内容和结构
@@ -422,72 +362,9 @@ export async function getDocumentFullContent(docId: string): Promise<string> {
     });
 }
 
-/**
- * 从HTML内容中提取块的真实顺序
- * @param htmlContent 文档的HTML内容
- * @returns 块ID到真实顺序的映射
- */
-export function extractBlockOrderFromHTML(htmlContent: string): Record<string, number> {
-    const orderMap: Record<string, number> = {};
 
-    try {
-        // 创建一个临时的DOM解析器
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(htmlContent, 'text/html');
 
-        // 查找所有具有data-node-id属性的元素
-        const blockElements = doc.querySelectorAll('[data-node-id]');
 
-        blockElements.forEach((element, index) => {
-            const nodeId = element.getAttribute('data-node-id');
-            if (nodeId) {
-                orderMap[nodeId] = index;
-            }
-        });
-
-        console.log('CrossReference: 从HTML提取的块顺序:', Object.keys(orderMap).length, '个块');
-
-    } catch (error) {
-        console.error('解析HTML内容失败:', error);
-    }
-
-    return orderMap;
-}
-
-/**
- * 获取文档中所有块的真实顺序映射（通过API）
- * @param docId 文档ID
- * @returns 块ID到真实顺序的映射
- */
-export async function getDocumentBlockOrder(docId: string): Promise<Record<string, number>> {
-    try {
-        // 首先尝试通过API获取完整文档内容
-        const htmlContent = await getDocumentFullContent(docId);
-        if (htmlContent) {
-            const orderMap = extractBlockOrderFromHTML(htmlContent);
-            if (Object.keys(orderMap).length > 0) {
-                console.log('CrossReference: 成功通过API获取文档块顺序');
-                return orderMap;
-            }
-        }
-
-        // 如果API方法失败，回退到SQL查询
-        console.log('CrossReference: API方法失败，回退到SQL查询');
-        const allBlocks = await querySQL(
-            `SELECT id FROM blocks WHERE root_id = '${docId}' AND type != 'd' ORDER BY sort`
-        );
-
-        const orderMap: Record<string, number> = {};
-        allBlocks.forEach((block, index) => {
-            orderMap[block.id] = index;
-        });
-
-        return orderMap;
-    } catch (error) {
-        console.error('获取文档块顺序失败:', error);
-        return {};
-    }
-}
 
 /**
  * 获取文档标题
