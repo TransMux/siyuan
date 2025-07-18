@@ -7,6 +7,27 @@ import { ICrossReference, IFigureInfo } from "../types";
 import { DocumentManager } from "./DocumentManager";
 import { queryDocumentFigures } from "../utils/apiUtils";
 
+/**
+ * 超级块中的图片/表格信息
+ */
+interface ISuperBlockFigure {
+    id: string;
+    type: 'image' | 'table';
+    element: Element;
+    captionElement: Element | null;
+    captionText: string;
+}
+
+/**
+ * 超级块解析结果
+ */
+interface ISuperBlockInfo {
+    element: Element;
+    layout: 'row' | 'col';
+    children: Element[];
+    figures: ISuperBlockFigure[];
+}
+
 export class CrossReference implements ICrossReference {
     private documentManager: DocumentManager;
 
@@ -27,8 +48,8 @@ export class CrossReference implements ICrossReference {
         if (!protyle) return;
 
         try {
-            // 通过CSS样式实现图片和表格的自动编号
-            this.loadCrossReferenceStyles();
+            // 通过CSS样式实现图片和表格的自动编号和超级块自定义标题
+            this.loadCrossReferenceStyles(protyle);
         } catch (error) {
             console.error('应用交叉引用失败:', error);
             throw error;
@@ -86,30 +107,236 @@ export class CrossReference implements ICrossReference {
     }
 
     /**
-     * 加载交叉引用样式
-     * 基于思源原有的图片和表格结构，通过CSS实现自动编号
+     * 解析protyle中的所有超级块，识别符合条件的图片/表格-标题组合
+     * @param protyle 编辑器实例
+     * @returns 超级块中的图片/表格信息数组
      */
-    private loadCrossReferenceStyles(): void {
+    private parseSuperBlockFigures(protyle: any): ISuperBlockFigure[] {
+        if (!protyle?.wysiwyg?.element) return [];
+
+        const figures: ISuperBlockFigure[] = [];
+        const superBlocks = protyle.wysiwyg.element.querySelectorAll('[data-type="NodeSuperBlock"]');
+
+        for (const sb of superBlocks) {
+            const sbInfo = this.analyzeSuperBlock(sb);
+            if (sbInfo) {
+                figures.push(...sbInfo.figures);
+            }
+        }
+
+        return figures;
+    }
+
+    /**
+     * 分析单个超级块的结构
+     * @param superBlockElement 超级块DOM元素
+     * @returns 超级块信息，如果不符合条件则返回null
+     */
+    private analyzeSuperBlock(superBlockElement: Element): ISuperBlockInfo | null {
+        const layout = superBlockElement.getAttribute('data-sb-layout') as 'row' | 'col';
+
+        // 只处理竖直布局的超级块
+        if (layout !== 'col') return null;
+
+        // 获取所有直接子元素（排除属性元素）
+        const children = Array.from(superBlockElement.children).filter(child =>
+            !child.classList.contains('protyle-attr')
+        );
+
+        // 必须恰好有两个子元素
+        if (children.length !== 2) return null;
+
+        const figures = this.identifyFiguresInSuperBlock(children);
+
+        // 如果没有找到符合条件的图片/表格-标题组合，返回null
+        if (figures.length === 0) return null;
+
+        return {
+            element: superBlockElement,
+            layout,
+            children,
+            figures
+        };
+    }
+
+    /**
+     * 在超级块的子元素中识别图片/表格和对应的标题
+     * @param children 子元素数组
+     * @returns 识别出的图片/表格信息数组
+     */
+    private identifyFiguresInSuperBlock(children: Element[]): ISuperBlockFigure[] {
+        const figures: ISuperBlockFigure[] = [];
+
+        for (let i = 0; i < children.length; i++) {
+            const child = children[i];
+            const figureInfo = this.identifyFigureElement(child);
+
+            if (figureInfo) {
+                // 寻找对应的标题元素
+                const captionElement = this.findCaptionForFigure(children, i);
+                const captionText = captionElement ? this.extractTextFromElement(captionElement) : '';
+
+                figures.push({
+                    id: child.getAttribute('data-node-id') || '',
+                    type: figureInfo.type,
+                    element: child,
+                    captionElement,
+                    captionText
+                });
+            }
+        }
+
+        return figures;
+    }
+
+    /**
+     * 识别元素是否为图片或表格
+     * @param element DOM元素
+     * @returns 图片/表格信息，如果不是则返回null
+     */
+    private identifyFigureElement(element: Element): { type: 'image' | 'table' } | null {
+        const nodeType = element.getAttribute('data-type');
+
+        if (nodeType === 'NodeParagraph') {
+            // 检查段落中是否包含图片
+            const imgElement = element.querySelector('[data-type="img"]');
+            if (imgElement) {
+                return { type: 'image' };
+            }
+        } else if (nodeType === 'NodeTable') {
+            return { type: 'table' };
+        }
+
+        return null;
+    }
+
+    /**
+     * 为图片/表格寻找对应的标题元素
+     * @param children 所有子元素
+     * @param figureIndex 图片/表格元素的索引
+     * @returns 标题元素，如果没有找到则返回null
+     */
+    private findCaptionForFigure(children: Element[], figureIndex: number): Element | null {
+        // 在两个元素的超级块中，另一个元素就是潜在的标题
+        const otherIndex = figureIndex === 0 ? 1 : 0;
+        const otherElement = children[otherIndex];
+
+        // 检查另一个元素是否为文本段落
+        if (otherElement && otherElement.getAttribute('data-type') === 'NodeParagraph') {
+            // 确保这个段落不包含图片（避免两个都是图片段落的情况）
+            const hasImg = otherElement.querySelector('[data-type="img"]');
+            if (!hasImg) {
+                return otherElement;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 从元素中提取纯文本内容
+     * @param element DOM元素
+     * @returns 文本内容
+     */
+    private extractTextFromElement(element: Element): string {
+        // 获取可编辑div中的文本内容
+        const editableDiv = element.querySelector('[contenteditable="true"]');
+        if (editableDiv) {
+            return editableDiv.textContent?.trim() || '';
+        }
+        return element.textContent?.trim() || '';
+    }
+
+    /**
+     * 生成超级块中图片/表格的自定义标题样式
+     * @param figures 超级块中的图片/表格信息
+     * @returns CSS样式字符串
+     */
+    private generateSuperBlockCaptionStyles(figures: ISuperBlockFigure[]): string {
+        let styles = '';
+
+        for (const figure of figures) {
+            if (figure.captionElement && figure.captionText) {
+                const figureId = figure.id;
+                const escapedText = figure.captionText.replace(/"/g, '\\"');
+
+                if (figure.type === 'image') {
+                    // 为图片添加自定义标题，隐藏原始标题段落
+                    styles += `
+                        .protyle-wysiwyg [data-node-id="${figureId}"] [data-type="img"]::after {
+                            content: "${escapedText}";
+                            display: block;
+                            text-align: center;
+                            font-size: 0.9em;
+                            color: var(--b3-theme-on-surface-light);
+                            margin-top: 8px;
+                            font-style: italic;
+                            font-weight: 500;
+                            padding: 4px 16px;
+                            background-color: var(--b3-theme-surface-lightest);
+                            border-radius: var(--b3-border-radius-b);
+                        }
+
+                        .protyle-wysiwyg [data-node-id="${figure.captionElement.getAttribute('data-node-id')}"] {
+                            display: none !important;
+                        }
+                    `;
+                } else if (figure.type === 'table') {
+                    // 为表格添加自定义标题，隐藏原始标题段落
+                    styles += `
+                        .protyle-wysiwyg [data-node-id="${figureId}"]::before {
+                            content: "${escapedText}";
+                            display: block;
+                            text-align: center;
+                            font-size: 0.9em;
+                            color: var(--b3-theme-on-surface-light);
+                            margin-bottom: 8px;
+                            font-style: italic;
+                            font-weight: 500;
+                            padding: 4px 16px;
+                            background-color: var(--b3-theme-surface-lightest);
+                            border-radius: var(--b3-border-radius-b);
+                        }
+
+                        .protyle-wysiwyg [data-node-id="${figure.captionElement.getAttribute('data-node-id')}"] {
+                            display: none !important;
+                        }
+                    `;
+                }
+            }
+        }
+
+        return styles;
+    }
+
+    /**
+     * 加载交叉引用样式
+     * 基于思源原有的图片和表格结构，通过CSS实现自动编号和自定义标题
+     */
+    private loadCrossReferenceStyles(protyle?: any): void {
+        // 解析超级块中的图片/表格
+        const superBlockFigures = protyle ? this.parseSuperBlockFigures(protyle) : [];
+
         const css = `
             /* 图片和表格计数器 */
             .protyle-wysiwyg {
                 counter-reset: figure table;
             }
 
-            /* 图片自动编号 */
-            .protyle-wysiwyg [data-type="img"] {
+            /* 图片自动编号 - 仅对非超级块中的图片 */
+            .protyle-wysiwyg [data-type="img"]:not(.sb [data-type="img"]) {
                 counter-increment: figure;
                 position: relative;
             }
 
-            /* 表格自动编号 */
-            .protyle-wysiwyg [data-type="table"] {
+            /* 表格自动编号 - 仅对非超级块中的表格 */
+            .protyle-wysiwyg [data-type="table"]:not(.sb [data-type="table"]) {
                 counter-increment: table;
                 position: relative;
             }
 
-            /* 图片标题样式 - 在图片下方添加标题 */
-            .protyle-wysiwyg [data-type="img"]::after {
+            /* 图片标题样式 - 仅对非超级块中的图片 */
+            .protyle-wysiwyg [data-type="img"]:not(.sb [data-type="img"])::after {
                 content: "Figure " counter(figure);
                 display: block;
                 text-align: center;
@@ -123,8 +350,8 @@ export class CrossReference implements ICrossReference {
                 border-radius: var(--b3-border-radius-b);
             }
 
-            /* 表格标题样式 - 在表格上方添加标题 */
-            .protyle-wysiwyg [data-type="table"]::before {
+            /* 表格标题样式 - 仅对非超级块中的表格 */
+            .protyle-wysiwyg [data-type="table"]:not(.sb [data-type="table"])::before {
                 content: "Table " counter(table);
                 display: block;
                 text-align: center;
@@ -137,6 +364,9 @@ export class CrossReference implements ICrossReference {
                 background-color: var(--b3-theme-surface-lightest);
                 border-radius: var(--b3-border-radius-b);
             }
+
+            /* 超级块中的图片/表格自定义标题样式 */
+            ${this.generateSuperBlockCaptionStyles(superBlockFigures)}
 
             /* 增强图片容器样式 */
             .protyle-wysiwyg [data-type="img"] {
@@ -375,11 +605,20 @@ export class CrossReference implements ICrossReference {
                 return;
             }
 
-            // 分析是否需要更新图片表格索引
-            if (this.needsFigureUpdate(msg)) {
+            // 分析是否需要更新图片表格索引或超级块结构
+            const needsUpdate = this.needsFigureUpdate(msg) || this.isSuperBlockStructureChange(msg);
+
+            if (needsUpdate) {
                 const currentProtyle = this.documentManager.getCurrentProtyle();
                 if (currentProtyle) {
-                    await this.applyCrossReference(currentProtyle);
+                    // 延迟一小段时间以确保DOM更新完成
+                    setTimeout(async () => {
+                        try {
+                            await this.applyCrossReference(currentProtyle);
+                        } catch (error) {
+                            console.error('CrossReference: 延迟更新失败:', error);
+                        }
+                    }, 100);
                 }
             }
         } catch (error) {
@@ -397,19 +636,62 @@ export class CrossReference implements ICrossReference {
             return false;
         }
 
-        // 检查是否包含图片或表格相关的操作
+        // 检查是否包含图片、表格或超级块相关的操作
         return msg.data.some((transaction: any) => {
             if (!transaction.doOperations || !Array.isArray(transaction.doOperations)) {
                 return false;
             }
 
             return transaction.doOperations.some((operation: any) => {
-                // 检查操作数据中是否包含图片或表格节点
+                // 检查操作数据中是否包含相关节点类型
                 if (operation.data && typeof operation.data === 'string') {
                     return operation.data.includes('data-type="NodeTable"') ||
                            operation.data.includes('<img') ||
-                           operation.data.includes('data-type="NodeParagraph"'); // 段落中可能包含图片
+                           operation.data.includes('data-type="NodeParagraph"') ||
+                           operation.data.includes('data-type="NodeSuperBlock"') ||
+                           operation.data.includes('data-sb-layout'); // 超级块布局变化
                 }
+
+                // 检查操作类型是否涉及超级块
+                if (operation.action) {
+                    return operation.action === 'insert' ||
+                           operation.action === 'update' ||
+                           operation.action === 'delete' ||
+                           operation.action === 'move'; // 移动操作可能影响超级块结构
+                }
+
+                return false;
+            });
+        });
+    }
+
+    /**
+     * 检查是否为超级块结构变化
+     * @param msg WebSocket 消息
+     * @returns 是否为超级块结构变化
+     */
+    private isSuperBlockStructureChange(msg: any): boolean {
+        if (!msg.data || !Array.isArray(msg.data)) {
+            return false;
+        }
+
+        return msg.data.some((transaction: any) => {
+            if (!transaction.doOperations || !Array.isArray(transaction.doOperations)) {
+                return false;
+            }
+
+            return transaction.doOperations.some((operation: any) => {
+                // 检查是否涉及超级块的创建、删除或修改
+                if (operation.data && typeof operation.data === 'string') {
+                    return operation.data.includes('data-type="NodeSuperBlock"') ||
+                           operation.data.includes('data-sb-layout');
+                }
+
+                // 检查是否为影响超级块子元素的操作
+                if (operation.action === 'move' || operation.action === 'insert' || operation.action === 'delete') {
+                    return true;
+                }
+
                 return false;
             });
         });
