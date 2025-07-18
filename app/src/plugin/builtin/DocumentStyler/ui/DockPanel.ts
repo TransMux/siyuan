@@ -258,7 +258,7 @@ export class DockPanel implements IDockPanel {
                     await this.settingsManager.setDocumentHeadingNumberStyle(docId, i, style);
                     this.updateStyleExample(i, style);
 
-                    // 如果标题编号功能已启用，使用防抖更新
+                    // 如果标题编号功能已启用，使用防抖更新，只应用标题编号
                     const docSettings = await this.settingsManager.getDocumentSettings(docId);
                     if (docSettings.headingNumberingEnabled) {
                         this.debounceApplyHeadingNumbering();
@@ -283,7 +283,7 @@ export class DockPanel implements IDockPanel {
 
                     await this.settingsManager.setDocumentNumberingFormat(docId, i, format);
 
-                    // 如果标题编号功能已启用，使用防抖更新
+                    // 如果标题编号功能已启用，使用防抖更新，只应用标题编号
                     const docSettings = await this.settingsManager.getDocumentSettings(docId);
                     if (docSettings.headingNumberingEnabled) {
                         this.debounceApplyHeadingNumbering();
@@ -331,9 +331,21 @@ export class DockPanel implements IDockPanel {
     private async applyDocumentSettings(docId: string): Promise<void> {
         try {
             const settings = await this.settingsManager.getDocumentSettings(docId);
+            await this.applyHeadingNumberingSettings(docId, settings.headingNumberingEnabled);
+            await this.applyCrossReferenceSettings(docId, settings.crossReferenceEnabled);
+        } catch (error) {
+            console.error('应用文档设置失败:', error);
+        }
+    }
 
-            // 应用标题编号
-            if (settings.headingNumberingEnabled) {
+    /**
+     * 应用标题编号设置
+     * @param docId 文档ID
+     * @param enabled 是否启用标题编号
+     */
+    private async applyHeadingNumberingSettings(docId: string, enabled: boolean): Promise<void> {
+        try {
+            if (enabled) {
                 if (this.pluginInstance) {
                     await this.pluginInstance.applyHeadingNumbering();
                 } else {
@@ -346,9 +358,19 @@ export class DockPanel implements IDockPanel {
                     console.warn('DocumentStyler: 插件实例不可用，无法清除标题编号');
                 }
             }
+        } catch (error) {
+            console.error('应用标题编号设置失败:', error);
+        }
+    }
 
-            // 应用交叉引用
-            if (settings.crossReferenceEnabled) {
+    /**
+     * 应用交叉引用设置
+     * @param docId 文档ID
+     * @param enabled 是否启用交叉引用
+     */
+    private async applyCrossReferenceSettings(docId: string, enabled: boolean): Promise<void> {
+        try {
+            if (enabled) {
                 if (this.pluginInstance) {
                     await this.pluginInstance.applyCrossReference();
                 } else {
@@ -362,7 +384,7 @@ export class DockPanel implements IDockPanel {
                 }
             }
         } catch (error) {
-            console.error('应用文档设置失败:', error);
+            console.error('应用交叉引用设置失败:', error);
         }
     }
 
@@ -489,7 +511,9 @@ export class DockPanel implements IDockPanel {
                 await this.settingsManager.setDocumentSettings(docId, { headingNumberingEnabled: enabled });
                 this.toggleHeadingStylesSection(enabled);
                 this.toggleNumberingFormatsSection(enabled);
-                await this.applyDocumentSettings(docId);
+
+                // 只应用标题编号相关的设置，不影响交叉引用
+                await this.applyHeadingNumberingSettings(docId, enabled);
             };
             headingCheckbox.addEventListener('change', headingHandler);
             (headingCheckbox as any)._documentStylerHandler = headingHandler;
@@ -502,7 +526,9 @@ export class DockPanel implements IDockPanel {
 
                 await this.settingsManager.setDocumentSettings(docId, { crossReferenceEnabled: enabled });
                 this.toggleFiguresSection(enabled);
-                await this.applyDocumentSettings(docId);
+
+                // 只应用交叉引用相关的设置，不影响标题编号
+                await this.applyCrossReferenceSettings(docId, enabled);
             };
             crossRefCheckbox.addEventListener('change', crossRefHandler);
             (crossRefCheckbox as any)._documentStylerHandler = crossRefHandler;
