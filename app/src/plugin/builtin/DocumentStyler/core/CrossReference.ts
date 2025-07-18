@@ -27,6 +27,66 @@ export class CrossReference implements ICrossReference {
     }
 
     /**
+     * 仅更新图表编号前缀的CSS样式，不重新获取图表数据
+     * @param docId 文档ID
+     */
+    async updateFigurePrefixStyles(docId: string): Promise<void> {
+        if (!this.settingsManager) {
+            console.warn('CrossReference: 设置管理器未设置，无法更新前缀样式');
+            return;
+        }
+
+        try {
+            // 获取当前的图表数据（从已有的样式中获取，避免重新解析DOM）
+            const figuresData = await this.getFiguresList(docId);
+
+            // 获取最新的前缀设置
+            const figurePrefix = await this.settingsManager.getDocumentFigurePrefix(docId);
+            const tablePrefix = await this.settingsManager.getDocumentTablePrefix(docId);
+
+            // 只更新CSS样式，不重新排序
+            const css = `
+                /* 超级块中的图片/表格自定义标题样式 */
+                ${this.generateFigureCaptionStyles(figuresData, figurePrefix, tablePrefix)}
+
+                /* 交叉引用链接样式 */
+                .protyle-wysiwyg a[href^="#figure-"],
+                .protyle-wysiwyg a[href^="#table-"] {
+                    color: var(--b3-theme-primary);
+                    text-decoration: none;
+                    font-weight: 500;
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    background-color: var(--b3-theme-primary-lightest);
+                    border: 1px solid var(--b3-theme-primary-lighter);
+                    transition: all 0.2s ease;
+                    font-size: 0.9em;
+                }
+
+                .protyle-wysiwyg a[href^="#figure-"]:hover,
+                .protyle-wysiwyg a[href^="#table-"]:hover {
+                    background-color: var(--b3-theme-primary-light);
+                    color: var(--b3-theme-on-primary);
+                    transform: translateY(-1px);
+                    box-shadow: 0 2px 4px var(--b3-theme-surface-light);
+                }
+            `;
+
+            let styleElement = document.getElementById('document-styler-cross-reference') as HTMLStyleElement;
+            if (!styleElement) {
+                styleElement = document.createElement('style');
+                styleElement.id = 'document-styler-cross-reference';
+                document.head.appendChild(styleElement);
+            }
+            styleElement.textContent = css;
+
+            console.log(`CrossReference: 图表前缀样式已更新 - 图片前缀: ${figurePrefix}, 表格前缀: ${tablePrefix}`);
+        } catch (error) {
+            console.error('更新图表前缀样式失败:', error);
+        }
+    }
+
+    /**
      * 设置面板更新回调函数
      * @param callback 面板更新回调函数
      */

@@ -166,10 +166,13 @@ export class SettingsManager implements ISettingsManager {
 
             if (value === null) {
                 // 如果没有设置属性，返回默认设置
+                console.log(`SettingsManager: 文档${docId}没有设置属性，使用默认设置`);
                 settings = this.getDefaultDocumentSettings();
             } else {
+                console.log(`SettingsManager: 从文档${docId}读取设置:`, value);
                 const parsedSettings = JSON.parse(value);
                 settings = this.validateAndFixDocumentSettings(parsedSettings);
+                console.log(`SettingsManager: 解析后的设置:`, settings);
             }
 
             // 更新缓存
@@ -194,9 +197,18 @@ export class SettingsManager implements ISettingsManager {
         try {
             const currentSettings = await this.getDocumentSettings(docId);
             const newSettings = { ...currentSettings, ...settings };
-            await setDocumentAttr(docId, {
+
+            console.log(`SettingsManager: 保存文档设置 - 文档ID: ${docId}`, newSettings);
+
+            const success = await setDocumentAttr(docId, {
                 [DOCUMENT_ATTR_KEYS.DOCUMENT_STYLER_SETTINGS]: JSON.stringify(newSettings)
             });
+
+            if (success) {
+                console.log(`SettingsManager: 文档设置保存成功 - 文档ID: ${docId}`);
+            } else {
+                console.error(`SettingsManager: 文档设置保存失败 - 文档ID: ${docId}`);
+            }
 
             // 清除缓存，确保下次获取最新数据
             this.documentSettingsCache.delete(docId);
@@ -387,6 +399,15 @@ export class SettingsManager implements ISettingsManager {
 
         if (Array.isArray(settings.headingNumberStyles) && settings.headingNumberStyles.length === 6) {
             fixed.headingNumberStyles = [...settings.headingNumberStyles];
+        }
+
+        // 验证并修复图表编号前缀
+        if (typeof settings.figurePrefix === 'string') {
+            fixed.figurePrefix = settings.figurePrefix;
+        }
+
+        if (typeof settings.tablePrefix === 'string') {
+            fixed.tablePrefix = settings.tablePrefix;
         }
 
         return fixed;

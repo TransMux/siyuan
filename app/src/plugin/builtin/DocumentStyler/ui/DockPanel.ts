@@ -338,10 +338,10 @@ export class DockPanel implements IDockPanel {
 
                 await this.settingsManager.setDocumentFigurePrefix(docId, prefix);
 
-                // 如果交叉引用功能已启用，重新应用交叉引用
+                // 如果交叉引用功能已启用，只更新CSS样式，不重新排序
                 const docSettings = await this.settingsManager.getDocumentSettings(docId);
                 if (docSettings.crossReferenceEnabled) {
-                    await this.applyCrossReferenceSettings(docId, true);
+                    await this.crossReference.updateFigurePrefixStyles(docId);
                 }
             };
             figurePrefixInput.addEventListener('input', handler);
@@ -359,10 +359,10 @@ export class DockPanel implements IDockPanel {
 
                 await this.settingsManager.setDocumentTablePrefix(docId, prefix);
 
-                // 如果交叉引用功能已启用，重新应用交叉引用
+                // 如果交叉引用功能已启用，只更新CSS样式，不重新排序
                 const docSettings = await this.settingsManager.getDocumentSettings(docId);
                 if (docSettings.crossReferenceEnabled) {
-                    await this.applyCrossReferenceSettings(docId, true);
+                    await this.crossReference.updateFigurePrefixStyles(docId);
                 }
             };
             tablePrefixInput.addEventListener('input', handler);
