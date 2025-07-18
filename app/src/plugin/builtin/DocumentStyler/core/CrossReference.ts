@@ -5,7 +5,7 @@
 
 import { ICrossReference, IFigureInfo } from "../types";
 import { DocumentManager } from "./DocumentManager";
-import { queryDocumentFigures } from "../utils/apiUtils";
+import { queryDocumentFigures, getDocumentBlockOrderFromDOM } from "../utils/apiUtils";
 
 /**
  * 超级块中的图片/表格信息
@@ -68,12 +68,12 @@ export class CrossReference implements ICrossReference {
         }
     }
 
-    async getFiguresList(docId: string): Promise<IFigureInfo[]> {
+    async getFiguresList(docId: string, protyle?: any): Promise<IFigureInfo[]> {
         if (!docId) return [];
 
         try {
             const figures = await queryDocumentFigures(docId);
-            return this.processFiguresData(figures);
+            return this.processFiguresData(figures, protyle);
         } catch (error) {
             console.error('获取图片表格列表失败:', error);
             return [];
@@ -301,7 +301,7 @@ export class CrossReference implements ICrossReference {
         let figuresData: IFigureInfo[] = [];
         if (protyle?.block?.rootID) {
             try {
-                figuresData = await this.getFiguresList(protyle.block.rootID);
+                figuresData = await this.getFiguresList(protyle.block.rootID, protyle);
             } catch (error) {
                 console.error('获取图片表格数据失败:', error);
             }
@@ -346,21 +346,44 @@ export class CrossReference implements ICrossReference {
     /**
      * 处理图片表格数据
      * @param figures 原始数据
+     * @param protyle 编辑器实例，用于获取DOM中的真实顺序
      * @returns 处理后的数据
      */
-    private processFiguresData(figures: any[]): IFigureInfo[] {
+    private processFiguresData(figures: any[], protyle?: any): IFigureInfo[] {
         const result: IFigureInfo[] = [];
         let imageCount = 0;
         let tableCount = 0;
 
-        // 按照在文档中的顺序排序
+        // 获取DOM中的真实顺序
+        let domOrder: Record<string, number> = {};
+        if (protyle) {
+            domOrder = getDocumentBlockOrderFromDOM(protyle);
+            console.log('CrossReference: DOM顺序映射:', domOrder);
+        }
+
+        // 按照在文档中的真实顺序排序
+        console.log('CrossReference: 排序前的图片表格:', figures.map(f => ({ id: f.id, type: f.figureType, sort: f.sort, domOrder: domOrder[f.id] })));
+
         figures.sort((a, b) => {
-            // 如果有sort字段，按sort排序，否则按id排序
-            if (a.sort && b.sort) {
-                return a.sort - b.sort;
+            // 优先使用DOM中的真实顺序
+            if (domOrder[a.id] !== undefined && domOrder[b.id] !== undefined) {
+                const result = domOrder[a.id] - domOrder[b.id];
+                console.log(`CrossReference: DOM排序 ${a.id}(${domOrder[a.id]}) vs ${b.id}(${domOrder[b.id]}) = ${result}`);
+                return result;
             }
-            return a.id.localeCompare(b.id);
+            // 如果DOM顺序不可用，回退到sort字段
+            if (a.sort && b.sort) {
+                const result = a.sort - b.sort;
+                console.log(`CrossReference: Sort字段排序 ${a.id}(${a.sort}) vs ${b.id}(${b.sort}) = ${result}`);
+                return result;
+            }
+            // 最后回退到ID排序
+            const result = a.id.localeCompare(b.id);
+            console.log(`CrossReference: ID排序 ${a.id} vs ${b.id} = ${result}`);
+            return result;
         });
+
+        console.log('CrossReference: 排序后的图片表格:', figures.map(f => ({ id: f.id, type: f.figureType, sort: f.sort, domOrder: domOrder[f.id] })));
 
         for (const figure of figures) {
             if (figure.figureType === 'image') {

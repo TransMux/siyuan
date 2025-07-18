@@ -153,17 +153,17 @@ export function querySQL(sql: string): Promise<any[]> {
  */
 export async function queryDocumentFigures(docId: string): Promise<any[]> {
     const results: any[] = [];
-    
+
     try {
         // 查询表格块
         const tables = await querySQL(
-            `SELECT id, type, subtype, content FROM blocks WHERE root_id = '${docId}' AND type = 't' ORDER BY sort`
+            `SELECT id, type, subtype, content FROM blocks WHERE root_id = '${docId}' AND type = 't'`
         );
         results.push(...tables.map(item => ({ ...item, figureType: 'table' })));
 
         // 查询包含图片的段落块
         const images = await querySQL(
-            `SELECT id, type, subtype, content FROM blocks WHERE root_id = '${docId}' AND type = 'p' AND markdown LIKE '![%' ORDER BY sort`
+            `SELECT id, type, subtype, content FROM blocks WHERE root_id = '${docId}' AND type = 'p' AND markdown LIKE '![%'`
         );
         results.push(...images.map(item => ({ ...item, figureType: 'image' })));
 
@@ -172,6 +172,56 @@ export async function queryDocumentFigures(docId: string): Promise<any[]> {
     }
 
     return results;
+}
+
+/**
+ * 获取文档中所有块的真实顺序映射
+ * @param protyle 编辑器实例
+ * @returns 块ID到真实顺序的映射
+ */
+export function getDocumentBlockOrderFromDOM(protyle: any): Record<string, number> {
+    const orderMap: Record<string, number> = {};
+
+    if (!protyle?.wysiwyg?.element) {
+        return orderMap;
+    }
+
+    // 遍历DOM中所有具有data-node-id属性的块级元素
+    const blockElements = protyle.wysiwyg.element.querySelectorAll('[data-node-id]');
+
+    blockElements.forEach((element: Element, index: number) => {
+        const nodeId = element.getAttribute('data-node-id');
+        if (nodeId) {
+            orderMap[nodeId] = index;
+        }
+    });
+
+    return orderMap;
+}
+
+/**
+ * 获取文档中所有块的真实顺序映射（通过API）
+ * @param docId 文档ID
+ * @returns 块ID到真实顺序的映射
+ */
+export async function getDocumentBlockOrder(docId: string): Promise<Record<string, number>> {
+    try {
+        // 通过SQL查询获取所有块，但这里的sort字段可能不准确
+        // 我们需要一个更好的方法来获取真实顺序
+        const allBlocks = await querySQL(
+            `SELECT id FROM blocks WHERE root_id = '${docId}' AND type != 'd' ORDER BY sort`
+        );
+
+        const orderMap: Record<string, number> = {};
+        allBlocks.forEach((block, index) => {
+            orderMap[block.id] = index;
+        });
+
+        return orderMap;
+    } catch (error) {
+        console.error('获取文档块顺序失败:', error);
+        return {};
+    }
 }
 
 /**
