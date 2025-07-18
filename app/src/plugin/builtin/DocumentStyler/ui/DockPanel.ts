@@ -16,15 +16,19 @@ export class DockPanel implements IDockPanel {
     private crossReference: CrossReference;
     private customElement: Custom | null = null;
     private panelElement: Element | null = null;
+    private pluginInstance: any; // 主插件实例
+    private eventsInitialized: boolean = false; // 标记事件是否已初始化
 
     constructor(
         settingsManager: SettingsManager,
         documentManager: DocumentManager,
-        crossReference: CrossReference
+        crossReference: CrossReference,
+        pluginInstance?: any
     ) {
         this.settingsManager = settingsManager;
         this.documentManager = documentManager;
         this.crossReference = crossReference;
+        this.pluginInstance = pluginInstance;
     }
 
     async init(): Promise<void> {
@@ -32,8 +36,12 @@ export class DockPanel implements IDockPanel {
     }
 
     destroy(): void {
+        // 清理事件监听器
+        this.clearPanelEvents();
+
         this.customElement = null;
         this.panelElement = null;
+        this.eventsInitialized = false;
     }
 
     /**
@@ -49,10 +57,13 @@ export class DockPanel implements IDockPanel {
         try {
             this.customElement = custom;
             this.panelElement = custom.element;
-            
+
+            // 重置事件初始化状态
+            this.eventsInitialized = false;
+
             custom.element.innerHTML = await this.generatePanelHTML();
             this.bindPanelEvents();
-            this.updatePanel();
+            await this.updatePanel();
         } catch (error) {
             console.error('DocumentStyler: Error initializing dock panel:', error);
         }
@@ -112,44 +123,43 @@ export class DockPanel implements IDockPanel {
                     <div class="document-styler-section">
                         <h3 class="document-styler-section-title">当前文档状态</h3>
                         <div id="current-doc-status">
-                            <div class="b3-label">加载中...</div>
+                            <div class="document-styler-option">
+                                <label class="fn__flex b3-label">
+                                    <div class="fn__flex-1">
+                                        标题自动编号
+                                        <code class="fn__code fn__none"></code>
+                                        <div class="b3-label__text">启用标题编号功能</div>
+                                    </div>
+                                    <span class="fn__space"></span>
+                                    <input class="b3-switch fn__flex-center" id="doc-heading-enabled" type="checkbox">
+                                </label>
+                            </div>
+                            <div class="document-styler-option">
+                                <label class="fn__flex b3-label">
+                                    <div class="fn__flex-1">
+                                        交叉引用
+                                        <code class="fn__code fn__none"></code>
+                                        <div class="b3-label__text">为图片和表格添加编号标签</div>
+                                    </div>
+                                    <span class="fn__space"></span>
+                                    <input class="b3-switch fn__flex-center" id="doc-crossref-enabled" type="checkbox">
+                                </label>
+                            </div>
+                            <div class="document-styler-option">
+                                <label class="fn__flex b3-label">
+                                    <div class="fn__flex-1">
+                                        默认启用
+                                        <code class="fn__code fn__none"></code>
+                                        <div class="b3-label__text">新建文档时默认启用编号</div>
+                                    </div>
+                                    <span class="fn__space"></span>
+                                    <input class="b3-switch fn__flex-center" id="doc-default-enabled" type="checkbox">
+                                </label>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- 文档功能设置 -->
-                    <div class="document-styler-section">
-                        <h3 class="document-styler-section-title">文档功能</h3>
-                        <div class="document-styler-option">
-                            <label class="fn__flex b3-label">
-                                <div class="fn__flex-1">
-                                    标题自动编号
-                                    <div class="b3-label__text">启用标题编号功能</div>
-                                </div>
-                                <span class="fn__space"></span>
-                                <input class="b3-switch fn__flex-center" id="heading-numbering" type="checkbox" ${docSettings.headingNumberingEnabled ? 'checked' : ''}>
-                            </label>
-                        </div>
-                        <div class="document-styler-option">
-                            <label class="fn__flex b3-label">
-                                <div class="fn__flex-1">
-                                    交叉引用
-                                    <div class="b3-label__text">为图片和表格添加编号标签</div>
-                                </div>
-                                <span class="fn__space"></span>
-                                <input class="b3-switch fn__flex-center" id="cross-reference" type="checkbox" ${docSettings.crossReferenceEnabled ? 'checked' : ''}>
-                            </label>
-                        </div>
-                        <div class="document-styler-option">
-                            <label class="fn__flex b3-label">
-                                <div class="fn__flex-1">
-                                    默认启用
-                                    <div class="b3-label__text">新建文档时默认启用编号</div>
-                                </div>
-                                <span class="fn__space"></span>
-                                <input class="b3-switch fn__flex-center" id="default-enabled" type="checkbox" ${docSettings.defaultEnabled ? 'checked' : ''}>
-                            </label>
-                        </div>
-                    </div>
+
 
                     <!-- 标题编号样式设置 -->
                     <div class="document-styler-section" id="heading-styles-section" style="${docSettings.headingNumberingEnabled ? '' : 'display: none;'}">
@@ -251,55 +261,94 @@ export class DockPanel implements IDockPanel {
     private bindPanelEvents(): void {
         if (!this.panelElement) return;
 
+        // 清除之前的事件监听器
+        this.clearPanelEvents();
+
         const docId = this.documentManager.getCurrentDocId();
         if (!docId) return;
-
-        // 标题编号开关
-        const headingNumberingCheckbox = this.panelElement.querySelector('#heading-numbering') as HTMLInputElement;
-        headingNumberingCheckbox?.addEventListener('change', async (e) => {
-            const enabled = (e.target as HTMLInputElement).checked;
-            await this.settingsManager.setDocumentSettings(docId, { headingNumberingEnabled: enabled });
-            this.toggleHeadingStylesSection(enabled);
-            this.toggleNumberingFormatsSection(enabled);
-            await this.applyDocumentSettings(docId);
-        });
-
-        // 交叉引用开关
-        const crossReferenceCheckbox = this.panelElement.querySelector('#cross-reference') as HTMLInputElement;
-        crossReferenceCheckbox?.addEventListener('change', async (e) => {
-            const enabled = (e.target as HTMLInputElement).checked;
-            await this.settingsManager.setDocumentSettings(docId, { crossReferenceEnabled: enabled });
-            this.toggleFiguresSection(enabled);
-            await this.applyDocumentSettings(docId);
-        });
-
-        // 默认启用开关
-        const defaultEnabledCheckbox = this.panelElement.querySelector('#default-enabled') as HTMLInputElement;
-        defaultEnabledCheckbox?.addEventListener('change', async (e) => {
-            const enabled = (e.target as HTMLInputElement).checked;
-            await this.settingsManager.setDocumentSettings(docId, { defaultEnabled: enabled });
-        });
 
         // 标题编号样式选择器
         for (let i = 0; i < 6; i++) {
             const styleSelect = this.panelElement.querySelector(`#heading-style-${i}`) as HTMLSelectElement;
-            styleSelect?.addEventListener('change', async (e) => {
-                const style = (e.target as HTMLSelectElement).value as HeadingNumberStyle;
-                await this.settingsManager.setDocumentHeadingNumberStyle(docId, i, style);
-                this.updateStyleExample(i, style);
-                await this.applyDocumentSettings(docId);
-            });
+            if (styleSelect) {
+                const handler = async (e: Event) => {
+                    const style = (e.target as HTMLSelectElement).value as HeadingNumberStyle;
+                    console.log(`DocumentStyler: 标题编号样式改变 - 级别${i+1}, 样式: ${style}`);
+
+                    await this.settingsManager.setDocumentHeadingNumberStyle(docId, i, style);
+                    this.updateStyleExample(i, style);
+
+                    // 如果标题编号功能已启用，立即应用新样式
+                    const docSettings = await this.settingsManager.getDocumentSettings(docId);
+                    console.log(`DocumentStyler: 文档设置 - 标题编号启用: ${docSettings.headingNumberingEnabled}, 插件实例可用: ${!!this.pluginInstance}`);
+
+                    if (docSettings.headingNumberingEnabled && this.pluginInstance) {
+                        console.log('DocumentStyler: 应用标题编号样式更新');
+                        await this.pluginInstance.applyHeadingNumbering();
+                    } else {
+                        console.log('DocumentStyler: 跳过标题编号样式更新 - 功能未启用或插件实例不可用');
+                    }
+                };
+                styleSelect.addEventListener('change', handler);
+                // 存储事件处理器以便后续清理
+                (styleSelect as any)._documentStylerHandler = handler;
+            }
         }
 
         // 编号格式输入框
         for (let i = 0; i < 6; i++) {
             const formatInput = this.panelElement.querySelector(`#format-${i}`) as HTMLInputElement;
-            formatInput?.addEventListener('change', async (e) => {
-                const format = (e.target as HTMLInputElement).value;
-                await this.settingsManager.setDocumentNumberingFormat(docId, i, format);
-                await this.applyDocumentSettings(docId);
-            });
+            if (formatInput) {
+                const handler = async (e: Event) => {
+                    const format = (e.target as HTMLInputElement).value;
+                    console.log(`DocumentStyler: 编号格式改变 - 级别${i+1}, 格式: ${format}`);
+
+                    await this.settingsManager.setDocumentNumberingFormat(docId, i, format);
+
+                    // 如果标题编号功能已启用，立即应用新格式
+                    const docSettings = await this.settingsManager.getDocumentSettings(docId);
+                    console.log(`DocumentStyler: 文档设置 - 标题编号启用: ${docSettings.headingNumberingEnabled}, 插件实例可用: ${!!this.pluginInstance}`);
+
+                    if (docSettings.headingNumberingEnabled && this.pluginInstance) {
+                        console.log('DocumentStyler: 应用编号格式更新');
+                        await this.pluginInstance.applyHeadingNumbering();
+                    } else {
+                        console.log('DocumentStyler: 跳过编号格式更新 - 功能未启用或插件实例不可用');
+                    }
+                };
+                formatInput.addEventListener('change', handler);
+                // 存储事件处理器以便后续清理
+                (formatInput as any)._documentStylerHandler = handler;
+            }
         }
+    }
+
+    /**
+     * 清除面板事件监听器
+     */
+    private clearPanelEvents(): void {
+        if (!this.panelElement) return;
+
+        // 清除标题编号样式选择器事件
+        for (let i = 0; i < 6; i++) {
+            const styleSelect = this.panelElement.querySelector(`#heading-style-${i}`) as HTMLSelectElement;
+            if (styleSelect && (styleSelect as any)._documentStylerHandler) {
+                styleSelect.removeEventListener('change', (styleSelect as any)._documentStylerHandler);
+                delete (styleSelect as any)._documentStylerHandler;
+            }
+        }
+
+        // 清除编号格式输入框事件
+        for (let i = 0; i < 6; i++) {
+            const formatInput = this.panelElement.querySelector(`#format-${i}`) as HTMLInputElement;
+            if (formatInput && (formatInput as any)._documentStylerHandler) {
+                formatInput.removeEventListener('change', (formatInput as any)._documentStylerHandler);
+                delete (formatInput as any)._documentStylerHandler;
+            }
+        }
+
+        // 清除文档状态事件
+        this.clearDocumentStatusEvents();
     }
 
     /**
@@ -312,16 +361,32 @@ export class DockPanel implements IDockPanel {
             
             // 应用标题编号
             if (settings.headingNumberingEnabled) {
-                await (window as any).documentStylerPlugin?.applyHeadingNumbering();
+                if (this.pluginInstance) {
+                    await this.pluginInstance.applyHeadingNumbering();
+                } else {
+                    console.warn('DocumentStyler: 插件实例不可用，无法应用标题编号');
+                }
             } else {
-                await (window as any).documentStylerPlugin?.clearHeadingNumbering();
+                if (this.pluginInstance) {
+                    await this.pluginInstance.clearHeadingNumbering();
+                } else {
+                    console.warn('DocumentStyler: 插件实例不可用，无法清除标题编号');
+                }
             }
             
             // 应用交叉引用
             if (settings.crossReferenceEnabled) {
-                await (window as any).documentStylerPlugin?.applyCrossReference();
+                if (this.pluginInstance) {
+                    await this.pluginInstance.applyCrossReference();
+                } else {
+                    console.warn('DocumentStyler: 插件实例不可用，无法应用交叉引用');
+                }
             } else {
-                await (window as any).documentStylerPlugin?.clearCrossReference();
+                if (this.pluginInstance) {
+                    await this.pluginInstance.clearCrossReference();
+                } else {
+                    console.warn('DocumentStyler: 插件实例不可用，无法清除交叉引用');
+                }
             }
         } catch (error) {
             console.error('应用文档设置失败:', error);
@@ -334,7 +399,11 @@ export class DockPanel implements IDockPanel {
     private updateStyleExample(level: number, style: HeadingNumberStyle): void {
         const exampleElement = this.panelElement?.querySelector(`#heading-style-${level}`)?.parentElement?.querySelector('.document-styler-style-example');
         if (exampleElement) {
-            exampleElement.textContent = NumberStyleConverter.getExample(style);
+            const example = NumberStyleConverter.getExample(style);
+            exampleElement.textContent = example;
+            console.log(`DocumentStyler: 更新样式示例 - 级别${level+1}, 样式: ${style}, 示例: ${example}`);
+        } else {
+            console.warn(`DocumentStyler: 未找到样式示例元素 - 级别${level+1}`);
         }
     }
 
@@ -376,16 +445,6 @@ export class DockPanel implements IDockPanel {
         try {
             const docSettings = await this.settingsManager.getDocumentSettings(docId);
 
-            // 更新文档功能开关状态
-            const headingCheckbox = this.panelElement.querySelector('#heading-numbering') as HTMLInputElement;
-            if (headingCheckbox) headingCheckbox.checked = docSettings.headingNumberingEnabled;
-
-            const crossRefCheckbox = this.panelElement.querySelector('#cross-reference') as HTMLInputElement;
-            if (crossRefCheckbox) crossRefCheckbox.checked = docSettings.crossReferenceEnabled;
-
-            const defaultEnabledCheckbox = this.panelElement.querySelector('#default-enabled') as HTMLInputElement;
-            if (defaultEnabledCheckbox) defaultEnabledCheckbox.checked = docSettings.defaultEnabled;
-
             // 更新当前文档状态显示
             await this.updateCurrentDocumentStatus(docId);
 
@@ -411,42 +470,37 @@ export class DockPanel implements IDockPanel {
      * 更新当前文档状态显示
      */
     private async updateCurrentDocumentStatus(docId: string | null): Promise<void> {
-        const statusElement = this.panelElement?.querySelector('#current-doc-status');
-        if (!statusElement) return;
-
-        if (!docId) {
-            statusElement.innerHTML = '<div class="b3-label">当前文档：未选择</div>';
-            return;
-        }
+        if (!docId) return;
 
         try {
-            const headingEnabled = await this.settingsManager.isDocumentHeadingNumberingEnabled(docId);
-            const crossRefEnabled = await this.settingsManager.isDocumentCrossReferenceEnabled(docId);
+            const docSettings = await this.settingsManager.getDocumentSettings(docId);
+            console.log(`DocumentStyler: 更新文档状态显示 - 文档ID: ${docId}`, docSettings);
 
-            const statusHTML = `
-                <div class="b3-label">当前文档状态</div>
-                <div class="fn__flex fn__flex-wrap">
-                    <label class="fn__flex fn__flex-center">
-                        <input type="checkbox" id="doc-heading-enabled" ${headingEnabled ? 'checked' : ''}>
-                        <span class="fn__space"></span>
-                        <span>标题编号</span>
-                    </label>
-                    <div class="fn__space"></span>
-                    <label class="fn__flex fn__flex-center">
-                        <input type="checkbox" id="doc-crossref-enabled" ${crossRefEnabled ? 'checked' : ''}>
-                        <span class="fn__space"></span>
-                        <span>交叉引用</span>
-                    </label>
-                </div>
-            `;
+            // 更新标题编号开关
+            const headingCheckbox = this.panelElement?.querySelector('#doc-heading-enabled') as HTMLInputElement;
+            if (headingCheckbox) {
+                headingCheckbox.checked = docSettings.headingNumberingEnabled;
+            }
 
-            statusElement.innerHTML = statusHTML;
+            // 更新交叉引用开关
+            const crossRefCheckbox = this.panelElement?.querySelector('#doc-crossref-enabled') as HTMLInputElement;
+            if (crossRefCheckbox) {
+                crossRefCheckbox.checked = docSettings.crossReferenceEnabled;
+            }
 
-            // 绑定事件
-            this.bindDocumentStatusEvents(docId);
+            // 更新默认启用开关
+            const defaultEnabledCheckbox = this.panelElement?.querySelector('#doc-default-enabled') as HTMLInputElement;
+            if (defaultEnabledCheckbox) {
+                defaultEnabledCheckbox.checked = docSettings.defaultEnabled;
+            }
+
+            // 只在初始化时绑定事件，避免重复绑定
+            if (!this.eventsInitialized) {
+                this.bindDocumentStatusEvents(docId);
+                this.eventsInitialized = true;
+            }
         } catch (error) {
             console.error('更新文档状态失败:', error);
-            statusElement.innerHTML = '<div class="b3-label">状态获取失败</div>';
         }
     }
 
@@ -454,23 +508,74 @@ export class DockPanel implements IDockPanel {
      * 绑定文档状态事件
      */
     private bindDocumentStatusEvents(docId: string): void {
+        // 先清除之前的事件监听器
+        this.clearDocumentStatusEvents();
+
         const headingCheckbox = this.panelElement?.querySelector('#doc-heading-enabled') as HTMLInputElement;
         const crossRefCheckbox = this.panelElement?.querySelector('#doc-crossref-enabled') as HTMLInputElement;
+        const defaultEnabledCheckbox = this.panelElement?.querySelector('#doc-default-enabled') as HTMLInputElement;
 
         if (headingCheckbox) {
-            headingCheckbox.addEventListener('change', async (e) => {
+            const headingHandler = async (e: Event) => {
                 const enabled = (e.target as HTMLInputElement).checked;
+                console.log(`DocumentStyler: 标题编号开关改变 - 启用: ${enabled}`);
+
                 await this.settingsManager.setDocumentSettings(docId, { headingNumberingEnabled: enabled });
+                this.toggleHeadingStylesSection(enabled);
+                this.toggleNumberingFormatsSection(enabled);
                 await this.applyDocumentSettings(docId);
-            });
+            };
+            headingCheckbox.addEventListener('change', headingHandler);
+            (headingCheckbox as any)._documentStylerHandler = headingHandler;
         }
 
         if (crossRefCheckbox) {
-            crossRefCheckbox.addEventListener('change', async (e) => {
+            const crossRefHandler = async (e: Event) => {
                 const enabled = (e.target as HTMLInputElement).checked;
+                console.log(`DocumentStyler: 交叉引用开关改变 - 启用: ${enabled}`);
+
                 await this.settingsManager.setDocumentSettings(docId, { crossReferenceEnabled: enabled });
+                this.toggleFiguresSection(enabled);
                 await this.applyDocumentSettings(docId);
-            });
+            };
+            crossRefCheckbox.addEventListener('change', crossRefHandler);
+            (crossRefCheckbox as any)._documentStylerHandler = crossRefHandler;
+        }
+
+        if (defaultEnabledCheckbox) {
+            const defaultHandler = async (e: Event) => {
+                const enabled = (e.target as HTMLInputElement).checked;
+                console.log(`DocumentStyler: 默认启用开关改变 - 启用: ${enabled}`);
+
+                await this.settingsManager.setDocumentSettings(docId, { defaultEnabled: enabled });
+            };
+            defaultEnabledCheckbox.addEventListener('change', defaultHandler);
+            (defaultEnabledCheckbox as any)._documentStylerHandler = defaultHandler;
+        }
+    }
+
+    /**
+     * 清除文档状态事件监听器
+     */
+    private clearDocumentStatusEvents(): void {
+        if (!this.panelElement) return;
+
+        const headingCheckbox = this.panelElement.querySelector('#doc-heading-enabled') as HTMLInputElement;
+        if (headingCheckbox && (headingCheckbox as any)._documentStylerHandler) {
+            headingCheckbox.removeEventListener('change', (headingCheckbox as any)._documentStylerHandler);
+            delete (headingCheckbox as any)._documentStylerHandler;
+        }
+
+        const crossRefCheckbox = this.panelElement.querySelector('#doc-crossref-enabled') as HTMLInputElement;
+        if (crossRefCheckbox && (crossRefCheckbox as any)._documentStylerHandler) {
+            crossRefCheckbox.removeEventListener('change', (crossRefCheckbox as any)._documentStylerHandler);
+            delete (crossRefCheckbox as any)._documentStylerHandler;
+        }
+
+        const defaultEnabledCheckbox = this.panelElement.querySelector('#doc-default-enabled') as HTMLInputElement;
+        if (defaultEnabledCheckbox && (defaultEnabledCheckbox as any)._documentStylerHandler) {
+            defaultEnabledCheckbox.removeEventListener('change', (defaultEnabledCheckbox as any)._documentStylerHandler);
+            delete (defaultEnabledCheckbox as any)._documentStylerHandler;
         }
     }
 

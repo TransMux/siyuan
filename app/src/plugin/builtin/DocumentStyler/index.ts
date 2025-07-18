@@ -70,7 +70,7 @@ export class DocumentStylerPlugin extends Plugin {
         );
 
         // 创建UI模块
-        this.dockPanel = new DockPanel(this.settingsManager, this.documentManager, this.crossReference);
+        this.dockPanel = new DockPanel(this.settingsManager, this.documentManager, this.crossReference, this);
         this.eventHandler = new EventHandler(
             this,
             this.settingsManager,
@@ -315,11 +315,15 @@ export class DocumentStylerPlugin extends Plugin {
         if (!docId) return;
 
         try {
+            console.log('DocumentStyler: 开始应用标题编号');
+            
             // 获取文档设置
             const docSettings = await this.settingsManager.getDocumentSettings(docId);
+            console.log('DocumentStyler: 文档设置获取成功', docSettings);
             
             // 使用文档的设置更新编号
             await this.headingNumbering.updateNumberingForDoc(docId);
+            console.log('DocumentStyler: 标题编号应用完成');
         } catch (error) {
             console.error('应用标题编号失败:', error);
         }

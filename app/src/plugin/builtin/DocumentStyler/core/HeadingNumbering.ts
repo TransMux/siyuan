@@ -70,19 +70,21 @@ export class HeadingNumbering implements IHeadingNumbering {
         if (!docId) return;
 
         try {
-            // 获取设置
-            const settings = this.settingsManager.getSettings();
+            // 获取文档特定设置，而不是全局设置
+            const docSettings = await this.settingsManager.getDocumentSettings(docId);
+            console.log('HeadingNumbering: 获取文档设置', docSettings);
 
             // 获取标题编号映射
             const headingMap = await this.outlineManager.getHeadingNumberMap(
                 docId,
-                settings.numberingFormats,
-                settings.headingNumberStyles,
+                docSettings.numberingFormats,
+                docSettings.headingNumberStyles,
                 true // 强制刷新
             );
 
             // 应用CSS样式
             this.styleManager.applyHeadingNumbering(headingMap);
+            console.log('HeadingNumbering: 标题编号更新完成');
         } catch (error) {
             console.error('更新标题编号失败:', error);
             throw error;
@@ -105,8 +107,11 @@ export class HeadingNumbering implements IHeadingNumbering {
      */
     async updateNumberingForDoc(docId: string): Promise<void> {
         try {
+            console.log(`DocumentStyler: 开始更新文档${docId}的标题编号`);
+            
             // 获取文档设置
             const docSettings = await this.settingsManager.getDocumentSettings(docId);
+            console.log('DocumentStyler: 文档设置', docSettings);
 
             // 获取标题编号映射
             const headingMap = await this.outlineManager.getHeadingNumberMap(
@@ -115,9 +120,11 @@ export class HeadingNumbering implements IHeadingNumbering {
                 docSettings.headingNumberStyles,
                 true // 强制刷新
             );
+            console.log('DocumentStyler: 标题编号映射获取成功', headingMap);
 
             // 应用CSS样式
             this.styleManager.applyHeadingNumbering(headingMap);
+            console.log('DocumentStyler: CSS样式应用完成');
         } catch (error) {
             console.error(`更新文档${docId}的标题编号失败:`, error);
             throw error;
