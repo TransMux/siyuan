@@ -174,17 +174,21 @@ function generateHeaderNumber(
     let result = format;
     // 找出所有占位符
     const placeholders = format.match(/\{(\d+)\}/g) || [];
-    
+
     for (const placeholder of placeholders) {
         // 获取占位符中的数字
         const match = placeholder.match(/\{(\d+)\}/);
         if (!match) continue;
-        const index = parseInt(match[1]) - 1;
-        // 使用当前标题级别的 useChineseNumbers 设置
-        const shouldUseChinese = useChineseNumbers[actualLevel] || false;
-        const num = newCounters[index];
-        const numStr = shouldUseChinese ? num2Chinese(num) : num.toString();
-        result = result.replace(placeholder, numStr);
+        const placeholderLevel = parseInt(match[1]) - 1; // 占位符级别（0-based）
+
+        // 确保占位符级别不超过当前实际级别
+        if (placeholderLevel <= actualLevel && placeholderLevel < newCounters.length) {
+            // 使用占位符对应级别的 useChineseNumbers 设置
+            const shouldUseChinese = useChineseNumbers[placeholderLevel] || false;
+            const num = newCounters[placeholderLevel];
+            const numStr = shouldUseChinese ? num2Chinese(num) : num.toString();
+            result = result.replace(placeholder, numStr);
+        }
     }
     
     return [result, newCounters];

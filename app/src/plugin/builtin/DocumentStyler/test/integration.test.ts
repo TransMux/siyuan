@@ -54,8 +54,46 @@ const mockOutlineData = [
         nodeType: "NodeHeading",
         subType: "h1",
         depth: 0,
-        count: 0,
-        blocks: []
+        count: 1,
+        blocks: [
+            {
+                id: "20231201-006",
+                name: "2.1 技术选型",
+                nodeType: "NodeHeading",
+                subType: "h2",
+                depth: 1,
+                count: 2,
+                blocks: [
+                    {
+                        id: "20231201-007",
+                        name: "2.1.1 前端技术",
+                        nodeType: "NodeHeading",
+                        subType: "h3",
+                        depth: 2,
+                        count: 0,
+                        blocks: []
+                    },
+                    {
+                        id: "20231201-008",
+                        name: "2.1.2 后端技术",
+                        nodeType: "NodeHeading",
+                        subType: "h3",
+                        depth: 2,
+                        count: 0,
+                        blocks: []
+                    }
+                ]
+            },
+            {
+                id: "20231201-009",
+                name: "2.2 架构设计",
+                nodeType: "NodeHeading",
+                subType: "h2",
+                depth: 1,
+                count: 0,
+                blocks: []
+            }
+        ]
     }
 ];
 
@@ -99,7 +137,11 @@ function testOutlineParsing(): void {
             "20231201-002": "1.1 ",
             "20231201-003": "1.2 ",
             "20231201-004": "1.2.1 ",
-            "20231201-005": "2. "
+            "20231201-005": "2. ",
+            "20231201-006": "2.1 ",
+            "20231201-007": "2.1.1 ",
+            "20231201-008": "2.1.2 ",
+            "20231201-009": "2.2 "
         };
         
         let allCorrect = true;

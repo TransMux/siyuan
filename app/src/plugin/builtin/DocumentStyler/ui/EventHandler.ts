@@ -103,6 +103,14 @@ export class EventHandler implements IEventHandler {
             const protyle = event.detail?.protyle;
             if (!protyle?.block?.rootID) return;
 
+            const newDocId = protyle.block.rootID;
+            const currentDocId = this.documentManager.getCurrentDocId();
+
+            // 检查是否是同一个文档，如果是则不需要更新
+            if (currentDocId === newDocId) {
+                return;
+            }
+
             // 更新文档管理器
             this.documentManager.updateCurrentDocument(protyle);
 

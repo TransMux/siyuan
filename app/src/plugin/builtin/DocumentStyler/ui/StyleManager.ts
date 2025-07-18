@@ -4,7 +4,6 @@
  */
 
 import { IStyleManager } from "../types";
-import { createStyleElement, removeStyleElement } from "../utils/domUtils";
 import { CSSGenerator } from "../utils/cssGenerator";
 import { IHeadingNumberMap } from "../utils/outlineUtils";
 
@@ -29,8 +28,11 @@ export class StyleManager implements IStyleManager {
     }
 
     removeStyles(): void {
-        removeStyleElement(this.MAIN_STYLE_ID);
-        removeStyleElement(this.HEADING_STYLE_ID);
+        const mainStyle = document.getElementById(this.MAIN_STYLE_ID);
+        if (mainStyle) mainStyle.remove();
+
+        const headingStyle = document.getElementById(this.HEADING_STYLE_ID);
+        if (headingStyle) headingStyle.remove();
     }
 
     updateStyles(): void {
@@ -337,7 +339,13 @@ export class StyleManager implements IStyleManager {
             }
         `;
 
-        createStyleElement(this.MAIN_STYLE_ID, css);
+        let styleElement = document.getElementById(this.MAIN_STYLE_ID) as HTMLStyleElement;
+        if (!styleElement) {
+            styleElement = document.createElement('style');
+            styleElement.id = this.MAIN_STYLE_ID;
+            document.head.appendChild(styleElement);
+        }
+        styleElement.textContent = css;
     }
 
     /**
@@ -381,14 +389,23 @@ export class StyleManager implements IStyleManager {
             `;
         }
 
-        createStyleElement(this.HEADING_STYLE_ID, css);
+        let styleElement = document.getElementById(this.HEADING_STYLE_ID) as HTMLStyleElement;
+        if (!styleElement) {
+            styleElement = document.createElement('style');
+            styleElement.id = this.HEADING_STYLE_ID;
+            document.head.appendChild(styleElement);
+        }
+        styleElement.textContent = css;
     }
 
     /**
      * 移除标题编号样式
      */
     removeHeadingNumberingStyles(): void {
-        removeStyleElement(this.HEADING_STYLE_ID);
+        const styleElement = document.getElementById(this.HEADING_STYLE_ID);
+        if (styleElement) {
+            styleElement.remove();
+        }
     }
 
     /**
@@ -493,14 +510,7 @@ export class StyleManager implements IStyleManager {
         CSSGenerator.applyCSS(css);
     }
 
-    /**
-     * 清除所有编号样式
-     */
-    private clearNumberingStyles(): void {
-        CSSGenerator.removeCSS();
-        this.currentHeadingMap = {};
-        this.currentFigureMap = {};
-    }
+
 
     /**
      * 检查编号样式是否已应用
