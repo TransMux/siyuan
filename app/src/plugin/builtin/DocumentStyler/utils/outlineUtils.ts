@@ -50,6 +50,7 @@ export function parseOutlineToNumberMap(
     formats: string[],
     useChineseNumbers: boolean[]
 ): IHeadingNumberMap {
+    debugger
     const numberMap: IHeadingNumberMap = {};
     const counters: number[] = [0, 0, 0, 0, 0, 0];
     
@@ -71,10 +72,10 @@ export function parseOutlineToNumberMap(
                         useChineseNumbers,
                         existingLevels
                     );
-                    
+
                     // 更新计数器
                     Object.assign(counters, newCounters);
-                    
+
                     // 保存到映射
                     numberMap[node.id] = {
                         number,
@@ -84,10 +85,17 @@ export function parseOutlineToNumberMap(
                 }
             }
         }
-        
-        // 处理子节点
+
+        // 处理子节点 - 根据思源源码，需要同时检查 blocks 和 children 字段
+        // 在 outline 数据中，子节点通常存储在 blocks 字段中
+        // 但在某些情况下可能使用 children 字段
         if (node.blocks && node.blocks.length > 0) {
             node.blocks.forEach(processNode);
+        }
+
+        // 检查是否有 children 字段（兼容不同的数据结构）
+        if ((node as any).children && (node as any).children.length > 0) {
+            (node as any).children.forEach(processNode);
         }
     }
     
@@ -112,9 +120,15 @@ export function collectExistingLevels(outlineData: IOutlineNode[]): number[] {
                 levels.add(level);
             }
         }
-        
+
+        // 处理子节点 - 根据思源源码，需要同时检查 blocks 和 children 字段
         if (node.blocks && node.blocks.length > 0) {
             node.blocks.forEach(collectFromNode);
+        }
+
+        // 检查是否有 children 字段（兼容不同的数据结构）
+        if ((node as any).children && (node as any).children.length > 0) {
+            (node as any).children.forEach(collectFromNode);
         }
     }
     
@@ -246,14 +260,24 @@ export function hasHeadingsInOutline(outlineData: IOutlineNode[]): boolean {
         if (node.nodeType === 'NodeHeading') {
             return true;
         }
-        
+
+        // 检查 blocks 字段
         if (node.blocks && node.blocks.length > 0) {
-            return node.blocks.some(checkNode);
+            if (node.blocks.some(checkNode)) {
+                return true;
+            }
         }
-        
+
+        // 检查 children 字段（兼容不同的数据结构）
+        if ((node as any).children && (node as any).children.length > 0) {
+            if ((node as any).children.some(checkNode)) {
+                return true;
+            }
+        }
+
         return false;
     }
-    
+
     return outlineData.some(checkNode);
 }
 
@@ -264,17 +288,23 @@ export function hasHeadingsInOutline(outlineData: IOutlineNode[]): boolean {
  */
 export function getHeadingNodesFromOutline(outlineData: IOutlineNode[]): IOutlineNode[] {
     const headingNodes: IOutlineNode[] = [];
-    
+
     function collectFromNode(node: IOutlineNode): void {
         if (node.nodeType === 'NodeHeading') {
             headingNodes.push(node);
         }
-        
+
+        // 处理 blocks 字段
         if (node.blocks && node.blocks.length > 0) {
             node.blocks.forEach(collectFromNode);
         }
+
+        // 处理 children 字段（兼容不同的数据结构）
+        if ((node as any).children && (node as any).children.length > 0) {
+            (node as any).children.forEach(collectFromNode);
+        }
     }
-    
+
     outlineData.forEach(collectFromNode);
     return headingNodes;
 }
