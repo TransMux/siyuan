@@ -439,7 +439,8 @@ export class StyleManager implements IStyleManager {
      */
     clearHeadingNumbering(): void {
         this.currentHeadingMap = {};
-        this.updateNumberingStyles();
+        // 直接移除样式，避免递归调用
+        this.removeHeadingNumberingStyles();
     }
 
     /**
@@ -456,7 +457,12 @@ export class StyleManager implements IStyleManager {
      */
     clearFigureNumbering(): void {
         this.currentFigureMap = {};
-        this.updateNumberingStyles();
+        // 如果标题映射也为空，直接移除样式；否则更新样式
+        if (Object.keys(this.currentHeadingMap).length === 0) {
+            this.removeHeadingNumberingStyles();
+        } else {
+            this.updateNumberingStyles();
+        }
     }
 
     /**
@@ -492,7 +498,8 @@ export class StyleManager implements IStyleManager {
         const hasFigures = Object.keys(this.currentFigureMap).length > 0;
 
         if (!hasHeadings && !hasFigures) {
-            this.clearHeadingNumbering();
+            // 直接移除样式，避免递归调用
+            this.removeHeadingNumberingStyles();
             return;
         }
 
