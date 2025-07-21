@@ -187,31 +187,23 @@ export class DockPanel implements IDockPanel {
                     <!-- 图表编号前缀设置 -->
                     <div class="document-styler-section" id="figure-prefix-section" style="${docSettings.crossReferenceEnabled ? '' : 'display: none;'}">
                         <h3 class="document-styler-section-title">图表编号前缀</h3>
-                        <div class="document-styler-option">
-                            <label class="fn__flex b3-label">
-                                <div class="fn__flex-1">
-                                    图片编号前缀
-                                    <div class="b3-label__text">自定义图片编号前缀，如"图"、"Figure"等</div>
-                                </div>
-                                <span class="fn__space"></span>
-                                <input type="text" class="b3-text-field" id="figure-prefix-input"
-                                       value="${docSettings.figurePrefix}"
-                                       placeholder="图"
-                                       style="width: 80px;">
-                            </label>
+
+                        <div class="fn__flex b3-label config__item">
+                            <div class="fn__flex-1">
+                                图片编号前缀
+                                <div class="b3-label__text">自定义图片编号前缀，如"图"、"Figure"等</div>
+                            </div>
+                            <span class="fn__space"></span>
+                            <input class="b3-text-field fn__flex-center fn__size200" id="figure-prefix-input" value="${docSettings.figurePrefix}" placeholder="图">
                         </div>
-                        <div class="document-styler-option">
-                            <label class="fn__flex b3-label">
-                                <div class="fn__flex-1">
-                                    表格编号前缀
-                                    <div class="b3-label__text">自定义表格编号前缀，如"表"、"Table"等</div>
-                                </div>
-                                <span class="fn__space"></span>
-                                <input type="text" class="b3-text-field" id="table-prefix-input"
-                                       value="${docSettings.tablePrefix}"
-                                       placeholder="表"
-                                       style="width: 80px;">
-                            </label>
+
+                        <div class="fn__flex b3-label config__item">
+                            <div class="fn__flex-1">
+                                表格编号前缀
+                                <div class="b3-label__text">自定义表格编号前缀，如"表"、"Table"等</div>
+                            </div>
+                            <span class="fn__space"></span>
+                            <input class="b3-text-field fn__flex-center fn__size200" id="table-prefix-input" value="${docSettings.tablePrefix}" placeholder="表">
                         </div>
                     </div>
 
@@ -272,8 +264,6 @@ export class DockPanel implements IDockPanel {
 
         // 清除之前的事件监听器
         this.clearPanelEvents();
-
-
 
         // 标题编号样式选择器
         for (let i = 0; i < 6; i++) {
@@ -344,7 +334,7 @@ export class DockPanel implements IDockPanel {
                     await this.crossReference.updateFigurePrefixStyles(docId);
                 }
             };
-            figurePrefixInput.addEventListener('input', handler);
+            figurePrefixInput.addEventListener('change', handler);
             (figurePrefixInput as any)._documentStylerHandler = handler;
         }
 
@@ -365,7 +355,7 @@ export class DockPanel implements IDockPanel {
                     await this.crossReference.updateFigurePrefixStyles(docId);
                 }
             };
-            tablePrefixInput.addEventListener('input', handler);
+            tablePrefixInput.addEventListener('change', handler);
             (tablePrefixInput as any)._documentStylerHandler = handler;
         }
     }
