@@ -472,13 +472,28 @@ export class CrossReferenceController {
      * @returns 是否影响
      */
     private checkTransactionAffectsDocument(transactions: any[], docId: string): boolean {
+        if (!Array.isArray(transactions) || !docId) {
+            return false;
+        }
+
         for (const transaction of transactions) {
-            if (transaction.doOperations) {
-                for (const operation of transaction.doOperations) {
-                    if (operation.id === docId || 
-                        (operation.data && operation.data.includes(docId))) {
-                        return true;
-                    }
+            if (!transaction || !transaction.doOperations || !Array.isArray(transaction.doOperations)) {
+                continue;
+            }
+
+            for (const operation of transaction.doOperations) {
+                if (!operation) {
+                    continue;
+                }
+
+                // 检查操作ID
+                if (operation.id === docId) {
+                    return true;
+                }
+
+                // 检查操作数据（确保是字符串类型）
+                if (operation.data && typeof operation.data === 'string' && operation.data.includes(docId)) {
+                    return true;
                 }
             }
         }
