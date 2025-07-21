@@ -17,7 +17,7 @@ export class FigureDOMParser {
         }
 
         try {
-            const parser = new window.DOMParser();
+            const parser = new (globalThis as any).DOMParser();
             const doc = parser.parseFromString(htmlContent, 'text/html');
             
             // 查找所有超级块

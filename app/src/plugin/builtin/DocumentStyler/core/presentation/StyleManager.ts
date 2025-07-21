@@ -54,10 +54,24 @@ export class StyleManager {
 
         try {
             const finalConfig = { ...this.defaultConfig, ...config };
-            
+
+            // 如果没有图表，只清除旧样式
+            if (!figures || figures.length === 0) {
+                await this.clearDocumentStyles(docId);
+                console.log(`StyleManager: 文档 ${docId} 没有图表，已清除旧样式`);
+                return;
+            }
+
             // 生成CSS样式
             const cssContent = this.cssGenerator.generateFigureStyles(figures, finalConfig);
-            
+
+            // 如果生成的CSS为空，也只清除旧样式
+            if (!cssContent || cssContent.trim() === '') {
+                await this.clearDocumentStyles(docId);
+                console.log(`StyleManager: 文档 ${docId} 生成的CSS为空，已清除旧样式`);
+                return;
+            }
+
             // 应用样式
             const styleId = await this.styleApplicator.applyStyles(docId, cssContent, {
                 scope: finalConfig.scope,
