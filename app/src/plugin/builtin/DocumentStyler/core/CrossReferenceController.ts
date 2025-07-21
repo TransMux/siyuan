@@ -39,6 +39,10 @@ export class CrossReferenceController {
     private isInitialized = false;
     private currentDocId?: string;
 
+    // 防重复处理
+    private processingDocs = new Set<string>();
+    private lastProcessTime = new Map<string, number>();
+
     constructor(config: ICrossReferenceConfig = {}) {
         this.config = {
             imagePrefix: '图',
@@ -116,6 +120,22 @@ export class CrossReferenceController {
             return;
         }
 
+        // 防重复处理检查
+        const now = Date.now();
+        const lastTime = this.lastProcessTime.get(docId);
+        if (lastTime && (now - lastTime) < 500) { // 500ms内的重复请求直接忽略
+            console.log(`CrossReferenceController: 忽略重复的文档切换请求 ${docId}`);
+            return;
+        }
+
+        if (this.processingDocs.has(docId)) {
+            console.log(`CrossReferenceController: 文档 ${docId} 正在处理中，跳过`);
+            return;
+        }
+
+        this.processingDocs.add(docId);
+        this.lastProcessTime.set(docId, now);
+
         const operationId = this.performanceMonitor.startOperation('document-switch', { docId });
 
         try {
@@ -170,6 +190,7 @@ export class CrossReferenceController {
                 await this.uiManager.setError(error as Error);
             }
         } finally {
+            this.processingDocs.delete(docId);
             this.performanceMonitor.endOperation(operationId);
         }
     }
@@ -184,6 +205,38 @@ export class CrossReferenceController {
         }
 
         await this.handleDocumentSwitch(this.currentDocId);
+    }
+
+    /**
+     * 仅更新前缀样式，不重新处理整个文档
+     * @param docId 文档ID
+     */
+    async updatePrefixStylesOnly(docId: string): Promise<void> {
+        if (!docId) {
+            console.warn('CrossReferenceController: 文档ID不能为空');
+            return;
+        }
+
+        try {
+            // 获取当前文档的图表数据（从缓存中获取，避免重新解析）
+            const state = this.figureState.getState(docId);
+            if (!state || !state.figures || state.figures.length === 0) {
+                console.log(`CrossReferenceController: 文档 ${docId} 没有图表数据，跳过前缀样式更新`);
+                return;
+            }
+
+            const figures = state.figures;
+
+            // 仅更新样式，使用当前配置的前缀
+            await this.styleManager.applyCrossReferenceStyles(docId, figures, {
+                imagePrefix: this.config.imagePrefix,
+                tablePrefix: this.config.tablePrefix
+            });
+
+            console.log(`CrossReferenceController: 文档 ${docId} 前缀样式已更新`);
+        } catch (error) {
+            console.error(`CrossReferenceController: 更新文档 ${docId} 前缀样式失败:`, error);
+        }
     }
 
     /**
@@ -364,7 +417,7 @@ export class CrossReferenceController {
         });
 
         // 图表操作事件
-        this.eventManager.on('figure:operation', async (data: any) => {
+        this.eventManager.on('figure:operation', async (_data: any) => {
             if (this.currentDocId && this.config.autoUpdate) {
                 // 延迟刷新，避免频繁更新
                 setTimeout(async () => {

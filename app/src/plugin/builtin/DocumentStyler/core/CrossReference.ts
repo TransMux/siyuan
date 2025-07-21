@@ -60,8 +60,8 @@ export class CrossReference implements ICrossReference {
                 tablePrefix: tablePrefix
             });
 
-            // 刷新当前文档以应用新的前缀
-            await this.controller.refreshCurrentDocument();
+            // 仅更新前缀样式，避免重新处理整个文档
+            await this.controller.updatePrefixStylesOnly(docId);
 
             console.log(`CrossReference: 图表前缀样式已更新 - 图片前缀: ${figurePrefix}, 表格前缀: ${tablePrefix}`);
         } catch (error) {

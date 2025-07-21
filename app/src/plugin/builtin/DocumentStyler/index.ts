@@ -33,6 +33,10 @@ export class DocumentStylerPlugin extends Plugin {
     private eventListeners: Map<string, Function> = new Map();
     private currentDocId: string | null = null;
 
+    // 防重复处理
+    private lastSwitchTime = 0;
+    private switchDebounceDelay = 300; // 300ms防抖
+
     constructor(options: IPluginOptions) {
         super(options);
         this.appRef = options.app;
@@ -198,10 +202,18 @@ export class DocumentStylerPlugin extends Plugin {
             if (!protyle?.block?.rootID) return;
 
             const newDocId = protyle.block.rootID;
+            const now = Date.now();
 
             // 检查是否是同一个文档
             if (this.currentDocId === newDocId) return;
 
+            // 防抖处理，避免短时间内重复切换
+            if (now - this.lastSwitchTime < this.switchDebounceDelay) {
+                console.log(`DocumentStyler: 忽略快速切换到文档 ${newDocId}`);
+                return;
+            }
+
+            this.lastSwitchTime = now;
             this.currentDocId = newDocId;
             this.documentManager.updateCurrentDocument(protyle);
 
