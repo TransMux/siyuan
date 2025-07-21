@@ -1,21 +1,34 @@
 /**
- * 交叉引用管理器
- * 负责图片和表格的交叉引用功能
+ * 交叉引用管理器 - 重构版本
+ * 使用新的架构，提供向后兼容的接口
  */
 
 import { ICrossReference, IFigureInfo } from "../types";
 import { DocumentManager } from "./DocumentManager";
-import { queryDocumentFigures } from "../utils/apiUtils";
-
-
+import { CrossReferenceController } from "./CrossReferenceController";
 
 export class CrossReference implements ICrossReference {
     private documentManager: DocumentManager;
+    private controller: CrossReferenceController;
     private panelUpdateCallback: (() => Promise<void>) | null = null;
     private settingsManager: any = null;
 
     constructor(documentManager: DocumentManager) {
         this.documentManager = documentManager;
+
+        // 使用新的控制器
+        this.controller = new CrossReferenceController({
+            autoUpdate: true,
+            enableUI: false, // 暂时禁用UI，保持向后兼容
+            enableWebSocket: true
+        });
+    }
+
+    /**
+     * 初始化交叉引用管理器
+     */
+    async init(): Promise<void> {
+        await this.controller.init();
     }
 
     /**
@@ -37,48 +50,18 @@ export class CrossReference implements ICrossReference {
         }
 
         try {
-            // 获取当前的图表数据（从已有的样式中获取，避免重新解析DOM）
-            const figuresData = await this.getFiguresList(docId);
-
             // 获取最新的前缀设置
             const figurePrefix = await this.settingsManager.getDocumentFigurePrefix(docId);
             const tablePrefix = await this.settingsManager.getDocumentTablePrefix(docId);
 
-            // 只更新CSS样式，不重新排序
-            const css = `
-                /* 超级块中的图片/表格自定义标题样式 */
-                ${this.generateFigureCaptionStyles(figuresData, figurePrefix, tablePrefix)}
+            // 使用新控制器更新配置
+            this.controller.updateConfig({
+                imagePrefix: figurePrefix,
+                tablePrefix: tablePrefix
+            });
 
-                /* 交叉引用链接样式 */
-                .protyle-wysiwyg a[href^="#figure-"],
-                .protyle-wysiwyg a[href^="#table-"] {
-                    color: var(--b3-theme-primary);
-                    text-decoration: none;
-                    font-weight: 500;
-                    padding: 2px 6px;
-                    border-radius: 4px;
-                    background-color: var(--b3-theme-primary-lightest);
-                    border: 1px solid var(--b3-theme-primary-lighter);
-                    transition: all 0.2s ease;
-                    font-size: 0.9em;
-                }
-
-                .protyle-wysiwyg a[href^="#figure-"]:hover,
-                .protyle-wysiwyg a[href^="#table-"]:hover {
-                    background-color: var(--b3-theme-primary-light);
-                    color: var(--b3-theme-on-primary);
-                    transform: translateY(-1px);
-                    box-shadow: 0 2px 4px var(--b3-theme-surface-light);
-                }
-            `;
-
-            let styleElement = document.getElementById('document-styler-cross-reference') as HTMLStyleElement;
-            if (!styleElement) {
-                styleElement = document.createElement('style');
-                styleElement.id = 'document-styler-cross-reference';
-                document.head.appendChild(styleElement);
-            }
-            styleElement.textContent = css;
+            // 刷新当前文档以应用新的前缀
+            await this.controller.refreshCurrentDocument();
 
             console.log(`CrossReference: 图表前缀样式已更新 - 图片前缀: ${figurePrefix}, 表格前缀: ${tablePrefix}`);
         } catch (error) {
@@ -94,18 +77,13 @@ export class CrossReference implements ICrossReference {
         this.panelUpdateCallback = callback;
     }
 
-    async init(): Promise<void> {
-        // 初始化时加载样式
-        await this.loadCrossReferenceStyles();
+    /**
+     * 销毁交叉引用管理器
+     */
+    async destroy(): Promise<void> {
+        await this.controller.destroy();
 
-        // 注册@符号交叉引用功能
-        this.registerCrossReferenceHint();
-
-        // 注册交叉引用点击处理
-        this.registerCrossReferenceClickHandler();
-    }
-
-    destroy(): void {
+        // 保持向后兼容的清理逻辑
         this.removeCrossReferenceStyles();
         this.unregisterCrossReferenceHint();
 
@@ -116,11 +94,20 @@ export class CrossReference implements ICrossReference {
         }
     }
 
+    /**
+     * 应用交叉引用到指定protyle
+     * @param protyle protyle对象
+     */
     async applyCrossReference(protyle: any): Promise<void> {
         if (!protyle) return;
 
         try {
-            // 通过CSS样式实现图片和表格的自动编号和超级块自定义标题
+            const docId = protyle?.block?.rootID;
+            if (docId) {
+                await this.controller.enableCrossReference(docId);
+            }
+
+            // 保持向后兼容的样式加载
             await this.loadCrossReferenceStyles(protyle);
         } catch (error) {
             console.error('应用交叉引用失败:', error);
@@ -128,11 +115,20 @@ export class CrossReference implements ICrossReference {
         }
     }
 
+    /**
+     * 清除交叉引用
+     * @param protyle protyle对象
+     */
     async clearCrossReference(protyle: any): Promise<void> {
         if (!protyle) return;
 
         try {
-            // 移除CSS样式
+            const docId = protyle?.block?.rootID;
+            if (docId) {
+                await this.controller.disableCrossReference(docId);
+            }
+
+            // 保持向后兼容的样式移除
             this.removeCrossReferenceStyles();
         } catch (error) {
             console.error('清除交叉引用失败:', error);
@@ -140,12 +136,16 @@ export class CrossReference implements ICrossReference {
         }
     }
 
+    /**
+     * 获取图表列表
+     * @param docId 文档ID
+     * @returns 图表列表
+     */
     async getFiguresList(docId: string): Promise<IFigureInfo[]> {
         if (!docId) return [];
 
         try {
-            const figures = await queryDocumentFigures(docId);
-            return await this.processFiguresData(figures);
+            return await this.controller.getFiguresList(docId);
         } catch (error) {
             console.error('获取图片表格列表失败:', error);
             return [];

@@ -1,0 +1,391 @@
+/**
+ * 交叉引用控制器 - 核心控制器
+ * 整合所有重构的组件，提供统一的交叉引用功能接口
+ */
+
+import { FigureManager } from './business';
+import { StyleManager } from './presentation';
+import { FigureState } from './state';
+import { EventManager } from './events';
+import { UIManager } from './ui';
+import { IFigureInfo, IDataFetchConfig } from '../types';
+
+export interface ICrossReferenceConfig {
+    /** 图片编号前缀 */
+    imagePrefix?: string;
+    /** 表格编号前缀 */
+    tablePrefix?: string;
+    /** 是否启用自动更新 */
+    autoUpdate?: boolean;
+    /** 是否启用UI面板 */
+    enableUI?: boolean;
+    /** 是否启用WebSocket监听 */
+    enableWebSocket?: boolean;
+    /** 事件处理延迟（毫秒） */
+    eventDelay?: number;
+}
+
+export class CrossReferenceController {
+    private figureManager: FigureManager;
+    private styleManager: StyleManager;
+    private figureState: FigureState;
+    private eventManager: EventManager;
+    private uiManager: UIManager;
+    
+    private config: Required<ICrossReferenceConfig>;
+    private isInitialized = false;
+    private currentDocId?: string;
+
+    constructor(config: ICrossReferenceConfig = {}) {
+        this.config = {
+            imagePrefix: '图',
+            tablePrefix: '表',
+            autoUpdate: true,
+            enableUI: true,
+            enableWebSocket: true,
+            eventDelay: 100,
+            ...config
+        };
+
+        // 初始化各个组件
+        this.figureManager = new FigureManager();
+        this.styleManager = new StyleManager();
+        this.figureState = new FigureState();
+        this.eventManager = new EventManager({
+            enableWebSocket: this.config.enableWebSocket,
+            eventDelay: this.config.eventDelay
+        });
+        this.uiManager = new UIManager({
+            autoUpdate: this.config.autoUpdate
+        });
+    }
+
+    /**
+     * 初始化控制器
+     */
+    async init(): Promise<void> {
+        if (this.isInitialized) {
+            console.warn('CrossReferenceController: 已经初始化，跳过重复初始化');
+            return;
+        }
+
+        try {
+            console.log('CrossReferenceController: 开始初始化...');
+
+            // 初始化各个组件
+            await this.eventManager.init();
+            
+            if (this.config.enableUI) {
+                await this.uiManager.init();
+            }
+
+            // 设置事件监听
+            this.setupEventListeners();
+
+            // 设置状态监听
+            this.setupStateListeners();
+
+            this.isInitialized = true;
+            console.log('CrossReferenceController: 初始化完成');
+
+            // 发送初始化完成事件
+            await this.eventManager.emit('system:ready');
+
+        } catch (error) {
+            console.error('CrossReferenceController: 初始化失败:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 处理文档切换
+     * @param docId 文档ID
+     */
+    async handleDocumentSwitch(docId: string): Promise<void> {
+        if (!this.isInitialized || !docId) {
+            return;
+        }
+
+        try {
+            console.log(`CrossReferenceController: 处理文档切换 ${docId}`);
+
+            // 更新当前文档ID
+            this.currentDocId = docId;
+
+            // 设置加载状态
+            await this.figureState.setLoadingState(docId, true);
+            
+            if (this.config.enableUI) {
+                await this.uiManager.setLoading(true);
+            }
+
+            // 获取图表数据
+            const figures = await this.figureManager.getFiguresList(docId);
+
+            // 更新状态
+            await this.figureState.setState(docId, figures, {
+                source: 'document-switch'
+            });
+
+            // 应用样式
+            await this.styleManager.applyCrossReferenceStyles(docId, figures, {
+                imagePrefix: this.config.imagePrefix,
+                tablePrefix: this.config.tablePrefix
+            });
+
+            // 更新UI
+            if (this.config.enableUI) {
+                await this.uiManager.setFigures(docId, figures);
+            }
+
+            console.log(`CrossReferenceController: 文档 ${docId} 处理完成，包含 ${figures.length} 个图表`);
+
+        } catch (error) {
+            console.error(`CrossReferenceController: 处理文档 ${docId} 失败:`, error);
+            
+            // 设置错误状态
+            await this.figureState.setErrorState(docId, error as Error);
+            
+            if (this.config.enableUI) {
+                await this.uiManager.setError(error as Error);
+            }
+        }
+    }
+
+    /**
+     * 刷新当前文档
+     */
+    async refreshCurrentDocument(): Promise<void> {
+        if (!this.currentDocId) {
+            console.warn('CrossReferenceController: 没有当前文档，无法刷新');
+            return;
+        }
+
+        await this.handleDocumentSwitch(this.currentDocId);
+    }
+
+    /**
+     * 启用交叉引用功能
+     * @param docId 文档ID，不传则使用当前文档
+     */
+    async enableCrossReference(docId?: string): Promise<void> {
+        const targetDocId = docId || this.currentDocId;
+        if (!targetDocId) {
+            console.warn('CrossReferenceController: 没有指定文档ID');
+            return;
+        }
+
+        await this.handleDocumentSwitch(targetDocId);
+    }
+
+    /**
+     * 禁用交叉引用功能
+     * @param docId 文档ID，不传则使用当前文档
+     */
+    async disableCrossReference(docId?: string): Promise<void> {
+        const targetDocId = docId || this.currentDocId;
+        if (!targetDocId) {
+            console.warn('CrossReferenceController: 没有指定文档ID');
+            return;
+        }
+
+        try {
+            // 清除样式
+            await this.styleManager.clearCrossReferenceStyles(targetDocId);
+
+            // 清除状态
+            await this.figureState.clearState(targetDocId);
+
+            // 更新UI
+            if (this.config.enableUI) {
+                await this.uiManager.clearState();
+            }
+
+            console.log(`CrossReferenceController: 已禁用文档 ${targetDocId} 的交叉引用`);
+
+        } catch (error) {
+            console.error(`CrossReferenceController: 禁用文档 ${targetDocId} 的交叉引用失败:`, error);
+        }
+    }
+
+    /**
+     * 获取文档的图表列表
+     * @param docId 文档ID
+     * @param config 获取配置
+     * @returns 图表列表
+     */
+    async getFiguresList(docId: string, config?: IDataFetchConfig): Promise<IFigureInfo[]> {
+        return this.figureManager.getFiguresList(docId, config);
+    }
+
+    /**
+     * 获取统计信息
+     * @returns 统计信息
+     */
+    getStats(): {
+        isInitialized: boolean;
+        currentDocId?: string;
+        figureManager: any;
+        styleManager: any;
+        figureState: any;
+        eventManager: any;
+        uiManager: any;
+    } {
+        return {
+            isInitialized: this.isInitialized,
+            currentDocId: this.currentDocId,
+            figureManager: this.figureManager.getCacheStats(),
+            styleManager: this.styleManager.getStyleStats(),
+            figureState: this.figureState.getStats(),
+            eventManager: this.eventManager.getStats(),
+            uiManager: this.config.enableUI ? this.uiManager.getStats() : null
+        };
+    }
+
+    /**
+     * 设置事件监听器
+     */
+    private setupEventListeners(): void {
+        // 文档切换事件
+        this.eventManager.on('document:switch', async (data: any) => {
+            const docId = data?.docId || data?.protyle?.block?.rootID;
+            if (docId && this.config.autoUpdate) {
+                await this.handleDocumentSwitch(docId);
+            }
+        });
+
+        // 文档加载事件
+        this.eventManager.on('document:loaded', async (data: any) => {
+            const docId = data?.docId || data?.protyle?.block?.rootID;
+            if (docId && this.config.autoUpdate) {
+                await this.handleDocumentSwitch(docId);
+            }
+        });
+
+        // 图表操作事件
+        this.eventManager.on('figure:operation', async (data: any) => {
+            if (this.currentDocId && this.config.autoUpdate) {
+                // 延迟刷新，避免频繁更新
+                setTimeout(async () => {
+                    await this.refreshCurrentDocument();
+                }, this.config.eventDelay * 2);
+            }
+        });
+
+        // WebSocket transaction事件
+        this.eventManager.on('websocket:transaction', async (transactions: any[]) => {
+            if (this.currentDocId && this.config.autoUpdate) {
+                // 检查是否涉及当前文档
+                const affectsCurrentDoc = this.checkTransactionAffectsDocument(transactions, this.currentDocId);
+                if (affectsCurrentDoc) {
+                    // 延迟刷新
+                    setTimeout(async () => {
+                        await this.refreshCurrentDocument();
+                    }, this.config.eventDelay * 3);
+                }
+            }
+        });
+
+        console.log('CrossReferenceController: 事件监听器已设置');
+    }
+
+    /**
+     * 设置状态监听器
+     */
+    private setupStateListeners(): void {
+        this.figureState.subscribe(async (docId: string, state: any, source: string) => {
+            console.log(`CrossReferenceController: 状态变化 ${docId} (来源: ${source})`);
+            
+            // 如果是当前文档且启用UI，更新UI状态
+            if (docId === this.currentDocId && this.config.enableUI) {
+                if (state.loading) {
+                    await this.uiManager.setLoading(true);
+                } else if (state.error) {
+                    await this.uiManager.setError(state.error);
+                } else {
+                    await this.uiManager.setFigures(docId, state.figures);
+                }
+            }
+        });
+
+        console.log('CrossReferenceController: 状态监听器已设置');
+    }
+
+    /**
+     * 检查transaction是否影响指定文档
+     * @param transactions transaction数组
+     * @param docId 文档ID
+     * @returns 是否影响
+     */
+    private checkTransactionAffectsDocument(transactions: any[], docId: string): boolean {
+        for (const transaction of transactions) {
+            if (transaction.doOperations) {
+                for (const operation of transaction.doOperations) {
+                    if (operation.id === docId || 
+                        (operation.data && operation.data.includes(docId))) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 更新配置
+     * @param config 新配置
+     */
+    updateConfig(config: Partial<ICrossReferenceConfig>): void {
+        this.config = { ...this.config, ...config };
+        
+        // 更新子组件配置
+        this.eventManager.updateConfig({
+            eventDelay: this.config.eventDelay
+        });
+
+        if (this.config.enableUI) {
+            this.uiManager.updateConfig({
+                autoUpdate: this.config.autoUpdate
+            });
+        }
+
+        console.log('CrossReferenceController: 配置已更新');
+    }
+
+    /**
+     * 销毁控制器
+     */
+    async destroy(): Promise<void> {
+        if (!this.isInitialized) {
+            return;
+        }
+
+        try {
+            console.log('CrossReferenceController: 开始销毁...');
+
+            // 清除当前文档的样式
+            if (this.currentDocId) {
+                await this.styleManager.clearCrossReferenceStyles(this.currentDocId);
+            }
+
+            // 销毁各个组件
+            if (this.config.enableUI) {
+                await this.uiManager.destroy();
+            }
+            
+            await this.eventManager.destroy();
+            await this.figureState.destroy();
+            await this.styleManager.destroy();
+            this.figureManager.destroy();
+
+            this.isInitialized = false;
+            this.currentDocId = undefined;
+
+            console.log('CrossReferenceController: 销毁完成');
+
+        } catch (error) {
+            console.error('CrossReferenceController: 销毁失败:', error);
+            throw error;
+        }
+    }
+}
