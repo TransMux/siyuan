@@ -8,6 +8,7 @@ import { StyleManager } from './presentation';
 import { FigureState } from './state';
 import { EventManager } from './events';
 import { UIManager } from './ui';
+import { PerformanceMonitor, MemoryManager } from './utils';
 import { IFigureInfo, IDataFetchConfig } from '../types';
 
 export interface ICrossReferenceConfig {
@@ -31,7 +32,9 @@ export class CrossReferenceController {
     private figureState: FigureState;
     private eventManager: EventManager;
     private uiManager: UIManager;
-    
+    private performanceMonitor: PerformanceMonitor;
+    private memoryManager: MemoryManager;
+
     private config: Required<ICrossReferenceConfig>;
     private isInitialized = false;
     private currentDocId?: string;
@@ -58,6 +61,13 @@ export class CrossReferenceController {
         this.uiManager = new UIManager({
             autoUpdate: this.config.autoUpdate
         });
+
+        // 初始化性能监控和内存管理
+        this.performanceMonitor = new PerformanceMonitor();
+        this.memoryManager = new MemoryManager();
+
+        // 注册组件内存监控
+        this.setupMemoryMonitoring();
     }
 
     /**
@@ -106,6 +116,8 @@ export class CrossReferenceController {
             return;
         }
 
+        const operationId = this.performanceMonitor.startOperation('document-switch', { docId });
+
         try {
             console.log(`CrossReferenceController: 处理文档切换 ${docId}`);
 
@@ -114,24 +126,32 @@ export class CrossReferenceController {
 
             // 设置加载状态
             await this.figureState.setLoadingState(docId, true);
-            
+
             if (this.config.enableUI) {
                 await this.uiManager.setLoading(true);
             }
 
-            // 获取图表数据
-            const figures = await this.figureManager.getFiguresList(docId);
+            // 获取图表数据（带性能监控）
+            const { result: figures } = await this.performanceMonitor.measureAsync(
+                'get-figures-list',
+                () => this.figureManager.getFiguresList(docId),
+                { docId }
+            );
 
             // 更新状态
             await this.figureState.setState(docId, figures, {
                 source: 'document-switch'
             });
 
-            // 应用样式
-            await this.styleManager.applyCrossReferenceStyles(docId, figures, {
-                imagePrefix: this.config.imagePrefix,
-                tablePrefix: this.config.tablePrefix
-            });
+            // 应用样式（带性能监控）
+            await this.performanceMonitor.measureAsync(
+                'apply-styles',
+                () => this.styleManager.applyCrossReferenceStyles(docId, figures, {
+                    imagePrefix: this.config.imagePrefix,
+                    tablePrefix: this.config.tablePrefix
+                }),
+                { docId, figureCount: figures.length }
+            );
 
             // 更新UI
             if (this.config.enableUI) {
@@ -142,13 +162,15 @@ export class CrossReferenceController {
 
         } catch (error) {
             console.error(`CrossReferenceController: 处理文档 ${docId} 失败:`, error);
-            
+
             // 设置错误状态
             await this.figureState.setErrorState(docId, error as Error);
-            
+
             if (this.config.enableUI) {
                 await this.uiManager.setError(error as Error);
             }
+        } finally {
+            this.performanceMonitor.endOperation(operationId);
         }
     }
 
@@ -230,6 +252,8 @@ export class CrossReferenceController {
         figureState: any;
         eventManager: any;
         uiManager: any;
+        performance: any;
+        memory: any;
     } {
         return {
             isInitialized: this.isInitialized,
@@ -238,7 +262,84 @@ export class CrossReferenceController {
             styleManager: this.styleManager.getStyleStats(),
             figureState: this.figureState.getStats(),
             eventManager: this.eventManager.getStats(),
-            uiManager: this.config.enableUI ? this.uiManager.getStats() : null
+            uiManager: this.config.enableUI ? this.uiManager.getStats() : null,
+            performance: this.performanceMonitor.getStats(),
+            memory: this.memoryManager.getCurrentMemoryStats()
+        };
+    }
+
+    /**
+     * 获取性能报告
+     * @returns 性能报告
+     */
+    getPerformanceReport() {
+        return this.performanceMonitor.exportReport();
+    }
+
+    /**
+     * 获取内存报告
+     * @returns 内存报告
+     */
+    getMemoryReport() {
+        return this.memoryManager.exportReport();
+    }
+
+    /**
+     * 执行性能优化
+     */
+    async optimizePerformance(): Promise<void> {
+        console.log('CrossReferenceController: 开始性能优化...');
+
+        // 清理过期缓存
+        await this.figureManager.clearCache();
+
+        // 执行内存清理
+        await this.memoryManager.performCleanup();
+
+        // 清理性能指标（保留最近的）
+        this.performanceMonitor.clearMetrics();
+
+        console.log('CrossReferenceController: 性能优化完成');
+    }
+
+    /**
+     * 检查系统健康状态
+     * @returns 健康状态报告
+     */
+    checkSystemHealth(): {
+        isHealthy: boolean;
+        warnings: string[];
+        recommendations: string[];
+    } {
+        const warnings: string[] = [];
+        const recommendations: string[] = [];
+
+        // 检查性能警告
+        const performanceWarnings = this.performanceMonitor.checkPerformanceWarnings();
+        warnings.push(...performanceWarnings);
+
+        // 检查内存警告
+        const memoryWarnings = this.memoryManager.checkMemoryWarnings();
+        warnings.push(...memoryWarnings);
+
+        // 生成建议
+        if (performanceWarnings.length > 0) {
+            recommendations.push('考虑执行性能优化');
+        }
+
+        if (memoryWarnings.length > 0) {
+            recommendations.push('考虑执行内存清理');
+        }
+
+        const stats = this.getStats();
+        if (stats.figureState.totalDocuments > 10) {
+            recommendations.push('考虑清理不活跃文档的状态');
+        }
+
+        return {
+            isHealthy: warnings.length === 0,
+            warnings,
+            recommendations
         };
     }
 
@@ -353,6 +454,50 @@ export class CrossReferenceController {
     }
 
     /**
+     * 设置内存监控
+     */
+    private setupMemoryMonitoring(): void {
+        // 注册各组件的内存监控
+        this.memoryManager.registerComponent('figureManager', () => {
+            const stats = this.figureManager.getCacheStats();
+            return stats.totalSize || 0;
+        });
+
+        this.memoryManager.registerComponent('styleManager', () => {
+            const stats = this.styleManager.getStyleStats();
+            return stats.memoryUsage || 0;
+        });
+
+        this.memoryManager.registerComponent('figureState', () => {
+            const stats = this.figureState.getStats();
+            return stats.memoryUsage || 0;
+        });
+
+        this.memoryManager.registerComponent('eventManager', () => {
+            const stats = this.eventManager.getStats();
+            return JSON.stringify(stats).length * 2; // 估算
+        });
+
+        if (this.config.enableUI) {
+            this.memoryManager.registerComponent('uiManager', () => {
+                const stats = this.uiManager.getStats();
+                return JSON.stringify(stats).length * 2; // 估算
+            });
+        }
+
+        // 注册清理任务
+        this.memoryManager.registerCleanupTask('clearExpiredCache', () => {
+            this.figureManager.clearCache();
+        });
+
+        this.memoryManager.registerCleanupTask('optimizeStyles', () => {
+            this.styleManager.optimizeMemory();
+        });
+
+        console.log('CrossReferenceController: 内存监控已设置');
+    }
+
+    /**
      * 销毁控制器
      */
     async destroy(): Promise<void> {
@@ -372,11 +517,15 @@ export class CrossReferenceController {
             if (this.config.enableUI) {
                 await this.uiManager.destroy();
             }
-            
+
             await this.eventManager.destroy();
             await this.figureState.destroy();
             await this.styleManager.destroy();
             this.figureManager.destroy();
+
+            // 销毁性能监控和内存管理
+            this.performanceMonitor.destroy();
+            this.memoryManager.destroy();
 
             this.isInitialized = false;
             this.currentDocId = undefined;
