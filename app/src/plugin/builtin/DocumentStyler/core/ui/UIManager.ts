@@ -419,4 +419,3 @@ export class UIManager {
         }
     }
 }
-}

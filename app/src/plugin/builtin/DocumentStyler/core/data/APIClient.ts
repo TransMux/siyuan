@@ -3,7 +3,7 @@
  * 负责所有与后端API的交互，提供统一的错误处理和重试机制
  */
 
-import { fetchPost } from '../../utils/apiUtils';
+import { fetchPost } from '../../../../../util/fetch';
 
 export class APIClient {
     private requestCache = new Map<string, { data: any; timestamp: number }>();
