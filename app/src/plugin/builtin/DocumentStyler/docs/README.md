@@ -151,11 +151,10 @@ DocumentStyler/
 │   │   ├── PanelRenderer.ts
 │   │   ├── InteractionHandler.ts
 │   │   └── index.ts
-│   ├── utils/                      # 工具层
-│   │   ├── PerformanceMonitor.ts
-│   │   ├── MemoryManager.ts
-│   │   └── index.ts
-│   └── index.ts                    # 核心模块导出
+│   └── utils/                      # 工具层
+│       ├── PerformanceMonitor.ts
+│       ├── MemoryManager.ts
+│       └── index.ts
 ├── tests/                          # 测试用例
 │   ├── CrossReferenceControllerTest.ts
 │   ├── PerformanceTest.ts

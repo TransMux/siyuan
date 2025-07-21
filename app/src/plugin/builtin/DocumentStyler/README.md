@@ -153,14 +153,20 @@ interface Settings {
 ### 测试
 运行测试文件：
 ```typescript
-import { runDocumentStylerTests } from './test';
-runDocumentStylerTests();
+import { runCrossReferenceControllerTests, runPerformanceTests } from './tests';
+
+// 运行功能测试
+await runCrossReferenceControllerTests();
+
+// 运行性能测试
+await runPerformanceTests();
 ```
 
 ### 调试
 在浏览器控制台中运行：
 ```javascript
-window.runDocumentStylerTests();
+// 需要先导入测试模块
+// 然后运行相应的测试函数
 ```
 
 ## 常见问题
