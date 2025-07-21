@@ -179,7 +179,7 @@ async function parseFiguresFromDOM(htmlContent: string): Promise<any[]> {
 
     try {
         // 创建DOM解析器
-        const parser = new DOMParser();
+        const parser = new window.DOMParser();
         const doc = parser.parseFromString(htmlContent, 'text/html');
 
         // 查找所有超级块

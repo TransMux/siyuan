@@ -1,11 +1,11 @@
 /**
- * DOM解析器 - 专门负责从HTML内容中解析图表数据
+ * 图表DOM解析器 - 专门负责从HTML内容中解析图表数据
  * 统一DOM解析逻辑，提供清晰的解析接口
  */
 
 import { IRawFigureData } from '../../types';
 
-export class DOMParser {
+export class FigureDOMParser {
     /**
      * 从HTML内容中解析图表数据
      * @param htmlContent HTML内容
@@ -17,7 +17,7 @@ export class DOMParser {
         }
 
         try {
-            const parser = new DOMParser();
+            const parser = new window.DOMParser();
             const doc = parser.parseFromString(htmlContent, 'text/html');
             
             // 查找所有超级块

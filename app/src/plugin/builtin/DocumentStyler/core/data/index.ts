@@ -5,5 +5,5 @@
 
 export { FigureDataProvider } from './FigureDataProvider';
 export { FigureDataCache } from './FigureDataCache';
-export { DOMParser } from './DOMParser';
+export { FigureDOMParser } from './DOMParser';
 export { APIClient } from './APIClient';

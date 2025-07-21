@@ -5,17 +5,17 @@
 
 import { IFigureInfo, IRawFigureData, IDataFetchConfig } from '../../types';
 import { FigureDataCache } from './FigureDataCache';
-import { DOMParser } from './DOMParser';
+import { FigureDOMParser } from './DOMParser';
 import { APIClient } from './APIClient';
 
 export class FigureDataProvider {
     private cache: FigureDataCache;
-    private domParser: DOMParser;
+    private domParser: FigureDOMParser;
     private apiClient: APIClient;
 
     constructor() {
         this.cache = new FigureDataCache();
-        this.domParser = new DOMParser();
+        this.domParser = new FigureDOMParser();
         this.apiClient = new APIClient();
     }
 
