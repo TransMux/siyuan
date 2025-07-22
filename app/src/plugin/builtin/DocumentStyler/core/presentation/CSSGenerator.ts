@@ -383,7 +383,7 @@ ${scope} [data-type="block-ref"][data-subtype="s"]:active {
                 const prefix = figure.type === 'image' ? imagePrefix : tablePrefix;
                 const displayText = `${prefix}${figure.number}`;
 
-                styles += `\n${scope} [data-type="block-ref sup"][data-subtype="s"][data-id="${figure.id}"]::before {
+                styles += `\n${scope} [data-type="block-ref"][data-subtype="s"][data-id="${figure.id}"]::before {
     content: "${displayText}";
     font-size: 1em;
     vertical-align: baseline;

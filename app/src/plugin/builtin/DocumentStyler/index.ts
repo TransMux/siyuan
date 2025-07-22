@@ -61,7 +61,6 @@ export class DocumentStylerPlugin extends Plugin {
             html: `<div class="b3-list-item__first"><svg class="b3-list-item__graphic"><use xlink:href="#iconRef"></use></svg><span class="b3-list-item__text">交叉引用</span></div>`,
             id: "crossReference",
             callback: ({ protyle }, nodeElement) => {
-                debugger
                 this.handleCrossReferenceSlash(protyle, nodeElement);
             }
         });
