@@ -55,7 +55,7 @@ export class FigureDataProvider {
             }
 
             // 获取原始数据
-            const rawData = await this.fetchRawData(docId);
+            const rawData = await this.fetchRawData(docId, !shouldSkipCache);
             
             // 处理数据
             const processedData = await this.processRawData(rawData);
@@ -79,9 +79,9 @@ export class FigureDataProvider {
      * @param docId 文档ID
      * @returns 原始图表数据
      */
-    private async fetchRawData(docId: string): Promise<IRawFigureData[]> {
+    private async fetchRawData(docId: string, useCache: boolean = true): Promise<IRawFigureData[]> {
         // 获取文档完整内容
-        const htmlContent = await this.apiClient.getDocumentContent(docId);
+        const htmlContent = await this.apiClient.getDocumentContent(docId, useCache);
         
         // 解析DOM获取图表数据
         const rawData = await this.domParser.parseFigures(htmlContent);
