@@ -27,7 +27,7 @@ export class CSSGenerator {
         styles.push(this.generateCaptionStyles(figures, config));
 
         // 生成交叉引用链接样式
-        styles.push(this.generateCrossRefLinkStyles(config));
+        // styles.push(this.generateCrossRefLinkStyles(config));
 
         // 生成斜杠命令交叉引用样式
         styles.push(this.generateSlashCrossRefStyles(figures, config));
@@ -354,7 +354,7 @@ ${scope} .${className}-highlight-fade {
         // 生成基础样式
         let styles = `
 /* 斜杠命令交叉引用样式 */
-${scope} [data-type="block-ref sup"][data-subtype="s"] {
+${scope} [data-type="block-ref"][data-subtype="s"] {
     position: relative;
     color: var(--b3-theme-primary);
     text-decoration: none;
@@ -364,13 +364,13 @@ ${scope} [data-type="block-ref sup"][data-subtype="s"] {
     ${animation}
 }
 
-${scope} [data-type="block-ref sup"][data-subtype="s"]:hover {
+${scope} [data-type="block-ref"][data-subtype="s"]:hover {
     background-color: var(--b3-theme-primary-lighter);
     border-radius: 0.2em;
     padding: 0.1em 0.2em;
 }
 
-${scope} [data-type="block-ref sup"][data-subtype="s"]:active {
+${scope} [data-type="block-ref"][data-subtype="s"]:active {
     background-color: var(--b3-theme-primary-light);
 }
         `.trim();

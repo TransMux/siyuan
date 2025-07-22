@@ -60,7 +60,8 @@ export class DocumentStylerPlugin extends Plugin {
             filter: ["cross-reference", "cross reference", "交叉引用", "jiaochayinyong", "jcyy", "图表引用", "tubiaoyinyong", "tbyy"],
             html: `<div class="b3-list-item__first"><svg class="b3-list-item__graphic"><use xlink:href="#iconRef"></use></svg><span class="b3-list-item__text">交叉引用</span></div>`,
             id: "crossReference",
-            callback: (protyle, nodeElement) => {
+            callback: ({ protyle }, nodeElement) => {
+                debugger
                 this.handleCrossReferenceSlash(protyle, nodeElement);
             }
         });
@@ -594,7 +595,6 @@ export class DocumentStylerPlugin extends Plugin {
 
             // 显示图表选择菜单
             this.showCrossReferenceMenu(protyle, nodeElement, figures);
-
         } catch (error) {
             console.error('处理交叉引用斜杠命令失败:', error);
         }
@@ -683,7 +683,7 @@ export class DocumentStylerPlugin extends Plugin {
 
                 return `
                     <div class="b3-list-item" data-figure-id="${figure.id}" data-figure-type="${figure.type}" data-figure-number="${figure.number}">
-                        <div class="b3-list-item__first">
+                        <div style="display: flex; align-items: center;">
                             <svg class="b3-list-item__graphic">
                                 <use xlink:href="#${iconName}"></use>
                             </svg>
@@ -760,7 +760,7 @@ export class DocumentStylerPlugin extends Plugin {
     private insertCrossReference(protyle: any, figure: any): void {
         try {
             // 使用正确的交叉引用格式
-            const crossRefHTML = `<span data-type="block-ref sup" data-subtype="s" data-id="${figure.id}">*</span>`;
+            const crossRefHTML = `<span data-type="block-ref" data-subtype="s" data-id="${figure.id}">*</span>`;
 
             // 获取当前选择范围
             const range = protyle.toolbar.range;
