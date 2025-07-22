@@ -149,6 +149,8 @@ export interface IDataFetchConfig {
     forceRefresh?: boolean;
     /** 包含的图表类型 */
     includeTypes?: ('image' | 'table')[];
+    /** 是否来自WebSocket触发（用于强制跳过缓存） */
+    fromWebSocket?: boolean;
 }
 
 /**

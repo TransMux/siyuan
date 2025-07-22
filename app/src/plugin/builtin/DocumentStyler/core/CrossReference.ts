@@ -97,14 +97,16 @@ export class CrossReference implements ICrossReference {
     /**
      * 应用交叉引用到指定protyle
      * @param protyle protyle对象
+     * @param config 数据获取配置
      */
-    async applyCrossReference(protyle: any): Promise<void> {
+    async applyCrossReference(protyle: any, config?: { fromWebSocket?: boolean }): Promise<void> {
         if (!protyle) return;
 
         try {
             const docId = protyle?.block?.rootID;
             if (docId) {
-                await this.controller.enableCrossReference(docId);
+                // 将配置传递给controller
+                await this.controller.enableCrossReference(docId, config);
             }
 
             // 保持向后兼容的样式加载
@@ -182,67 +184,19 @@ export class CrossReference implements ICrossReference {
     }
 
     /**
-     * 加载交叉引用样式
-     * 基于从完整DOM结构解析出来的图表数据，通过CSS实现自动编号和自定义标题
+     * 加载交叉引用样式（现在由新的StyleManager统一管理）
      */
-    private async loadCrossReferenceStyles(protyle?: any): Promise<void> {
-        // 获取当前文档的所有图片表格数据（现在从完整DOM结构解析，包含正确编号和标题）
-        let figuresData: IFigureInfo[] = [];
-        let figurePrefix = '图';
-        let tablePrefix = '表';
-
-        if (protyle?.block?.rootID) {
-            try {
-                // 从完整DOM结构获取图表数据
-                figuresData = await this.getFiguresList(protyle.block.rootID);
-
-                // 获取自定义前缀
-                if (this.settingsManager) {
-                    figurePrefix = await this.settingsManager.getDocumentFigurePrefix(protyle.block.rootID);
-                    tablePrefix = await this.settingsManager.getDocumentTablePrefix(protyle.block.rootID);
-                }
-
-                // 由于现在图表数据已经包含了标题信息，我们可以直接使用
-                // 不再需要复杂的超级块解析，因为标题信息已经在figuresData中了
-            } catch (error) {
-                console.error('获取图片表格数据失败:', error);
-            }
+    private async loadCrossReferenceStyles(_protyle?: any): Promise<void> {
+        // 移除旧的样式系统，现在统一使用新的StyleManager
+        const oldStyleElement = document.getElementById('document-styler-cross-reference');
+        if (oldStyleElement) {
+            oldStyleElement.remove();
+            console.log('CrossReference: 移除了旧的样式元素 document-styler-cross-reference');
         }
 
-        const css = `
-            /* 超级块中的图片/表格自定义标题样式 */
-            ${this.generateFigureCaptionStyles(figuresData, figurePrefix, tablePrefix)}
-
-            /* 交叉引用链接样式 */
-            .protyle-wysiwyg a[href^="#figure-"],
-            .protyle-wysiwyg a[href^="#table-"] {
-                color: var(--b3-theme-primary);
-                text-decoration: none;
-                font-weight: 500;
-                padding: 2px 6px;
-                border-radius: 4px;
-                background-color: var(--b3-theme-primary-lightest);
-                border: 1px solid var(--b3-theme-primary-lighter);
-                transition: all 0.2s ease;
-                font-size: 0.9em;
-            }
-
-            .protyle-wysiwyg a[href^="#figure-"]:hover,
-            .protyle-wysiwyg a[href^="#table-"]:hover {
-                background-color: var(--b3-theme-primary-light);
-                color: var(--b3-theme-on-primary);
-                transform: translateY(-1px);
-                box-shadow: 0 2px 4px var(--b3-theme-surface-light);
-            }
-        `;
-
-        let styleElement = document.getElementById('document-styler-cross-reference') as HTMLStyleElement;
-        if (!styleElement) {
-            styleElement = document.createElement('style');
-            styleElement.id = 'document-styler-cross-reference';
-            document.head.appendChild(styleElement);
-        }
-        styleElement.textContent = css;
+        // 现在样式由新的StyleManager统一管理，通过controller处理
+        // 这个方法保持向后兼容，但实际样式处理已经迁移到新系统
+        console.log('CrossReference: 样式处理已迁移到新的StyleManager系统');
     }
 
     /**
@@ -378,10 +332,15 @@ export class CrossReference implements ICrossReference {
      * 移除交叉引用样式
      */
     private removeCrossReferenceStyles(): void {
-        const styleElement = document.getElementById('document-styler-cross-reference');
-        if (styleElement) {
-            styleElement.remove();
+        // 移除旧的样式元素
+        const oldStyleElement = document.getElementById('document-styler-cross-reference');
+        if (oldStyleElement) {
+            oldStyleElement.remove();
+            console.log('CrossReference: 移除了旧的样式元素 document-styler-cross-reference');
         }
+
+        // 新的样式由StyleManager管理，通过controller清除
+        // 这里不需要额外处理
     }
 
 
@@ -408,7 +367,8 @@ export class CrossReference implements ICrossReference {
                     // 延迟一小段时间以确保DOM更新完成
                     setTimeout(async () => {
                         try {
-                            await this.applyCrossReference(currentProtyle);
+                            // WebSocket触发的更新需要强制跳过缓存
+                            await this.applyCrossReference(currentProtyle, { fromWebSocket: true });
 
                             // 通知侧边栏面板更新图表列表
                             if (this.panelUpdateCallback) {

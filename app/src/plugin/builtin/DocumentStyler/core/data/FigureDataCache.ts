@@ -20,7 +20,7 @@ interface ICacheStats {
 
 export class FigureDataCache {
     private cache = new Map<string, ICacheEntry>();
-    private defaultExpiry = 5 * 60 * 1000; // 5分钟
+    private defaultExpiry = 60 * 1000; // 60秒（最大缓存时间）
     private maxEntries = 100; // 最大缓存条目数
     private hits = 0;
     private misses = 0;

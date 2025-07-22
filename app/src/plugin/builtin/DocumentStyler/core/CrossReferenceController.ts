@@ -114,8 +114,9 @@ export class CrossReferenceController {
     /**
      * 处理文档切换
      * @param docId 文档ID
+     * @param config 数据获取配置
      */
-    async handleDocumentSwitch(docId: string): Promise<void> {
+    async handleDocumentSwitch(docId: string, config?: { fromWebSocket?: boolean }): Promise<void> {
         if (!this.isInitialized || !docId) {
             return;
         }
@@ -152,10 +153,15 @@ export class CrossReferenceController {
             }
 
             // 获取图表数据（带性能监控）
+            const fetchConfig = {
+                fromWebSocket: config?.fromWebSocket || false,
+                forceRefresh: config?.fromWebSocket || false // WebSocket触发时强制刷新
+            };
+
             const { result: figures } = await this.performanceMonitor.measureAsync(
                 'get-figures-list',
-                () => this.figureManager.getFiguresList(docId),
-                { docId }
+                () => this.figureManager.getFiguresList(docId, fetchConfig),
+                { docId, fromWebSocket: config?.fromWebSocket }
             );
 
             // 更新状态
@@ -242,15 +248,16 @@ export class CrossReferenceController {
     /**
      * 启用交叉引用功能
      * @param docId 文档ID，不传则使用当前文档
+     * @param config 数据获取配置
      */
-    async enableCrossReference(docId?: string): Promise<void> {
+    async enableCrossReference(docId?: string, config?: { fromWebSocket?: boolean }): Promise<void> {
         const targetDocId = docId || this.currentDocId;
         if (!targetDocId) {
             console.warn('CrossReferenceController: 没有指定文档ID');
             return;
         }
 
-        await this.handleDocumentSwitch(targetDocId);
+        await this.handleDocumentSwitch(targetDocId, config);
     }
 
     /**
