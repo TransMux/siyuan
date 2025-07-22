@@ -75,7 +75,7 @@ export class DocumentStylerPlugin extends Plugin {
         // 按依赖顺序创建组件
         this.settingsManager = new SettingsManager(this);
         this.documentManager = new DocumentManager(this.appRef);
-        this.fontStyleManager = new FontStyleManager();
+        this.fontStyleManager = new FontStyleManager(this.settingsManager);
         this.styleManager = new StyleManager();
 
         // 功能组件

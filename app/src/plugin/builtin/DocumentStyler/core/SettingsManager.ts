@@ -337,6 +337,7 @@ export class SettingsManager implements ISettingsManager {
         return {
             headingNumberingEnabled: false,
             crossReferenceEnabled: false,
+            customFontEnabled: false,
             numberingFormats: [...this.settings.numberingFormats],
             headingNumberStyles: [...this.settings.headingNumberStyles],
             figurePrefix: this.settings.figurePrefix,
@@ -443,6 +444,15 @@ export class SettingsManager implements ISettingsManager {
     }
 
     /**
+     * 重置文档的字体设置为默认值
+     * @param docId 文档ID
+     */
+    async resetDocumentFontSettings(docId: string): Promise<void> {
+        const defaultFontSettings = this.getDefaultFontSettings();
+        await this.setDocumentFontSettings(docId, defaultFontSettings);
+    }
+
+    /**
      * 验证并修复文档设置
      * @param settings 要验证的设置
      * @returns 修复后的设置
@@ -463,6 +473,10 @@ export class SettingsManager implements ISettingsManager {
 
         if (typeof settings.crossReferenceEnabled === 'boolean') {
             fixed.crossReferenceEnabled = settings.crossReferenceEnabled;
+        }
+
+        if (typeof settings.customFontEnabled === 'boolean') {
+            fixed.customFontEnabled = settings.customFontEnabled;
         }
 
         if (Array.isArray(settings.numberingFormats) && settings.numberingFormats.length === 6) {

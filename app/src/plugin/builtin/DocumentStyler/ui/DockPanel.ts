@@ -80,7 +80,6 @@ export class DockPanel implements IDockPanel {
         if (!this.panelElement) return;
 
         try {
-            await this.updateCurrentDocInfo();
             await this.updateSettingsUI();
             await this.updateFiguresList();
         } catch (error) {
@@ -166,6 +165,15 @@ export class DockPanel implements IDockPanel {
                             <span class="fn__space"></span>
                             <input class="b3-switch fn__flex-center" id="doc-crossref-enabled" type="checkbox" checked="">
                         </label>
+
+                        <label class="fn__flex b3-label">
+                            <div class="fn__flex-1">
+                                文章字体自定义
+                                <div class="b3-label__text">启用文档字体自定义功能</div>
+                            </div>
+                            <span class="fn__space"></span>
+                            <input class="b3-switch fn__flex-center" id="doc-custom-font-enabled" type="checkbox" checked="">
+                        </label>
                     </div>
 
                     <!-- 标题编号样式设置 -->
@@ -176,13 +184,7 @@ export class DockPanel implements IDockPanel {
                         </div>
                     </div>
 
-                    <!-- 当前文档信息 -->
-                    <div class="document-styler-section">
-                        <h3 class="document-styler-section-title">当前文档</h3>
-                        <div class="document-styler-info" id="current-doc-info">
-                            未选择文档
-                        </div>
-                    </div>
+
 
                     <!-- 图表编号前缀设置 -->
                     <div class="document-styler-section" id="figure-prefix-section" style="${docSettings.crossReferenceEnabled ? '' : 'display: none;'}">
@@ -208,8 +210,13 @@ export class DockPanel implements IDockPanel {
                     </div>
 
                     <!-- 字体设置 -->
-                    <div class="document-styler-section" id="font-settings-section">
-                        <h3 class="document-styler-section-title">字体设置</h3>
+                    <div class="document-styler-section" id="font-settings-section" style="${docSettings.customFontEnabled ? '' : 'display: none;'}">
+                        <div class="fn__flex" style="align-items: center; margin-bottom: 8px;">
+                            <h3 class="document-styler-section-title" style="margin: 0; flex: 1;">字体设置</h3>
+                            <button class="b3-button b3-button--small" id="reset-font-settings" style="margin-left: 8px;">
+                                重置为默认
+                            </button>
+                        </div>
                         ${this.generateFontSettingsHTML(docSettings.fontSettings)}
                     </div>
 
@@ -437,6 +444,9 @@ export class DockPanel implements IDockPanel {
 
         // 绑定字体设置事件
         this.bindFontSettingsEvents();
+
+        // 绑定重置字体设置按钮事件
+        this.bindResetFontSettingsEvent();
     }
 
     /**
@@ -589,6 +599,35 @@ export class DockPanel implements IDockPanel {
     }
 
     /**
+     * 绑定重置字体设置按钮事件
+     */
+    private bindResetFontSettingsEvent(): void {
+        if (!this.panelElement) return;
+
+        const resetButton = this.panelElement.querySelector('#reset-font-settings') as HTMLButtonElement;
+        if (resetButton) {
+            const handler = async () => {
+                const docId = this.documentManager.getCurrentDocId();
+                if (!docId) return;
+
+                console.log('DocumentStyler: 重置字体设置为默认值');
+
+                // 重置字体设置
+                await this.settingsManager.resetDocumentFontSettings(docId);
+
+                // 更新UI显示
+                const docSettings = await this.settingsManager.getDocumentSettings(docId);
+                await this.updateFontSettingsUI(docSettings.fontSettings);
+
+                // 应用字体设置
+                await this.applyFontSettings(docId);
+            };
+            resetButton.addEventListener('click', handler);
+            (resetButton as any)._documentStylerHandler = handler;
+        }
+    }
+
+    /**
      * 清除面板事件监听器
      */
     private clearPanelEvents(): void {
@@ -632,7 +671,8 @@ export class DockPanel implements IDockPanel {
             '#font-size-increase',
             '#line-height-input',
             '#line-height-decrease',
-            '#line-height-increase'
+            '#line-height-increase',
+            '#reset-font-settings'
         ];
 
         fontElements.forEach(selector => {
@@ -788,31 +828,7 @@ export class DockPanel implements IDockPanel {
         }
     }
 
-    /**
-     * 更新当前文档信息
-     */
-    private async updateCurrentDocInfo(): Promise<void> {
-        const infoElement = this.panelElement?.querySelector('#current-doc-info');
-        if (!infoElement) return;
 
-        const docId = this.documentManager.getCurrentDocId();
-        if (!docId) {
-            infoElement.textContent = '未选择文档';
-            return;
-        }
-
-        try {
-            const docInfo = await this.documentManager.getDocumentInfo(docId);
-            if (docInfo) {
-                infoElement.textContent = docInfo.title;
-            } else {
-                infoElement.textContent = `文档ID: ${docId.substring(0, 8)}...`;
-            }
-        } catch (error) {
-            console.error('更新文档信息失败:', error);
-            infoElement.textContent = `文档ID: ${docId.substring(0, 8)}...`;
-        }
-    }
 
     /**
      * 更新设置UI
@@ -845,6 +861,7 @@ export class DockPanel implements IDockPanel {
             this.toggleHeadingStylesSection(docSettings.headingNumberingEnabled);
             this.toggleNumberingFormatsSection(docSettings.headingNumberingEnabled);
             this.toggleFiguresSection(docSettings.crossReferenceEnabled);
+            this.toggleFontSettingsSection(docSettings.customFontEnabled);
         } catch (error) {
             console.error('更新设置UI失败:', error);
         }
@@ -904,6 +921,12 @@ export class DockPanel implements IDockPanel {
                 crossRefCheckbox.checked = docSettings.crossReferenceEnabled;
             }
 
+            // 更新文章字体自定义开关
+            const customFontCheckbox = this.panelElement?.querySelector('#doc-custom-font-enabled') as HTMLInputElement;
+            if (customFontCheckbox) {
+                customFontCheckbox.checked = docSettings.customFontEnabled;
+            }
+
             // 只在初始化时绑定事件，避免重复绑定
             if (!this.eventsInitialized) {
                 this.bindDocumentStatusEvents(docId);
@@ -923,6 +946,7 @@ export class DockPanel implements IDockPanel {
 
         const headingCheckbox = this.panelElement?.querySelector('#doc-heading-enabled') as HTMLInputElement;
         const crossRefCheckbox = this.panelElement?.querySelector('#doc-crossref-enabled') as HTMLInputElement;
+        const customFontCheckbox = this.panelElement?.querySelector('#doc-custom-font-enabled') as HTMLInputElement;
 
         if (headingCheckbox) {
             const headingHandler = async (e: Event) => {
@@ -968,6 +992,31 @@ export class DockPanel implements IDockPanel {
             crossRefCheckbox.addEventListener('change', crossRefHandler);
             (crossRefCheckbox as any)._documentStylerHandler = crossRefHandler;
         }
+
+        if (customFontCheckbox) {
+            const customFontHandler = async (e: Event) => {
+                // 实时获取当前文档ID，而不是使用闭包中的旧ID
+                const currentDocId = this.documentManager.getCurrentDocId();
+                if (!currentDocId) {
+                    console.warn('DocumentStyler: 无法获取当前文档ID，跳过文章字体自定义设置');
+                    return;
+                }
+
+                const enabled = (e.target as HTMLInputElement).checked;
+                console.log(`DocumentStyler: 文章字体自定义开关改变 - 启用: ${enabled}, 文档ID: ${currentDocId}`);
+
+                await this.settingsManager.setDocumentSettings(currentDocId, { customFontEnabled: enabled });
+                this.toggleFontSettingsSection(enabled);
+
+                // 如果禁用了字体自定义，清除字体设置
+                if (!enabled) {
+                    await this.settingsManager.resetDocumentFontSettings(currentDocId);
+                    await this.applyFontSettings(currentDocId);
+                }
+            };
+            customFontCheckbox.addEventListener('change', customFontHandler);
+            (customFontCheckbox as any)._documentStylerHandler = customFontHandler;
+        }
     }
 
     /**
@@ -986,6 +1035,12 @@ export class DockPanel implements IDockPanel {
         if (crossRefCheckbox && (crossRefCheckbox as any)._documentStylerHandler) {
             crossRefCheckbox.removeEventListener('change', (crossRefCheckbox as any)._documentStylerHandler);
             delete (crossRefCheckbox as any)._documentStylerHandler;
+        }
+
+        const customFontCheckbox = this.panelElement.querySelector('#doc-custom-font-enabled') as HTMLInputElement;
+        if (customFontCheckbox && (customFontCheckbox as any)._documentStylerHandler) {
+            customFontCheckbox.removeEventListener('change', (customFontCheckbox as any)._documentStylerHandler);
+            delete (customFontCheckbox as any)._documentStylerHandler;
         }
     }
 
@@ -1087,6 +1142,16 @@ export class DockPanel implements IDockPanel {
         const prefixSection = this.panelElement?.querySelector('#figure-prefix-section') as HTMLElement;
         if (prefixSection) {
             prefixSection.style.display = show ? '' : 'none';
+        }
+    }
+
+    /**
+     * 切换字体设置节的显示
+     */
+    private toggleFontSettingsSection(show: boolean): void {
+        const fontSection = this.panelElement?.querySelector('#font-settings-section') as HTMLElement;
+        if (fontSection) {
+            fontSection.style.display = show ? '' : 'none';
         }
     }
 

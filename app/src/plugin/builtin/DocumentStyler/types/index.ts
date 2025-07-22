@@ -318,6 +318,8 @@ export interface IDocumentStylerDocumentSettings {
     headingNumberingEnabled: boolean;
     /** 交叉引用启用状态 */
     crossReferenceEnabled: boolean;
+    /** 文章字体自定义启用状态 */
+    customFontEnabled: boolean;
     /** 标题编号格式配置 */
     numberingFormats: string[];
     /** 标题编号样式配置 (6个级别) */

@@ -4,10 +4,16 @@
  */
 
 import { IFontSettings, IModule } from "../types";
+import { SettingsManager } from "./SettingsManager";
 
 export class FontStyleManager implements IModule {
     private readonly FONT_STYLE_ID_PREFIX = 'document-styler-font-';
     private appliedStyles: Map<string, HTMLStyleElement> = new Map();
+    private settingsManager: SettingsManager;
+
+    constructor(settingsManager: SettingsManager) {
+        this.settingsManager = settingsManager;
+    }
 
     async init(): Promise<void> {
         // 初始化时清理可能存在的旧样式
@@ -31,6 +37,14 @@ export class FontStyleManager implements IModule {
         }
 
         try {
+            // 检查是否启用了文章字体自定义
+            const docSettings = await this.settingsManager.getDocumentSettings(docId);
+            if (!docSettings.customFontEnabled) {
+                console.log(`FontStyleManager: 文档 ${docId} 未启用文章字体自定义，清除字体样式`);
+                await this.clearDocumentStyles(docId);
+                return;
+            }
+
             // 清除该文档的旧样式
             await this.clearDocumentStyles(docId);
 
