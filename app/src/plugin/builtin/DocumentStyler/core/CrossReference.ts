@@ -394,11 +394,15 @@ export class CrossReference implements ICrossReference {
         try {
             // 检查当前文档是否受影响
             if (!this.documentManager.isCurrentDocumentAffected(msg)) {
+                console.log('CrossReference: WebSocket消息不影响当前文档，跳过处理');
                 return;
             }
 
+            console.log('CrossReference: 收到影响当前文档的WebSocket消息，检查是否需要更新图表');
+
             // 分析是否需要更新图片表格索引或超级块结构
             if (this.needsFigureUpdate(msg)) {
+                console.log('CrossReference: 检测到需要更新图表，开始处理');
                 const currentProtyle = this.documentManager.getCurrentProtyle();
                 if (currentProtyle) {
                     // 延迟一小段时间以确保DOM更新完成
@@ -416,6 +420,8 @@ export class CrossReference implements ICrossReference {
                         }
                     }, 100);
                 }
+            } else {
+                console.log('CrossReference: WebSocket消息不需要更新图表');
             }
         } catch (error) {
             console.error('CrossReference: 处理 transaction 消息失败:', error);
@@ -429,11 +435,12 @@ export class CrossReference implements ICrossReference {
      */
     private needsFigureUpdate(msg: any): boolean {
         if (!msg.data || !Array.isArray(msg.data)) {
+            console.log('CrossReference: 消息数据格式不正确');
             return false;
         }
 
         // 检查是否包含图片、表格或超级块相关的操作
-        return msg.data.some((transaction: any) => {
+        const needsUpdate = msg.data.some((transaction: any) => {
             if (!transaction.doOperations || !Array.isArray(transaction.doOperations)) {
                 return false;
             }
@@ -441,23 +448,27 @@ export class CrossReference implements ICrossReference {
             return transaction.doOperations.some((operation: any) => {
                 // 检查操作数据中是否包含相关节点类型
                 if (operation.data && typeof operation.data === 'string') {
-                    return operation.data.includes('data-type="NodeTable"') ||
-                           operation.data.includes('<img') ||
-                           operation.data.includes('data-type="NodeSuperBlock"') ||
-                           operation.data.includes('data-sb-layout'); // 超级块布局变化
-                }
+                    const isFigureRelated = operation.data.includes('data-type="NodeTable"') ||
+                                          operation.data.includes('<img') ||
+                                          operation.data.includes('data-type="NodeSuperBlock"') ||
+                                          operation.data.includes('data-sb-layout');
 
-                // 检查操作类型是否涉及超级块
-                if (operation.action) {
-                    return operation.action === 'insert' ||
-                           operation.action === 'update' ||
-                           operation.action === 'delete' ||
-                           operation.action === 'move'; // 移动操作可能影响超级块结构
+                    if (isFigureRelated) {
+                        console.log(`CrossReference: 检测到图表相关操作 - 动作: ${operation.action}, 数据包含: ${
+                            operation.data.includes('data-type="NodeTable"') ? 'NodeTable ' : ''
+                        }${operation.data.includes('<img') ? 'img ' : ''}${
+                            operation.data.includes('data-type="NodeSuperBlock"') ? 'NodeSuperBlock ' : ''
+                        }${operation.data.includes('data-sb-layout') ? 'sb-layout' : ''}`);
+                        return true;
+                    }
                 }
 
                 return false;
             });
         });
+
+        console.log(`CrossReference: needsFigureUpdate 结果: ${needsUpdate}`);
+        return needsUpdate;
     }
 
     /**
