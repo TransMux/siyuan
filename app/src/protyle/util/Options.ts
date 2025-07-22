@@ -22,7 +22,7 @@ export class Options {
             preview: "",
         },
         click: {
-            preventInsetEmptyBlock: false
+            preventInsetEmptyBlock: true
         },
         hint: {
             delay: 200,
