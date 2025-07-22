@@ -44,8 +44,26 @@ export class DocumentStylerPlugin extends Plugin {
         // 将插件实例暴露到全局，供HTML onclick使用
         (window as any).documentStylerPlugin = this;
 
+        // 注册斜杠命令
+        this.registerSlashCommands();
+
         // 初始化核心组件 - 简化依赖关系
         this.initializeComponents();
+    }
+
+    /**
+     * 注册斜杠命令
+     */
+    private registerSlashCommands(): void {
+        // 注册交叉引用斜杠命令
+        this.protyleSlash.push({
+            filter: ["cross-reference", "cross reference", "交叉引用", "jiaochayinyong", "jcyy", "图表引用", "tubiaoyinyong", "tbyy"],
+            html: `<div class="b3-list-item__first"><svg class="b3-list-item__graphic"><use xlink:href="#iconRef"></use></svg><span class="b3-list-item__text">交叉引用</span></div>`,
+            id: "crossReference",
+            callback: (protyle, nodeElement) => {
+                this.handleCrossReferenceSlash(protyle, nodeElement);
+            }
+        });
     }
 
     /**
@@ -554,6 +572,261 @@ export class DocumentStylerPlugin extends Plugin {
             await this.crossReference.forceUpdate();
         } catch (error) {
             console.error('手动更新交叉引用失败:', error);
+        }
+    }
+
+    /**
+     * 处理交叉引用斜杠命令
+     * @param protyle 编辑器实例
+     * @param nodeElement 节点元素
+     */
+    private async handleCrossReferenceSlash(protyle: any, nodeElement: HTMLElement): Promise<void> {
+        try {
+            // 获取当前文档ID
+            const docId = protyle?.block?.rootID;
+            if (!docId) {
+                console.warn('无法获取当前文档ID');
+                return;
+            }
+
+            // 获取图表数据
+            const figures = await this.crossReference.getFiguresList(docId);
+
+            // 显示图表选择菜单
+            this.showCrossReferenceMenu(protyle, nodeElement, figures);
+
+        } catch (error) {
+            console.error('处理交叉引用斜杠命令失败:', error);
+        }
+    }
+
+    /**
+     * 显示交叉引用选择菜单
+     * @param protyle 编辑器实例
+     * @param nodeElement 节点元素
+     * @param figures 图表数据
+     */
+    private showCrossReferenceMenu(protyle: any, nodeElement: HTMLElement, figures: any[]): void {
+        // 获取光标位置
+        const range = protyle.toolbar.range;
+        if (!range) return;
+
+        const rangePosition = this.getSelectionPosition(nodeElement, range);
+        const menuPosition = {
+            x: rangePosition.left,
+            y: rangePosition.top + 26
+        };
+
+        // 创建并显示菜单
+        this.createCrossReferenceMenu(figures, menuPosition, (figure) => {
+            // 插入交叉引用
+            this.insertCrossReference(protyle, figure);
+        });
+    }
+
+    /**
+     * 获取选择位置
+     * @param _nodeElement 节点元素（未使用，保留以备将来扩展）
+     * @param range 选择范围
+     * @returns 位置信息
+     */
+    private getSelectionPosition(_nodeElement: HTMLElement, range: Range): { left: number; top: number } {
+        const rect = range.getBoundingClientRect();
+        return {
+            left: rect.left,
+            top: rect.top
+        };
+    }
+
+    /**
+     * 创建交叉引用菜单
+     * @param figures 图表数据
+     * @param position 菜单位置
+     * @param onSelect 选择回调
+     */
+    private createCrossReferenceMenu(
+        figures: any[],
+        position: { x: number; y: number },
+        onSelect: (figure: any) => void
+    ): void {
+        // 移除已存在的菜单
+        const existingMenu = document.querySelector('.cross-reference-menu');
+        if (existingMenu) {
+            existingMenu.remove();
+        }
+
+        // 创建菜单容器
+        const menuElement = document.createElement('div');
+        menuElement.className = 'b3-menu b3-list b3-list--background cross-reference-menu';
+        menuElement.style.position = 'fixed';
+        menuElement.style.left = `${position.x}px`;
+        menuElement.style.top = `${position.y}px`;
+        menuElement.style.zIndex = '9999';
+        menuElement.style.maxHeight = '300px';
+        menuElement.style.overflowY = 'auto';
+        menuElement.style.minWidth = '200px';
+
+        if (figures.length === 0) {
+            // 没有图表时显示提示
+            menuElement.innerHTML = `
+                <div class="b3-list-item b3-list-item--readonly">
+                    <span class="b3-list-item__text">当前文档中没有图片或表格</span>
+                </div>
+            `;
+        } else {
+            // 生成图表列表
+            const menuHTML = figures.map(figure => {
+                const typeText = figure.type === 'image' ? '图' : '表';
+                const iconName = figure.type === 'image' ? 'iconImage' : 'iconTable';
+                const displayText = `${typeText} ${figure.number}`;
+                const captionText = figure.caption ? `: ${figure.caption}` : '';
+
+                return `
+                    <div class="b3-list-item" data-figure-id="${figure.id}" data-figure-type="${figure.type}" data-figure-number="${figure.number}">
+                        <div class="b3-list-item__first">
+                            <svg class="b3-list-item__graphic">
+                                <use xlink:href="#${iconName}"></use>
+                            </svg>
+                            <span class="b3-list-item__text">${displayText}${captionText}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            menuElement.innerHTML = menuHTML;
+
+            // 添加点击事件监听
+            menuElement.addEventListener('click', (event: MouseEvent) => {
+                const target = event.target as HTMLElement;
+                const listItem = target.closest('.b3-list-item') as HTMLElement;
+
+                if (listItem && listItem.dataset.figureId) {
+                    const figure = {
+                        id: listItem.dataset.figureId,
+                        type: listItem.dataset.figureType,
+                        number: parseInt(listItem.dataset.figureNumber || '0')
+                    };
+
+                    onSelect(figure);
+                    menuElement.remove();
+                }
+            });
+        }
+
+        // 添加到页面
+        document.body.appendChild(menuElement);
+
+        // 添加全局点击事件监听，点击菜单外部时关闭菜单
+        setTimeout(() => {
+            document.addEventListener('click', (event: MouseEvent) => {
+                const target = event.target as HTMLElement;
+                if (!menuElement.contains(target)) {
+                    menuElement.remove();
+                }
+            }, { once: true });
+        }, 0);
+
+        // 调整菜单位置，确保不超出屏幕边界
+        this.adjustMenuPosition(menuElement);
+    }
+
+    /**
+     * 调整菜单位置
+     * @param menuElement 菜单元素
+     */
+    private adjustMenuPosition(menuElement: HTMLElement): void {
+        const rect = menuElement.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        // 调整水平位置
+        if (rect.right > viewportWidth) {
+            const newLeft = viewportWidth - rect.width - 10;
+            menuElement.style.left = `${Math.max(10, newLeft)}px`;
+        }
+
+        // 调整垂直位置
+        if (rect.bottom > viewportHeight) {
+            const newTop = viewportHeight - rect.height - 10;
+            menuElement.style.top = `${Math.max(10, newTop)}px`;
+        }
+    }
+
+    /**
+     * 插入交叉引用
+     * @param protyle 编辑器实例
+     * @param figure 图表信息
+     */
+    private insertCrossReference(protyle: any, figure: any): void {
+        try {
+            // 使用正确的交叉引用格式
+            const crossRefHTML = `<span data-type="block-ref sup" data-subtype="s" data-id="${figure.id}">*</span>`;
+
+            // 获取当前选择范围
+            const range = protyle.toolbar.range;
+            if (range) {
+                // 删除选择内容
+                range.deleteContents();
+
+                // 创建HTML元素并插入
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = crossRefHTML;
+                const crossRefElement = tempDiv.firstChild as HTMLElement;
+
+                range.insertNode(crossRefElement);
+                range.setStartAfter(crossRefElement);
+                range.collapse(true);
+
+                // 更新选择
+                const selection = window.getSelection();
+                if (selection) {
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
+
+                // 触发文档更新
+                this.triggerDocumentUpdate(protyle);
+
+                // 重新应用交叉引用样式以包含新插入的引用
+                this.updateCrossReferenceStyles(protyle);
+            }
+
+            console.log(`插入交叉引用: ${figure.type} ${figure.number}`);
+        } catch (error) {
+            console.error('插入交叉引用失败:', error);
+        }
+    }
+
+    /**
+     * 触发文档更新
+     * @param protyle 编辑器实例
+     */
+    private triggerDocumentUpdate(protyle: any): void {
+        try {
+            // 触发文档更新
+            if (protyle && protyle.wysiwyg && typeof protyle.wysiwyg.renderCustom === 'function') {
+                protyle.wysiwyg.renderCustom();
+            }
+        } catch (error) {
+            console.error('触发文档更新失败:', error);
+        }
+    }
+
+    /**
+     * 更新交叉引用样式
+     * @param protyle 编辑器实例
+     */
+    private async updateCrossReferenceStyles(protyle: any): Promise<void> {
+        try {
+            const docId = protyle?.block?.rootID;
+            if (!docId) return;
+
+            // 重新应用交叉引用样式
+            await this.crossReference.applyCrossReference(protyle);
+
+            console.log('交叉引用样式已更新');
+        } catch (error) {
+            console.error('更新交叉引用样式失败:', error);
         }
     }
 
