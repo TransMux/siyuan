@@ -113,11 +113,7 @@ export class FontStyleManager implements IModule {
         return (
             (!fontSettings.fontFamily || fontSettings.fontFamily === '') &&
             (!fontSettings.fontSize || fontSettings.fontSize === '16px') &&
-            (!fontSettings.lineHeight || fontSettings.lineHeight === '1.6') &&
-            (!fontSettings.fontWeight || fontSettings.fontWeight === 'normal') &&
-            (!fontSettings.fontStyle || fontSettings.fontStyle === 'normal') &&
-            (!fontSettings.letterSpacing || fontSettings.letterSpacing === 'normal') &&
-            (!fontSettings.wordSpacing || fontSettings.wordSpacing === 'normal')
+            (!fontSettings.lineHeight || fontSettings.lineHeight === '1.6')
         );
     }
 
@@ -143,22 +139,6 @@ export class FontStyleManager implements IModule {
 
         if (fontSettings.lineHeight && fontSettings.lineHeight !== '1.6') {
             cssProperties.push(`line-height: ${fontSettings.lineHeight}`);
-        }
-
-        if (fontSettings.fontWeight && fontSettings.fontWeight !== 'normal') {
-            cssProperties.push(`font-weight: ${fontSettings.fontWeight}`);
-        }
-
-        if (fontSettings.fontStyle && fontSettings.fontStyle !== 'normal') {
-            cssProperties.push(`font-style: ${fontSettings.fontStyle}`);
-        }
-
-        if (fontSettings.letterSpacing && fontSettings.letterSpacing !== 'normal') {
-            cssProperties.push(`letter-spacing: ${fontSettings.letterSpacing}`);
-        }
-
-        if (fontSettings.wordSpacing && fontSettings.wordSpacing !== 'normal') {
-            cssProperties.push(`word-spacing: ${fontSettings.wordSpacing}`);
         }
 
         // 如果没有需要设置的属性，返回空字符串

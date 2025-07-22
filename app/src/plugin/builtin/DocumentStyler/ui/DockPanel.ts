@@ -283,13 +283,21 @@ export class DockPanel implements IDockPanel {
                 <div class="fn__flex b3-label config__item">
                     <div class="fn__flex-1">
                         字体大小
-                        <div class="b3-label__text">设置文档的字体大小</div>
+                        <div class="b3-label__text">设置文档的字体大小（px）</div>
                     </div>
                     <span class="fn__space"></span>
-                    <input class="b3-text-field fn__flex-center fn__size200"
-                           id="font-size-input"
-                           value="${fontSettings.fontSize}"
-                           placeholder="16px">
+                    <div class="fn__flex" style="align-items: center;">
+                        <button class="b3-button b3-button--small" id="font-size-decrease" style="margin-right: 4px;">-</button>
+                        <input class="b3-text-field fn__flex-center"
+                               id="font-size-input"
+                               value="${this.parseFontSize(fontSettings.fontSize)}"
+                               style="width: 60px; text-align: center; margin: 0 4px;"
+                               type="number"
+                               min="8"
+                               max="72">
+                        <button class="b3-button b3-button--small" id="font-size-increase" style="margin-left: 4px;">+</button>
+                        <span style="margin-left: 8px; color: var(--b3-theme-on-surface-light);">px</span>
+                    </div>
                 </div>
 
                 <div class="fn__flex b3-label config__item">
@@ -298,82 +306,30 @@ export class DockPanel implements IDockPanel {
                         <div class="b3-label__text">设置文档的行高</div>
                     </div>
                     <span class="fn__space"></span>
-                    <input class="b3-text-field fn__flex-center fn__size200"
-                           id="line-height-input"
-                           value="${fontSettings.lineHeight}"
-                           placeholder="1.6">
-                </div>
-
-                <div class="fn__flex b3-label config__item">
-                    <div class="fn__flex-1">
-                        字体粗细
-                        <div class="b3-label__text">设置文档的字体粗细</div>
+                    <div class="fn__flex" style="align-items: center;">
+                        <button class="b3-button b3-button--small" id="line-height-decrease" style="margin-right: 4px;">-</button>
+                        <input class="b3-text-field fn__flex-center"
+                               id="line-height-input"
+                               value="${parseFloat(fontSettings.lineHeight || '1.6').toFixed(1)}"
+                               style="width: 60px; text-align: center; margin: 0 4px;"
+                               type="number"
+                               min="1.0"
+                               max="3.0"
+                               step="0.1">
+                        <button class="b3-button b3-button--small" id="line-height-increase" style="margin-left: 4px;">+</button>
                     </div>
-                    <span class="fn__space"></span>
-                    <select class="b3-select fn__flex-center fn__size200" id="font-weight-select">
-                        <option value="normal" ${fontSettings.fontWeight === 'normal' ? 'selected' : ''}>正常</option>
-                        <option value="bold" ${fontSettings.fontWeight === 'bold' ? 'selected' : ''}>粗体</option>
-                        <option value="lighter" ${fontSettings.fontWeight === 'lighter' ? 'selected' : ''}>细体</option>
-                        <option value="100" ${fontSettings.fontWeight === '100' ? 'selected' : ''}>100</option>
-                        <option value="200" ${fontSettings.fontWeight === '200' ? 'selected' : ''}>200</option>
-                        <option value="300" ${fontSettings.fontWeight === '300' ? 'selected' : ''}>300</option>
-                        <option value="400" ${fontSettings.fontWeight === '400' ? 'selected' : ''}>400</option>
-                        <option value="500" ${fontSettings.fontWeight === '500' ? 'selected' : ''}>500</option>
-                        <option value="600" ${fontSettings.fontWeight === '600' ? 'selected' : ''}>600</option>
-                        <option value="700" ${fontSettings.fontWeight === '700' ? 'selected' : ''}>700</option>
-                        <option value="800" ${fontSettings.fontWeight === '800' ? 'selected' : ''}>800</option>
-                        <option value="900" ${fontSettings.fontWeight === '900' ? 'selected' : ''}>900</option>
-                    </select>
-                </div>
-
-                <div class="fn__flex b3-label config__item">
-                    <div class="fn__flex-1">
-                        字体样式
-                        <div class="b3-label__text">设置文档的字体样式</div>
-                    </div>
-                    <span class="fn__space"></span>
-                    <select class="b3-select fn__flex-center fn__size200" id="font-style-select">
-                        <option value="normal" ${fontSettings.fontStyle === 'normal' ? 'selected' : ''}>正常</option>
-                        <option value="italic" ${fontSettings.fontStyle === 'italic' ? 'selected' : ''}>斜体</option>
-                        <option value="oblique" ${fontSettings.fontStyle === 'oblique' ? 'selected' : ''}>倾斜</option>
-                    </select>
-                </div>
-
-                <div class="fn__flex b3-label config__item">
-                    <div class="fn__flex-1">
-                        字母间距
-                        <div class="b3-label__text">设置文档的字母间距</div>
-                    </div>
-                    <span class="fn__space"></span>
-                    <input class="b3-text-field fn__flex-center fn__size200"
-                           id="letter-spacing-input"
-                           value="${fontSettings.letterSpacing}"
-                           placeholder="normal">
-                </div>
-
-                <div class="fn__flex b3-label config__item">
-                    <div class="fn__flex-1">
-                        单词间距
-                        <div class="b3-label__text">设置文档的单词间距</div>
-                    </div>
-                    <span class="fn__space"></span>
-                    <input class="b3-text-field fn__flex-center fn__size200"
-                           id="word-spacing-input"
-                           value="${fontSettings.wordSpacing}"
-                           placeholder="normal">
-                </div>
-
-                <div class="fn__flex" style="margin-top: 16px;">
-                    <button class="b3-button b3-button--outline" id="reset-font-settings">
-                        重置字体设置
-                    </button>
-                    <span class="fn__space"></span>
-                    <button class="b3-button b3-button--text" id="apply-font-settings">
-                        应用字体设置
-                    </button>
                 </div>
             </div>
         `;
+    }
+
+    /**
+     * 解析字体大小，提取数字部分
+     */
+    private parseFontSize(fontSize: string): number {
+        if (!fontSize) return 16;
+        const match = fontSize.match(/(\d+)/);
+        return match ? parseInt(match[1], 10) : 16;
     }
 
     /**
@@ -516,7 +472,7 @@ export class DockPanel implements IDockPanel {
                 const docId = this.documentManager.getCurrentDocId();
                 if (!docId) return;
 
-                const fontSize = (e.target as HTMLInputElement).value;
+                const fontSize = (e.target as HTMLInputElement).value + 'px';
                 console.log(`DocumentStyler: 字体大小改变: ${fontSize}`);
 
                 await this.settingsManager.setDocumentFontSize(docId, fontSize);
@@ -524,6 +480,50 @@ export class DockPanel implements IDockPanel {
             };
             fontSizeInput.addEventListener('change', handler);
             (fontSizeInput as any)._documentStylerHandler = handler;
+        }
+
+        // 字体大小减少按钮
+        const fontSizeDecreaseBtn = this.panelElement.querySelector('#font-size-decrease') as HTMLButtonElement;
+        if (fontSizeDecreaseBtn) {
+            const handler = async () => {
+                const docId = this.documentManager.getCurrentDocId();
+                if (!docId) return;
+
+                const input = this.panelElement.querySelector('#font-size-input') as HTMLInputElement;
+                const currentSize = parseInt(input.value) || 16;
+                const newSize = Math.max(8, currentSize - 1);
+                input.value = newSize.toString();
+
+                const fontSize = newSize + 'px';
+                console.log(`DocumentStyler: 字体大小减少: ${fontSize}`);
+
+                await this.settingsManager.setDocumentFontSize(docId, fontSize);
+                await this.applyFontSettings(docId);
+            };
+            fontSizeDecreaseBtn.addEventListener('click', handler);
+            (fontSizeDecreaseBtn as any)._documentStylerHandler = handler;
+        }
+
+        // 字体大小增加按钮
+        const fontSizeIncreaseBtn = this.panelElement.querySelector('#font-size-increase') as HTMLButtonElement;
+        if (fontSizeIncreaseBtn) {
+            const handler = async () => {
+                const docId = this.documentManager.getCurrentDocId();
+                if (!docId) return;
+
+                const input = this.panelElement.querySelector('#font-size-input') as HTMLInputElement;
+                const currentSize = parseInt(input.value) || 16;
+                const newSize = Math.min(72, currentSize + 1);
+                input.value = newSize.toString();
+
+                const fontSize = newSize + 'px';
+                console.log(`DocumentStyler: 字体大小增加: ${fontSize}`);
+
+                await this.settingsManager.setDocumentFontSize(docId, fontSize);
+                await this.applyFontSettings(docId);
+            };
+            fontSizeIncreaseBtn.addEventListener('click', handler);
+            (fontSizeIncreaseBtn as any)._documentStylerHandler = handler;
         }
 
         // 行高输入框
@@ -543,104 +543,48 @@ export class DockPanel implements IDockPanel {
             (lineHeightInput as any)._documentStylerHandler = handler;
         }
 
-        // 字体粗细选择器
-        const fontWeightSelect = this.panelElement.querySelector('#font-weight-select') as HTMLSelectElement;
-        if (fontWeightSelect) {
-            const handler = async (e: Event) => {
-                const docId = this.documentManager.getCurrentDocId();
-                if (!docId) return;
-
-                const fontWeight = (e.target as HTMLSelectElement).value;
-                console.log(`DocumentStyler: 字体粗细改变: ${fontWeight}`);
-
-                await this.settingsManager.setDocumentFontSettings(docId, { fontWeight });
-                await this.applyFontSettings(docId);
-            };
-            fontWeightSelect.addEventListener('change', handler);
-            (fontWeightSelect as any)._documentStylerHandler = handler;
-        }
-
-        // 字体样式选择器
-        const fontStyleSelect = this.panelElement.querySelector('#font-style-select') as HTMLSelectElement;
-        if (fontStyleSelect) {
-            const handler = async (e: Event) => {
-                const docId = this.documentManager.getCurrentDocId();
-                if (!docId) return;
-
-                const fontStyle = (e.target as HTMLSelectElement).value;
-                console.log(`DocumentStyler: 字体样式改变: ${fontStyle}`);
-
-                await this.settingsManager.setDocumentFontSettings(docId, { fontStyle });
-                await this.applyFontSettings(docId);
-            };
-            fontStyleSelect.addEventListener('change', handler);
-            (fontStyleSelect as any)._documentStylerHandler = handler;
-        }
-
-        // 字母间距输入框
-        const letterSpacingInput = this.panelElement.querySelector('#letter-spacing-input') as HTMLInputElement;
-        if (letterSpacingInput) {
-            const handler = async (e: Event) => {
-                const docId = this.documentManager.getCurrentDocId();
-                if (!docId) return;
-
-                const letterSpacing = (e.target as HTMLInputElement).value;
-                console.log(`DocumentStyler: 字母间距改变: ${letterSpacing}`);
-
-                await this.settingsManager.setDocumentFontSettings(docId, { letterSpacing });
-                await this.applyFontSettings(docId);
-            };
-            letterSpacingInput.addEventListener('change', handler);
-            (letterSpacingInput as any)._documentStylerHandler = handler;
-        }
-
-        // 单词间距输入框
-        const wordSpacingInput = this.panelElement.querySelector('#word-spacing-input') as HTMLInputElement;
-        if (wordSpacingInput) {
-            const handler = async (e: Event) => {
-                const docId = this.documentManager.getCurrentDocId();
-                if (!docId) return;
-
-                const wordSpacing = (e.target as HTMLInputElement).value;
-                console.log(`DocumentStyler: 单词间距改变: ${wordSpacing}`);
-
-                await this.settingsManager.setDocumentFontSettings(docId, { wordSpacing });
-                await this.applyFontSettings(docId);
-            };
-            wordSpacingInput.addEventListener('change', handler);
-            (wordSpacingInput as any)._documentStylerHandler = handler;
-        }
-
-        // 重置字体设置按钮
-        const resetButton = this.panelElement.querySelector('#reset-font-settings') as HTMLButtonElement;
-        if (resetButton) {
+        // 行高减少按钮
+        const lineHeightDecreaseBtn = this.panelElement.querySelector('#line-height-decrease') as HTMLButtonElement;
+        if (lineHeightDecreaseBtn) {
             const handler = async () => {
                 const docId = this.documentManager.getCurrentDocId();
                 if (!docId) return;
 
-                console.log(`DocumentStyler: 重置字体设置`);
+                const input = this.panelElement.querySelector('#line-height-input') as HTMLInputElement;
+                const currentHeight = parseFloat(input.value) || 1.6;
+                const newHeight = Math.max(1.0, Math.round((currentHeight - 0.1) * 10) / 10);
+                input.value = newHeight.toFixed(1);
 
-                const defaultFontSettings = this.settingsManager.getDefaultFontSettings();
-                await this.settingsManager.setDocumentFontSettings(docId, defaultFontSettings);
-                await this.updatePanel(); // 重新更新面板以显示默认值
+                const lineHeight = newHeight.toString();
+                console.log(`DocumentStyler: 行高减少: ${lineHeight}`);
+
+                await this.settingsManager.setDocumentFontSettings(docId, { lineHeight });
                 await this.applyFontSettings(docId);
             };
-            resetButton.addEventListener('click', handler);
-            (resetButton as any)._documentStylerHandler = handler;
+            lineHeightDecreaseBtn.addEventListener('click', handler);
+            (lineHeightDecreaseBtn as any)._documentStylerHandler = handler;
         }
 
-        // 应用字体设置按钮
-        const applyButton = this.panelElement.querySelector('#apply-font-settings') as HTMLButtonElement;
-        if (applyButton) {
+        // 行高增加按钮
+        const lineHeightIncreaseBtn = this.panelElement.querySelector('#line-height-increase') as HTMLButtonElement;
+        if (lineHeightIncreaseBtn) {
             const handler = async () => {
                 const docId = this.documentManager.getCurrentDocId();
                 if (!docId) return;
 
-                console.log(`DocumentStyler: 手动应用字体设置`);
+                const input = this.panelElement.querySelector('#line-height-input') as HTMLInputElement;
+                const currentHeight = parseFloat(input.value) || 1.6;
+                const newHeight = Math.min(3.0, Math.round((currentHeight + 0.1) * 10) / 10);
+                input.value = newHeight.toFixed(1);
+
+                const lineHeight = newHeight.toString();
+                console.log(`DocumentStyler: 行高增加: ${lineHeight}`);
+
+                await this.settingsManager.setDocumentFontSettings(docId, { lineHeight });
                 await this.applyFontSettings(docId);
             };
-            applyButton.addEventListener('click', handler);
-            (applyButton as any)._documentStylerHandler = handler;
+            lineHeightIncreaseBtn.addEventListener('click', handler);
+            (lineHeightIncreaseBtn as any)._documentStylerHandler = handler;
         }
     }
 
@@ -684,13 +628,11 @@ export class DockPanel implements IDockPanel {
         const fontElements = [
             '#font-family-select',
             '#font-size-input',
+            '#font-size-decrease',
+            '#font-size-increase',
             '#line-height-input',
-            '#font-weight-select',
-            '#font-style-select',
-            '#letter-spacing-input',
-            '#word-spacing-input',
-            '#reset-font-settings',
-            '#apply-font-settings'
+            '#line-height-decrease',
+            '#line-height-increase'
         ];
 
         fontElements.forEach(selector => {
@@ -706,7 +648,7 @@ export class DockPanel implements IDockPanel {
     /**
      * 加载系统字体
      */
-    private async loadSystemFonts(selectElement: HTMLSelectElement): void {
+    private async loadSystemFonts(selectElement: HTMLSelectElement): Promise<void> {
         try {
             // 调用思源的API获取系统字体
             const response = await fetch('/api/system/getSysFonts', {
@@ -924,37 +866,14 @@ export class DockPanel implements IDockPanel {
             // 更新字体大小输入框
             const fontSizeInput = this.panelElement.querySelector('#font-size-input') as HTMLInputElement;
             if (fontSizeInput) {
-                fontSizeInput.value = fontSettings.fontSize || '16px';
+                fontSizeInput.value = this.parseFontSize(fontSettings.fontSize || '16px').toString();
             }
 
             // 更新行高输入框
             const lineHeightInput = this.panelElement.querySelector('#line-height-input') as HTMLInputElement;
             if (lineHeightInput) {
-                lineHeightInput.value = fontSettings.lineHeight || '1.6';
-            }
-
-            // 更新字体粗细选择器
-            const fontWeightSelect = this.panelElement.querySelector('#font-weight-select') as HTMLSelectElement;
-            if (fontWeightSelect) {
-                fontWeightSelect.value = fontSettings.fontWeight || 'normal';
-            }
-
-            // 更新字体样式选择器
-            const fontStyleSelect = this.panelElement.querySelector('#font-style-select') as HTMLSelectElement;
-            if (fontStyleSelect) {
-                fontStyleSelect.value = fontSettings.fontStyle || 'normal';
-            }
-
-            // 更新字母间距输入框
-            const letterSpacingInput = this.panelElement.querySelector('#letter-spacing-input') as HTMLInputElement;
-            if (letterSpacingInput) {
-                letterSpacingInput.value = fontSettings.letterSpacing || 'normal';
-            }
-
-            // 更新单词间距输入框
-            const wordSpacingInput = this.panelElement.querySelector('#word-spacing-input') as HTMLInputElement;
-            if (wordSpacingInput) {
-                wordSpacingInput.value = fontSettings.wordSpacing || 'normal';
+                const lineHeight = parseFloat(fontSettings.lineHeight || '1.6');
+                lineHeightInput.value = lineHeight.toFixed(1);
             }
 
             console.log('DocumentStyler: 字体设置UI已更新', fontSettings);

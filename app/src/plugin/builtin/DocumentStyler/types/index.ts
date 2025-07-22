@@ -288,14 +288,6 @@ export const FONT_SETTINGS_CONSTANTS = {
     DEFAULT_FONT_SIZE: '16px',
     /** 默认行高 */
     DEFAULT_LINE_HEIGHT: '1.6',
-    /** 默认字体粗细 */
-    DEFAULT_FONT_WEIGHT: 'normal',
-    /** 默认字体样式 */
-    DEFAULT_FONT_STYLE: 'normal',
-    /** 默认字母间距 */
-    DEFAULT_LETTER_SPACING: 'normal',
-    /** 默认单词间距 */
-    DEFAULT_WORD_SPACING: 'normal',
 } as const;
 
 /**
@@ -316,14 +308,6 @@ export interface IFontSettings {
     fontSize: string;
     /** 行高 */
     lineHeight: string;
-    /** 字体粗细 */
-    fontWeight: string;
-    /** 字体样式（正常/斜体） */
-    fontStyle: string;
-    /** 字母间距 */
-    letterSpacing: string;
-    /** 单词间距 */
-    wordSpacing: string;
 }
 
 /**

@@ -326,10 +326,6 @@ export class SettingsManager implements ISettingsManager {
             fontFamily: FONT_SETTINGS_CONSTANTS.DEFAULT_FONT_FAMILY,
             fontSize: FONT_SETTINGS_CONSTANTS.DEFAULT_FONT_SIZE,
             lineHeight: FONT_SETTINGS_CONSTANTS.DEFAULT_LINE_HEIGHT,
-            fontWeight: FONT_SETTINGS_CONSTANTS.DEFAULT_FONT_WEIGHT,
-            fontStyle: FONT_SETTINGS_CONSTANTS.DEFAULT_FONT_STYLE,
-            letterSpacing: FONT_SETTINGS_CONSTANTS.DEFAULT_LETTER_SPACING,
-            wordSpacing: FONT_SETTINGS_CONSTANTS.DEFAULT_WORD_SPACING,
         };
     }
 
@@ -495,10 +491,6 @@ export class SettingsManager implements ISettingsManager {
                 fontFamily: typeof fontSettings.fontFamily === 'string' ? fontSettings.fontFamily : defaultFontSettings.fontFamily,
                 fontSize: typeof fontSettings.fontSize === 'string' ? fontSettings.fontSize : defaultFontSettings.fontSize,
                 lineHeight: typeof fontSettings.lineHeight === 'string' ? fontSettings.lineHeight : defaultFontSettings.lineHeight,
-                fontWeight: typeof fontSettings.fontWeight === 'string' ? fontSettings.fontWeight : defaultFontSettings.fontWeight,
-                fontStyle: typeof fontSettings.fontStyle === 'string' ? fontSettings.fontStyle : defaultFontSettings.fontStyle,
-                letterSpacing: typeof fontSettings.letterSpacing === 'string' ? fontSettings.letterSpacing : defaultFontSettings.letterSpacing,
-                wordSpacing: typeof fontSettings.wordSpacing === 'string' ? fontSettings.wordSpacing : defaultFontSettings.wordSpacing,
             };
         }
 
