@@ -259,10 +259,15 @@ export class DocumentStylerPlugin extends Plugin {
             const data = JSON.parse(event.data);
 
             // 只处理transactions事件，用于实时更新
-            if (data.cmd === 'transactions' && this.currentDocId) {
-                // 使用组件的专门处理器进行更精细的分析
-                await this.headingNumbering.handleTransactionMessage(data);
-                await this.crossReference.handleTransactionMessage(data);
+            if (data.cmd === 'transactions') {
+                if (this.currentDocId) {
+                    console.log(`DocumentStyler: 收到WebSocket transactions消息，当前文档ID: ${this.currentDocId}`);
+                    // 使用组件的专门处理器进行更精细的分析
+                    await this.headingNumbering.handleTransactionMessage(data);
+                    await this.crossReference.handleTransactionMessage(data);
+                } else {
+                    console.log('DocumentStyler: 收到WebSocket transactions消息，但当前文档ID为空，跳过处理');
+                }
             }
         } catch (error) {
             // 忽略解析错误，不是所有WebSocket消息都是JSON

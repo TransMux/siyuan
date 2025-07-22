@@ -286,11 +286,12 @@ export class DocumentManager implements IDocumentManager {
      */
     isCurrentDocumentAffected(msg: any): boolean {
         if (!this.currentDocId || !this.currentProtyle || !msg.data || !Array.isArray(msg.data)) {
+            console.log(`DocumentManager: 消息影响检查失败 - 当前文档ID: ${this.currentDocId}, protyle存在: ${!!this.currentProtyle}, 消息数据有效: ${!!(msg.data && Array.isArray(msg.data))}`);
             return false;
         }
 
         // 检查 transaction 中的操作是否影响当前 protyle 中的块
-        return msg.data.some((transaction: any) => {
+        const isAffected = msg.data.some((transaction: any) => {
             if (!transaction.doOperations || !Array.isArray(transaction.doOperations)) {
                 return false;
             }
@@ -298,11 +299,18 @@ export class DocumentManager implements IDocumentManager {
             return transaction.doOperations.some((operation: any) => {
                 // 检查操作的块ID是否存在于当前protyle中
                 if (operation.id) {
-                    return this.isBlockInCurrentProtyle(operation.id);
+                    const blockExists = this.isBlockInCurrentProtyle(operation.id);
+                    if (blockExists) {
+                        console.log(`DocumentManager: 检测到影响当前文档的操作 - 块ID: ${operation.id}, 操作: ${operation.action}`);
+                    }
+                    return blockExists;
                 }
                 return false;
             });
         });
+
+        console.log(`DocumentManager: 消息是否影响当前文档: ${isAffected}`);
+        return isAffected;
     }
 
     /**
