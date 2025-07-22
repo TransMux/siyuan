@@ -39,6 +39,15 @@ export class GatewayConnectorPlugin extends Plugin {
                 openHomepage();
             },
         });
+
+        this.addCommand({
+            langKey: "pullAllUnreadArticlesFromNocodb",
+            langText: "从 Nocodb 数据库拉取所有未读文章 (pull-all-unread-articles-from-nocodb)",
+            hotkey: "",
+            callback: () => {
+                this.pullAllUnreadArticlesFromNocodb();
+            },
+        });
     }
 
     /**
@@ -74,5 +83,20 @@ export class GatewayConnectorPlugin extends Plugin {
             console.error(e);
             showMessage("AI 总结请求失败: " + (e as Error).message, 3000, "error");
         }
+    }
+
+    private pullAllUnreadArticlesFromNocodb() {
+        fetchPost(
+            "http://100.74.82.128:6253/scripts/batch-insert-zhoukan-from-noco",
+            {},
+            (response: any) => {
+                if (typeof response === "object" && response.success) {
+                    showMessage("AI 总结请求已发送", 3000, "info");
+                } else if (typeof response === "object") {
+                    showMessage(response.msg || "AI 总结请求发送失败", 3000, "error");
+                }
+            },
+            { "Content-Type": "application/json" }
+        );
     }
 } 
