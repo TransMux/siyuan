@@ -91,9 +91,9 @@ export class GatewayConnectorPlugin extends Plugin {
             {},
             (response: any) => {
                 if (typeof response === "object" && response.success) {
-                    showMessage("AI 总结请求已发送", 3000, "info");
+                    showMessage("请求已发送", 3000, "info");
                 } else if (typeof response === "object") {
-                    showMessage(response.msg || "AI 总结请求发送失败", 3000, "error");
+                    showMessage(response.msg || "请求发送失败", 3000, "error");
                 }
             },
             { "Content-Type": "application/json" }
