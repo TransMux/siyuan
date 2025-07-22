@@ -560,7 +560,7 @@ export class DockPanel implements IDockPanel {
     /**
      * 绑定文档状态事件
      */
-    private bindDocumentStatusEvents(docId: string): void {
+    private bindDocumentStatusEvents(_docId: string): void {
         // 先清除之前的事件监听器
         this.clearDocumentStatusEvents();
 
@@ -569,15 +569,22 @@ export class DockPanel implements IDockPanel {
 
         if (headingCheckbox) {
             const headingHandler = async (e: Event) => {
-                const enabled = (e.target as HTMLInputElement).checked;
-                console.log(`DocumentStyler: 标题编号开关改变 - 启用: ${enabled}`);
+                // 实时获取当前文档ID，而不是使用闭包中的旧ID
+                const currentDocId = this.documentManager.getCurrentDocId();
+                if (!currentDocId) {
+                    console.warn('DocumentStyler: 无法获取当前文档ID，跳过标题编号设置');
+                    return;
+                }
 
-                await this.settingsManager.setDocumentSettings(docId, { headingNumberingEnabled: enabled });
+                const enabled = (e.target as HTMLInputElement).checked;
+                console.log(`DocumentStyler: 标题编号开关改变 - 启用: ${enabled}, 文档ID: ${currentDocId}`);
+
+                await this.settingsManager.setDocumentSettings(currentDocId, { headingNumberingEnabled: enabled });
                 this.toggleHeadingStylesSection(enabled);
                 this.toggleNumberingFormatsSection(enabled);
 
                 // 只应用标题编号相关的设置，不影响交叉引用
-                await this.applyHeadingNumberingSettings(docId, enabled);
+                await this.applyHeadingNumberingSettings(currentDocId, enabled);
             };
             headingCheckbox.addEventListener('change', headingHandler);
             (headingCheckbox as any)._documentStylerHandler = headingHandler;
@@ -585,14 +592,21 @@ export class DockPanel implements IDockPanel {
 
         if (crossRefCheckbox) {
             const crossRefHandler = async (e: Event) => {
-                const enabled = (e.target as HTMLInputElement).checked;
-                console.log(`DocumentStyler: 交叉引用开关改变 - 启用: ${enabled}`);
+                // 实时获取当前文档ID，而不是使用闭包中的旧ID
+                const currentDocId = this.documentManager.getCurrentDocId();
+                if (!currentDocId) {
+                    console.warn('DocumentStyler: 无法获取当前文档ID，跳过交叉引用设置');
+                    return;
+                }
 
-                await this.settingsManager.setDocumentSettings(docId, { crossReferenceEnabled: enabled });
+                const enabled = (e.target as HTMLInputElement).checked;
+                console.log(`DocumentStyler: 交叉引用开关改变 - 启用: ${enabled}, 文档ID: ${currentDocId}`);
+
+                await this.settingsManager.setDocumentSettings(currentDocId, { crossReferenceEnabled: enabled });
                 this.toggleFiguresSection(enabled);
 
                 // 只应用交叉引用相关的设置，不影响标题编号
-                await this.applyCrossReferenceSettings(docId, enabled);
+                await this.applyCrossReferenceSettings(currentDocId, enabled);
             };
             crossRefCheckbox.addEventListener('change', crossRefHandler);
             (crossRefCheckbox as any)._documentStylerHandler = crossRefHandler;

@@ -207,15 +207,20 @@ export class DocumentStylerPlugin extends Plugin {
             // 检查是否是同一个文档
             if (this.currentDocId === newDocId) return;
 
-            // 防抖处理，避免短时间内重复切换
+            // 立即更新文档ID，确保后续操作使用正确的ID
+            this.currentDocId = newDocId;
+            this.documentManager.updateCurrentDocument(protyle);
+
+            // 防抖处理，避免短时间内重复的完整处理流程
             if (now - this.lastSwitchTime < this.switchDebounceDelay) {
-                console.log(`DocumentStyler: 忽略快速切换到文档 ${newDocId}`);
+                console.log(`DocumentStyler: 快速切换到文档 ${newDocId}，仅更新ID，跳过完整处理`);
+                // 仍然需要更新面板以显示正确的文档信息
+                await this.dockPanel.updatePanel();
                 return;
             }
 
             this.lastSwitchTime = now;
-            this.currentDocId = newDocId;
-            this.documentManager.updateCurrentDocument(protyle);
+            console.log(`DocumentStyler: 完整处理文档切换到 ${newDocId}`);
 
             // 更新面板
             await this.dockPanel.updatePanel();
