@@ -4,7 +4,7 @@
  */
 
 import { Custom } from "../../../../layout/dock/Custom";
-import { IDockPanel, IFigureInfo, HeadingNumberStyle } from "../types";
+import { IDockPanel, IFigureInfo, HeadingNumberStyle, IFontSettings } from "../types";
 import { SettingsManager } from "../core/SettingsManager";
 import { DocumentManager } from "../core/DocumentManager";
 import { CrossReference } from "../core/CrossReference";
@@ -207,6 +207,12 @@ export class DockPanel implements IDockPanel {
                         </div>
                     </div>
 
+                    <!-- 字体设置 -->
+                    <div class="document-styler-section" id="font-settings-section">
+                        <h3 class="document-styler-section-title">字体设置</h3>
+                        ${this.generateFontSettingsHTML(docSettings.fontSettings)}
+                    </div>
+
                     <!-- 图片表格列表 -->
                     <div class="document-styler-section" id="figures-section" style="${docSettings.crossReferenceEnabled ? '' : 'display: none;'}">
                         <h3 class="document-styler-section-title">文档内容</h3>
@@ -236,10 +242,10 @@ export class DockPanel implements IDockPanel {
                     <div class="document-styler-option-header">
                         <span class="document-styler-level-label">H${level} 样式</span>
                     </div>
-                    
-                    <input type="text" class="b3-text-field" 
-                            id="format-${i}" 
-                            value="${format}" 
+
+                    <input type="text" class="b3-text-field"
+                            id="format-${i}"
+                            value="${format}"
                             placeholder="例如: {1}. 或 第{1}章">
 
                     <select class="b3-select" id="heading-style-${i}">
@@ -254,6 +260,120 @@ export class DockPanel implements IDockPanel {
         }
 
         return html;
+    }
+
+    /**
+     * 生成字体设置HTML
+     */
+    private generateFontSettingsHTML(fontSettings: IFontSettings): string {
+        return `
+            <div class="document-styler-font-settings">
+                <div class="fn__flex b3-label config__item">
+                    <div class="fn__flex-1">
+                        字体族
+                        <div class="b3-label__text">设置文档的字体族，留空使用系统默认</div>
+                    </div>
+                    <span class="fn__space"></span>
+                    <select class="b3-select fn__flex-center fn__size200" id="font-family-select">
+                        <option value="">默认字体</option>
+                        <!-- 字体选项将通过JavaScript动态加载 -->
+                    </select>
+                </div>
+
+                <div class="fn__flex b3-label config__item">
+                    <div class="fn__flex-1">
+                        字体大小
+                        <div class="b3-label__text">设置文档的字体大小</div>
+                    </div>
+                    <span class="fn__space"></span>
+                    <input class="b3-text-field fn__flex-center fn__size200"
+                           id="font-size-input"
+                           value="${fontSettings.fontSize}"
+                           placeholder="16px">
+                </div>
+
+                <div class="fn__flex b3-label config__item">
+                    <div class="fn__flex-1">
+                        行高
+                        <div class="b3-label__text">设置文档的行高</div>
+                    </div>
+                    <span class="fn__space"></span>
+                    <input class="b3-text-field fn__flex-center fn__size200"
+                           id="line-height-input"
+                           value="${fontSettings.lineHeight}"
+                           placeholder="1.6">
+                </div>
+
+                <div class="fn__flex b3-label config__item">
+                    <div class="fn__flex-1">
+                        字体粗细
+                        <div class="b3-label__text">设置文档的字体粗细</div>
+                    </div>
+                    <span class="fn__space"></span>
+                    <select class="b3-select fn__flex-center fn__size200" id="font-weight-select">
+                        <option value="normal" ${fontSettings.fontWeight === 'normal' ? 'selected' : ''}>正常</option>
+                        <option value="bold" ${fontSettings.fontWeight === 'bold' ? 'selected' : ''}>粗体</option>
+                        <option value="lighter" ${fontSettings.fontWeight === 'lighter' ? 'selected' : ''}>细体</option>
+                        <option value="100" ${fontSettings.fontWeight === '100' ? 'selected' : ''}>100</option>
+                        <option value="200" ${fontSettings.fontWeight === '200' ? 'selected' : ''}>200</option>
+                        <option value="300" ${fontSettings.fontWeight === '300' ? 'selected' : ''}>300</option>
+                        <option value="400" ${fontSettings.fontWeight === '400' ? 'selected' : ''}>400</option>
+                        <option value="500" ${fontSettings.fontWeight === '500' ? 'selected' : ''}>500</option>
+                        <option value="600" ${fontSettings.fontWeight === '600' ? 'selected' : ''}>600</option>
+                        <option value="700" ${fontSettings.fontWeight === '700' ? 'selected' : ''}>700</option>
+                        <option value="800" ${fontSettings.fontWeight === '800' ? 'selected' : ''}>800</option>
+                        <option value="900" ${fontSettings.fontWeight === '900' ? 'selected' : ''}>900</option>
+                    </select>
+                </div>
+
+                <div class="fn__flex b3-label config__item">
+                    <div class="fn__flex-1">
+                        字体样式
+                        <div class="b3-label__text">设置文档的字体样式</div>
+                    </div>
+                    <span class="fn__space"></span>
+                    <select class="b3-select fn__flex-center fn__size200" id="font-style-select">
+                        <option value="normal" ${fontSettings.fontStyle === 'normal' ? 'selected' : ''}>正常</option>
+                        <option value="italic" ${fontSettings.fontStyle === 'italic' ? 'selected' : ''}>斜体</option>
+                        <option value="oblique" ${fontSettings.fontStyle === 'oblique' ? 'selected' : ''}>倾斜</option>
+                    </select>
+                </div>
+
+                <div class="fn__flex b3-label config__item">
+                    <div class="fn__flex-1">
+                        字母间距
+                        <div class="b3-label__text">设置文档的字母间距</div>
+                    </div>
+                    <span class="fn__space"></span>
+                    <input class="b3-text-field fn__flex-center fn__size200"
+                           id="letter-spacing-input"
+                           value="${fontSettings.letterSpacing}"
+                           placeholder="normal">
+                </div>
+
+                <div class="fn__flex b3-label config__item">
+                    <div class="fn__flex-1">
+                        单词间距
+                        <div class="b3-label__text">设置文档的单词间距</div>
+                    </div>
+                    <span class="fn__space"></span>
+                    <input class="b3-text-field fn__flex-center fn__size200"
+                           id="word-spacing-input"
+                           value="${fontSettings.wordSpacing}"
+                           placeholder="normal">
+                </div>
+
+                <div class="fn__flex" style="margin-top: 16px;">
+                    <button class="b3-button b3-button--outline" id="reset-font-settings">
+                        重置字体设置
+                    </button>
+                    <span class="fn__space"></span>
+                    <button class="b3-button b3-button--text" id="apply-font-settings">
+                        应用字体设置
+                    </button>
+                </div>
+            </div>
+        `;
     }
 
     /**
@@ -358,6 +478,170 @@ export class DockPanel implements IDockPanel {
             tablePrefixInput.addEventListener('change', handler);
             (tablePrefixInput as any)._documentStylerHandler = handler;
         }
+
+        // 绑定字体设置事件
+        this.bindFontSettingsEvents();
+    }
+
+    /**
+     * 绑定字体设置事件
+     */
+    private bindFontSettingsEvents(): void {
+        if (!this.panelElement) return;
+
+        // 字体族选择器
+        const fontFamilySelect = this.panelElement.querySelector('#font-family-select') as HTMLSelectElement;
+        if (fontFamilySelect) {
+            // 加载系统字体
+            this.loadSystemFonts(fontFamilySelect);
+
+            const handler = async (e: Event) => {
+                const docId = this.documentManager.getCurrentDocId();
+                if (!docId) return;
+
+                const fontFamily = (e.target as HTMLSelectElement).value;
+                console.log(`DocumentStyler: 字体族改变: ${fontFamily}`);
+
+                await this.settingsManager.setDocumentFontFamily(docId, fontFamily);
+                await this.applyFontSettings(docId);
+            };
+            fontFamilySelect.addEventListener('change', handler);
+            (fontFamilySelect as any)._documentStylerHandler = handler;
+        }
+
+        // 字体大小输入框
+        const fontSizeInput = this.panelElement.querySelector('#font-size-input') as HTMLInputElement;
+        if (fontSizeInput) {
+            const handler = async (e: Event) => {
+                const docId = this.documentManager.getCurrentDocId();
+                if (!docId) return;
+
+                const fontSize = (e.target as HTMLInputElement).value;
+                console.log(`DocumentStyler: 字体大小改变: ${fontSize}`);
+
+                await this.settingsManager.setDocumentFontSize(docId, fontSize);
+                await this.applyFontSettings(docId);
+            };
+            fontSizeInput.addEventListener('change', handler);
+            (fontSizeInput as any)._documentStylerHandler = handler;
+        }
+
+        // 行高输入框
+        const lineHeightInput = this.panelElement.querySelector('#line-height-input') as HTMLInputElement;
+        if (lineHeightInput) {
+            const handler = async (e: Event) => {
+                const docId = this.documentManager.getCurrentDocId();
+                if (!docId) return;
+
+                const lineHeight = (e.target as HTMLInputElement).value;
+                console.log(`DocumentStyler: 行高改变: ${lineHeight}`);
+
+                await this.settingsManager.setDocumentFontSettings(docId, { lineHeight });
+                await this.applyFontSettings(docId);
+            };
+            lineHeightInput.addEventListener('change', handler);
+            (lineHeightInput as any)._documentStylerHandler = handler;
+        }
+
+        // 字体粗细选择器
+        const fontWeightSelect = this.panelElement.querySelector('#font-weight-select') as HTMLSelectElement;
+        if (fontWeightSelect) {
+            const handler = async (e: Event) => {
+                const docId = this.documentManager.getCurrentDocId();
+                if (!docId) return;
+
+                const fontWeight = (e.target as HTMLSelectElement).value;
+                console.log(`DocumentStyler: 字体粗细改变: ${fontWeight}`);
+
+                await this.settingsManager.setDocumentFontSettings(docId, { fontWeight });
+                await this.applyFontSettings(docId);
+            };
+            fontWeightSelect.addEventListener('change', handler);
+            (fontWeightSelect as any)._documentStylerHandler = handler;
+        }
+
+        // 字体样式选择器
+        const fontStyleSelect = this.panelElement.querySelector('#font-style-select') as HTMLSelectElement;
+        if (fontStyleSelect) {
+            const handler = async (e: Event) => {
+                const docId = this.documentManager.getCurrentDocId();
+                if (!docId) return;
+
+                const fontStyle = (e.target as HTMLSelectElement).value;
+                console.log(`DocumentStyler: 字体样式改变: ${fontStyle}`);
+
+                await this.settingsManager.setDocumentFontSettings(docId, { fontStyle });
+                await this.applyFontSettings(docId);
+            };
+            fontStyleSelect.addEventListener('change', handler);
+            (fontStyleSelect as any)._documentStylerHandler = handler;
+        }
+
+        // 字母间距输入框
+        const letterSpacingInput = this.panelElement.querySelector('#letter-spacing-input') as HTMLInputElement;
+        if (letterSpacingInput) {
+            const handler = async (e: Event) => {
+                const docId = this.documentManager.getCurrentDocId();
+                if (!docId) return;
+
+                const letterSpacing = (e.target as HTMLInputElement).value;
+                console.log(`DocumentStyler: 字母间距改变: ${letterSpacing}`);
+
+                await this.settingsManager.setDocumentFontSettings(docId, { letterSpacing });
+                await this.applyFontSettings(docId);
+            };
+            letterSpacingInput.addEventListener('change', handler);
+            (letterSpacingInput as any)._documentStylerHandler = handler;
+        }
+
+        // 单词间距输入框
+        const wordSpacingInput = this.panelElement.querySelector('#word-spacing-input') as HTMLInputElement;
+        if (wordSpacingInput) {
+            const handler = async (e: Event) => {
+                const docId = this.documentManager.getCurrentDocId();
+                if (!docId) return;
+
+                const wordSpacing = (e.target as HTMLInputElement).value;
+                console.log(`DocumentStyler: 单词间距改变: ${wordSpacing}`);
+
+                await this.settingsManager.setDocumentFontSettings(docId, { wordSpacing });
+                await this.applyFontSettings(docId);
+            };
+            wordSpacingInput.addEventListener('change', handler);
+            (wordSpacingInput as any)._documentStylerHandler = handler;
+        }
+
+        // 重置字体设置按钮
+        const resetButton = this.panelElement.querySelector('#reset-font-settings') as HTMLButtonElement;
+        if (resetButton) {
+            const handler = async () => {
+                const docId = this.documentManager.getCurrentDocId();
+                if (!docId) return;
+
+                console.log(`DocumentStyler: 重置字体设置`);
+
+                const defaultFontSettings = this.settingsManager.getDefaultFontSettings();
+                await this.settingsManager.setDocumentFontSettings(docId, defaultFontSettings);
+                await this.updatePanel(); // 重新更新面板以显示默认值
+                await this.applyFontSettings(docId);
+            };
+            resetButton.addEventListener('click', handler);
+            (resetButton as any)._documentStylerHandler = handler;
+        }
+
+        // 应用字体设置按钮
+        const applyButton = this.panelElement.querySelector('#apply-font-settings') as HTMLButtonElement;
+        if (applyButton) {
+            const handler = async () => {
+                const docId = this.documentManager.getCurrentDocId();
+                if (!docId) return;
+
+                console.log(`DocumentStyler: 手动应用字体设置`);
+                await this.applyFontSettings(docId);
+            };
+            applyButton.addEventListener('click', handler);
+            (applyButton as any)._documentStylerHandler = handler;
+        }
     }
 
     /**
@@ -384,8 +668,104 @@ export class DockPanel implements IDockPanel {
             }
         }
 
+        // 清除字体设置事件
+        this.clearFontSettingsEvents();
+
         // 清除文档状态事件
         this.clearDocumentStatusEvents();
+    }
+
+    /**
+     * 清除字体设置事件
+     */
+    private clearFontSettingsEvents(): void {
+        if (!this.panelElement) return;
+
+        const fontElements = [
+            '#font-family-select',
+            '#font-size-input',
+            '#line-height-input',
+            '#font-weight-select',
+            '#font-style-select',
+            '#letter-spacing-input',
+            '#word-spacing-input',
+            '#reset-font-settings',
+            '#apply-font-settings'
+        ];
+
+        fontElements.forEach(selector => {
+            const element = this.panelElement.querySelector(selector) as HTMLElement;
+            if (element && (element as any)._documentStylerHandler) {
+                const eventType = element.tagName === 'BUTTON' ? 'click' : 'change';
+                element.removeEventListener(eventType, (element as any)._documentStylerHandler);
+                delete (element as any)._documentStylerHandler;
+            }
+        });
+    }
+
+    /**
+     * 加载系统字体
+     */
+    private async loadSystemFonts(selectElement: HTMLSelectElement): void {
+        try {
+            // 调用思源的API获取系统字体
+            const response = await fetch('/api/system/getSysFonts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({})
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.code === 0 && Array.isArray(data.data)) {
+                    // 清空现有选项（保留默认选项）
+                    const defaultOption = selectElement.querySelector('option[value=""]');
+                    selectElement.innerHTML = '';
+                    if (defaultOption) {
+                        selectElement.appendChild(defaultOption);
+                    }
+
+                    // 添加系统字体选项
+                    data.data.forEach((fontFamily: string) => {
+                        const option = document.createElement('option');
+                        option.value = fontFamily;
+                        option.textContent = fontFamily;
+                        option.style.fontFamily = fontFamily;
+                        selectElement.appendChild(option);
+                    });
+
+                    // 设置当前选中的字体
+                    const docId = this.documentManager.getCurrentDocId();
+                    if (docId) {
+                        const fontSettings = await this.settingsManager.getDocumentFontSettings(docId);
+                        selectElement.value = fontSettings.fontFamily || '';
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('DocumentStyler: 加载系统字体失败:', error);
+        }
+    }
+
+    /**
+     * 应用字体设置
+     */
+    private async applyFontSettings(docId: string): Promise<void> {
+        if (!docId) return;
+
+        try {
+            // 调用主插件的字体设置应用方法
+            if (this.pluginInstance && typeof this.pluginInstance.applyFontSettings === 'function') {
+                await this.pluginInstance.applyFontSettings();
+                console.log(`DocumentStyler: 应用文档 ${docId} 的字体设置`);
+            } else {
+                console.warn('DocumentStyler: 主插件实例不可用，无法应用字体设置');
+            }
+        } catch (error) {
+            console.error(`DocumentStyler: 应用字体设置失败:`, error);
+        }
     }
 
     /**

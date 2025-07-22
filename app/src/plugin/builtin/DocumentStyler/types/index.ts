@@ -279,12 +279,52 @@ export interface IStyleManager extends IModule {
 // 移除不再需要的EventHandler接口
 
 /**
+ * 字体设置常量
+ */
+export const FONT_SETTINGS_CONSTANTS = {
+    /** 默认字体族 */
+    DEFAULT_FONT_FAMILY: '',
+    /** 默认字体大小 */
+    DEFAULT_FONT_SIZE: '16px',
+    /** 默认行高 */
+    DEFAULT_LINE_HEIGHT: '1.6',
+    /** 默认字体粗细 */
+    DEFAULT_FONT_WEIGHT: 'normal',
+    /** 默认字体样式 */
+    DEFAULT_FONT_STYLE: 'normal',
+    /** 默认字母间距 */
+    DEFAULT_LETTER_SPACING: 'normal',
+    /** 默认单词间距 */
+    DEFAULT_WORD_SPACING: 'normal',
+} as const;
+
+/**
  * 文档属性常量
  */
 export const DOCUMENT_ATTR_KEYS = {
     /** 文档样式设置 */
     DOCUMENT_STYLER_SETTINGS: 'custom-document-styler-settings'
 } as const;
+
+/**
+ * 字体设置接口
+ */
+export interface IFontSettings {
+    /** 字体族 */
+    fontFamily: string;
+    /** 字体大小 */
+    fontSize: string;
+    /** 行高 */
+    lineHeight: string;
+    /** 字体粗细 */
+    fontWeight: string;
+    /** 字体样式（正常/斜体） */
+    fontStyle: string;
+    /** 字母间距 */
+    letterSpacing: string;
+    /** 单词间距 */
+    wordSpacing: string;
+}
 
 /**
  * 文档样式设置接口
@@ -302,4 +342,6 @@ export interface IDocumentStylerDocumentSettings {
     figurePrefix: string;
     /** 表格编号前缀配置 */
     tablePrefix: string;
+    /** 字体设置 */
+    fontSettings: IFontSettings;
 }

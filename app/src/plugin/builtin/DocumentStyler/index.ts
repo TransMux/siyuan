@@ -7,6 +7,7 @@ import { SettingsManager } from "./core/SettingsManager";
 import { DocumentManager } from "./core/DocumentManager";
 import { HeadingNumbering } from "./core/HeadingNumbering";
 import { CrossReference } from "./core/CrossReference";
+import { FontStyleManager } from "./core/FontStyleManager";
 import { DockPanel } from "./ui/DockPanel";
 import { StyleManager } from "./ui/StyleManager";
 import { IPluginOptions, IDocumentStylerSettings, IDocumentInfo } from "./types";
@@ -26,6 +27,7 @@ export class DocumentStylerPlugin extends Plugin {
     private documentManager: DocumentManager;
     private headingNumbering: HeadingNumbering;
     private crossReference: CrossReference;
+    private fontStyleManager: FontStyleManager;
     private styleManager: StyleManager;
     private dockPanel: DockPanel;
 
@@ -73,6 +75,7 @@ export class DocumentStylerPlugin extends Plugin {
         // 按依赖顺序创建组件
         this.settingsManager = new SettingsManager(this);
         this.documentManager = new DocumentManager(this.appRef);
+        this.fontStyleManager = new FontStyleManager();
         this.styleManager = new StyleManager();
 
         // 功能组件
@@ -145,6 +148,7 @@ export class DocumentStylerPlugin extends Plugin {
         // 按依赖顺序初始化组件
         await this.settingsManager.init();
         await this.documentManager.init();
+        await this.fontStyleManager.init();
         await this.styleManager.init();
         await this.headingNumbering.init();
         await this.crossReference.init();
@@ -160,6 +164,7 @@ export class DocumentStylerPlugin extends Plugin {
         this.crossReference?.destroy();
         this.headingNumbering?.destroy();
         this.styleManager?.destroy();
+        this.fontStyleManager?.destroy();
         this.documentManager?.destroy();
         this.settingsManager?.destroy();
     }
@@ -338,6 +343,9 @@ export class DocumentStylerPlugin extends Plugin {
                     await this.crossReference.clearCrossReference(protyle);
                 }
             }
+
+            // 应用字体设置
+            await this.fontStyleManager.applyFontStyles(this.currentDocId, docSettings.fontSettings);
         } catch (error) {
             console.error('DocumentStyler: 应用文档设置失败:', error);
         }
@@ -573,6 +581,44 @@ export class DocumentStylerPlugin extends Plugin {
         } catch (error) {
             console.error('手动更新交叉引用失败:', error);
         }
+    }
+
+    /**
+     * 应用字体设置（供DockPanel调用）
+     */
+    public async applyFontSettings(): Promise<void> {
+        const docId = this.documentManager.getCurrentDocId();
+        if (!docId) return;
+
+        try {
+            const docSettings = await this.settingsManager.getDocumentSettings(docId);
+            await this.fontStyleManager.applyFontStyles(docId, docSettings.fontSettings);
+            console.log('DocumentStyler: 字体设置应用完成');
+        } catch (error) {
+            console.error('应用字体设置失败:', error);
+        }
+    }
+
+    /**
+     * 清除字体设置（供DockPanel调用）
+     */
+    public async clearFontSettings(): Promise<void> {
+        const docId = this.documentManager.getCurrentDocId();
+        if (!docId) return;
+
+        try {
+            await this.fontStyleManager.clearDocumentStyles(docId);
+            console.log('DocumentStyler: 字体设置清除完成');
+        } catch (error) {
+            console.error('清除字体设置失败:', error);
+        }
+    }
+
+    /**
+     * 获取字体样式管理器（供DockPanel调用）
+     */
+    public getFontStyleManager(): FontStyleManager {
+        return this.fontStyleManager;
     }
 
     /**

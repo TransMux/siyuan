@@ -4,7 +4,7 @@
  */
 
 import { Plugin } from "../../../index";
-import { ISettingsManager, IDocumentStylerSettings, HeadingNumberStyle, DOCUMENT_ATTR_KEYS, IDocumentStylerDocumentSettings } from "../types";
+import { ISettingsManager, IDocumentStylerSettings, HeadingNumberStyle, DOCUMENT_ATTR_KEYS, IDocumentStylerDocumentSettings, IFontSettings, FONT_SETTINGS_CONSTANTS } from "../types";
 import { getDocumentAttr, setDocumentAttr } from "../utils/apiUtils";
 
 // 存储配置的键名
@@ -318,6 +318,22 @@ export class SettingsManager implements ISettingsManager {
     }
 
     /**
+     * 获取默认字体设置
+     * @returns 默认字体设置
+     */
+    getDefaultFontSettings(): IFontSettings {
+        return {
+            fontFamily: FONT_SETTINGS_CONSTANTS.DEFAULT_FONT_FAMILY,
+            fontSize: FONT_SETTINGS_CONSTANTS.DEFAULT_FONT_SIZE,
+            lineHeight: FONT_SETTINGS_CONSTANTS.DEFAULT_LINE_HEIGHT,
+            fontWeight: FONT_SETTINGS_CONSTANTS.DEFAULT_FONT_WEIGHT,
+            fontStyle: FONT_SETTINGS_CONSTANTS.DEFAULT_FONT_STYLE,
+            letterSpacing: FONT_SETTINGS_CONSTANTS.DEFAULT_LETTER_SPACING,
+            wordSpacing: FONT_SETTINGS_CONSTANTS.DEFAULT_WORD_SPACING,
+        };
+    }
+
+    /**
      * 获取默认文档设置
      * @returns 默认文档设置
      */
@@ -329,6 +345,7 @@ export class SettingsManager implements ISettingsManager {
             headingNumberStyles: [...this.settings.headingNumberStyles],
             figurePrefix: this.settings.figurePrefix,
             tablePrefix: this.settings.tablePrefix,
+            fontSettings: this.getDefaultFontSettings(),
         };
     }
 
@@ -371,6 +388,65 @@ export class SettingsManager implements ISettingsManager {
     }
 
     /**
+     * 获取文档的字体设置
+     * @param docId 文档ID
+     * @returns 字体设置
+     */
+    async getDocumentFontSettings(docId: string): Promise<IFontSettings> {
+        const settings = await this.getDocumentSettings(docId);
+        return settings.fontSettings;
+    }
+
+    /**
+     * 设置文档的字体设置
+     * @param docId 文档ID
+     * @param fontSettings 字体设置
+     */
+    async setDocumentFontSettings(docId: string, fontSettings: Partial<IFontSettings>): Promise<void> {
+        const currentSettings = await this.getDocumentSettings(docId);
+        const newFontSettings = { ...currentSettings.fontSettings, ...fontSettings };
+        await this.setDocumentSettings(docId, { fontSettings: newFontSettings });
+    }
+
+    /**
+     * 获取文档的字体族
+     * @param docId 文档ID
+     * @returns 字体族
+     */
+    async getDocumentFontFamily(docId: string): Promise<string> {
+        const fontSettings = await this.getDocumentFontSettings(docId);
+        return fontSettings.fontFamily;
+    }
+
+    /**
+     * 设置文档的字体族
+     * @param docId 文档ID
+     * @param fontFamily 字体族
+     */
+    async setDocumentFontFamily(docId: string, fontFamily: string): Promise<void> {
+        await this.setDocumentFontSettings(docId, { fontFamily });
+    }
+
+    /**
+     * 获取文档的字体大小
+     * @param docId 文档ID
+     * @returns 字体大小
+     */
+    async getDocumentFontSize(docId: string): Promise<string> {
+        const fontSettings = await this.getDocumentFontSettings(docId);
+        return fontSettings.fontSize;
+    }
+
+    /**
+     * 设置文档的字体大小
+     * @param docId 文档ID
+     * @param fontSize 字体大小
+     */
+    async setDocumentFontSize(docId: string, fontSize: string): Promise<void> {
+        await this.setDocumentFontSettings(docId, { fontSize });
+    }
+
+    /**
      * 验证并修复文档设置
      * @param settings 要验证的设置
      * @returns 修复后的设置
@@ -408,6 +484,22 @@ export class SettingsManager implements ISettingsManager {
 
         if (typeof settings.tablePrefix === 'string') {
             fixed.tablePrefix = settings.tablePrefix;
+        }
+
+        // 验证并修复字体设置
+        if (settings.fontSettings && typeof settings.fontSettings === 'object') {
+            const fontSettings = settings.fontSettings;
+            const defaultFontSettings = this.getDefaultFontSettings();
+
+            fixed.fontSettings = {
+                fontFamily: typeof fontSettings.fontFamily === 'string' ? fontSettings.fontFamily : defaultFontSettings.fontFamily,
+                fontSize: typeof fontSettings.fontSize === 'string' ? fontSettings.fontSize : defaultFontSettings.fontSize,
+                lineHeight: typeof fontSettings.lineHeight === 'string' ? fontSettings.lineHeight : defaultFontSettings.lineHeight,
+                fontWeight: typeof fontSettings.fontWeight === 'string' ? fontSettings.fontWeight : defaultFontSettings.fontWeight,
+                fontStyle: typeof fontSettings.fontStyle === 'string' ? fontSettings.fontStyle : defaultFontSettings.fontStyle,
+                letterSpacing: typeof fontSettings.letterSpacing === 'string' ? fontSettings.letterSpacing : defaultFontSettings.letterSpacing,
+                wordSpacing: typeof fontSettings.wordSpacing === 'string' ? fontSettings.wordSpacing : defaultFontSettings.wordSpacing,
+            };
         }
 
         return fixed;
