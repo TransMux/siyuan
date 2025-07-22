@@ -639,6 +639,25 @@ export class CrossReference implements ICrossReference {
     }
 
     /**
+     * 手动触发交叉引用更新（用于调试和特殊情况）
+     */
+    async forceUpdate(): Promise<void> {
+        const currentProtyle = this.documentManager.getCurrentProtyle();
+        if (currentProtyle) {
+            console.log('CrossReference: 手动触发交叉引用更新');
+            await this.applyCrossReference(currentProtyle);
+
+            // 通知侧边栏面板更新图表列表
+            if (this.panelUpdateCallback) {
+                await this.panelUpdateCallback();
+                console.log('CrossReference: 侧边栏面板已更新');
+            }
+        } else {
+            console.warn('CrossReference: 无法手动更新，当前protyle不存在');
+        }
+    }
+
+    /**
      * 滚动到指定的图片或表格
      * @param figureId 图片或表格的ID
      * @param figureType 类型（image或table）

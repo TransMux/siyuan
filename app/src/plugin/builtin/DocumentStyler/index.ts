@@ -227,6 +227,22 @@ export class DocumentStylerPlugin extends Plugin {
 
             // 应用当前文档的设置
             await this.applyCurrentDocumentSettings();
+
+            // 延迟检查是否需要更新交叉引用（防止WebSocket消息处理的竞争条件）
+            setTimeout(async () => {
+                try {
+                    const docSettings = await this.settingsManager.getDocumentSettings(newDocId);
+                    if (docSettings.crossReferenceEnabled) {
+                        const protyle = this.documentManager.getCurrentProtyle();
+                        if (protyle) {
+                            console.log('DocumentStyler: 文档切换后延迟检查交叉引用更新');
+                            await this.crossReference.applyCrossReference(protyle);
+                        }
+                    }
+                } catch (error) {
+                    console.error('DocumentStyler: 延迟更新交叉引用失败:', error);
+                }
+            }, 500); // 500ms延迟，确保DOM更新完成
         } catch (error) {
             console.error('DocumentStyler: 文档切换处理失败:', error);
         }
@@ -527,6 +543,17 @@ export class DocumentStylerPlugin extends Plugin {
             await this.crossReference.clearCrossReference(protyle);
         } catch (error) {
             console.error('清除交叉引用失败:', error);
+        }
+    }
+
+    /**
+     * 手动触发交叉引用更新（供调试使用）
+     */
+    public async forceUpdateCrossReference(): Promise<void> {
+        try {
+            await this.crossReference.forceUpdate();
+        } catch (error) {
+            console.error('手动更新交叉引用失败:', error);
         }
     }
 
