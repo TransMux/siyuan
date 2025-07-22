@@ -896,12 +896,70 @@ export class DockPanel implements IDockPanel {
                 if (styleSelect) styleSelect.value = docSettings.headingNumberStyles[i];
             }
 
+            // 更新字体设置
+            await this.updateFontSettingsUI(docSettings.fontSettings);
+
             // 更新节的显示状态
             this.toggleHeadingStylesSection(docSettings.headingNumberingEnabled);
             this.toggleNumberingFormatsSection(docSettings.headingNumberingEnabled);
             this.toggleFiguresSection(docSettings.crossReferenceEnabled);
         } catch (error) {
             console.error('更新设置UI失败:', error);
+        }
+    }
+
+    /**
+     * 更新字体设置UI
+     */
+    private async updateFontSettingsUI(fontSettings: any): Promise<void> {
+        if (!this.panelElement || !fontSettings) return;
+
+        try {
+            // 更新字体族选择器
+            const fontFamilySelect = this.panelElement.querySelector('#font-family-select') as HTMLSelectElement;
+            if (fontFamilySelect) {
+                fontFamilySelect.value = fontSettings.fontFamily || '';
+            }
+
+            // 更新字体大小输入框
+            const fontSizeInput = this.panelElement.querySelector('#font-size-input') as HTMLInputElement;
+            if (fontSizeInput) {
+                fontSizeInput.value = fontSettings.fontSize || '16px';
+            }
+
+            // 更新行高输入框
+            const lineHeightInput = this.panelElement.querySelector('#line-height-input') as HTMLInputElement;
+            if (lineHeightInput) {
+                lineHeightInput.value = fontSettings.lineHeight || '1.6';
+            }
+
+            // 更新字体粗细选择器
+            const fontWeightSelect = this.panelElement.querySelector('#font-weight-select') as HTMLSelectElement;
+            if (fontWeightSelect) {
+                fontWeightSelect.value = fontSettings.fontWeight || 'normal';
+            }
+
+            // 更新字体样式选择器
+            const fontStyleSelect = this.panelElement.querySelector('#font-style-select') as HTMLSelectElement;
+            if (fontStyleSelect) {
+                fontStyleSelect.value = fontSettings.fontStyle || 'normal';
+            }
+
+            // 更新字母间距输入框
+            const letterSpacingInput = this.panelElement.querySelector('#letter-spacing-input') as HTMLInputElement;
+            if (letterSpacingInput) {
+                letterSpacingInput.value = fontSettings.letterSpacing || 'normal';
+            }
+
+            // 更新单词间距输入框
+            const wordSpacingInput = this.panelElement.querySelector('#word-spacing-input') as HTMLInputElement;
+            if (wordSpacingInput) {
+                wordSpacingInput.value = fontSettings.wordSpacing || 'normal';
+            }
+
+            console.log('DocumentStyler: 字体设置UI已更新', fontSettings);
+        } catch (error) {
+            console.error('DocumentStyler: 更新字体设置UI失败:', error);
         }
     }
 

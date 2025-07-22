@@ -169,14 +169,16 @@ export class FontStyleManager implements IModule {
         // 生成针对特定文档的CSS规则
         const cssRule = `
 /* 文档 ${docId} 的字体样式 */
+.protyle[data-doc-id="${docId}"] .protyle-wysiwyg,
+.protyle[data-doc-id="${docId}"] .protyle-wysiwyg [contenteditable="true"],
 .protyle-wysiwyg[data-doc-id="${docId}"],
+.protyle-wysiwyg[data-doc-id="${docId}"] [contenteditable="true"],
 .protyle-wysiwyg[data-doc-id="${docId}"] .protyle-wysiwyg__embed,
 .protyle-wysiwyg[data-doc-id="${docId}"] [data-type="NodeParagraph"],
 .protyle-wysiwyg[data-doc-id="${docId}"] [data-type="NodeHeading"],
 .protyle-wysiwyg[data-doc-id="${docId}"] [data-type="NodeList"],
 .protyle-wysiwyg[data-doc-id="${docId}"] [data-type="NodeListItem"],
-.protyle-wysiwyg[data-doc-id="${docId}"] [data-type="NodeBlockquote"],
-.protyle-wysiwyg[data-doc-id="${docId}"] [contenteditable="true"] {
+.protyle-wysiwyg[data-doc-id="${docId}"] [data-type="NodeBlockquote"] {
     ${cssProperties.join(';\n    ')};
 }`;
 

@@ -217,6 +217,29 @@ export class DocumentStylerPlugin extends Plugin {
     }
 
     /**
+     * 添加文档ID到protyle元素
+     * @param protyle 编辑器实例
+     * @param docId 文档ID
+     */
+    private addDocIdToProtyle(protyle: any, docId: string): void {
+        try {
+            if (protyle && protyle.element) {
+                // 添加data-doc-id属性到protyle元素
+                protyle.element.setAttribute('data-doc-id', docId);
+
+                // 也添加到wysiwyg元素上，以便CSS选择器能够正确匹配
+                if (protyle.wysiwyg && protyle.wysiwyg.element) {
+                    protyle.wysiwyg.element.setAttribute('data-doc-id', docId);
+                }
+
+                console.log(`DocumentStyler: 已为文档 ${docId} 添加data-doc-id属性`);
+            }
+        } catch (error) {
+            console.error('DocumentStyler: 添加data-doc-id属性失败:', error);
+        }
+    }
+
+    /**
      * 文档切换事件处理
      */
     private async onDocumentSwitch(event: CustomEvent): Promise<void> {
@@ -233,6 +256,9 @@ export class DocumentStylerPlugin extends Plugin {
             // 立即更新文档ID，确保后续操作使用正确的ID
             this.currentDocId = newDocId;
             this.documentManager.updateCurrentDocument(protyle);
+
+            // 添加data-doc-id属性到protyle元素上
+            this.addDocIdToProtyle(protyle, newDocId);
 
             // 防抖处理，避免短时间内重复的完整处理流程
             if (now - this.lastSwitchTime < this.switchDebounceDelay) {
@@ -282,6 +308,9 @@ export class DocumentStylerPlugin extends Plugin {
             const docId = protyle.block.rootID;
             this.currentDocId = docId;
             this.documentManager.updateCurrentDocument(protyle);
+
+            // 添加data-doc-id属性到protyle元素上
+            this.addDocIdToProtyle(protyle, docId);
 
             // 应用当前文档的设置
             await this.applyCurrentDocumentSettings();
