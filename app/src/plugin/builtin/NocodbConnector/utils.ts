@@ -215,23 +215,46 @@ export function renderField(columnName: string, value: any, config: NocodbColumn
 
     switch (config.type) {
         case 'link':
-            return `<a href="${value}" target="_blank" style="color: var(--b3-theme-primary); text-decoration: underline;">${value}</a>`;
-        
+            // 截断长链接显示
+            const maxLinkLength = 50;
+            const displayUrl = value.length > maxLinkLength ? value.substring(0, maxLinkLength) + '...' : value;
+            return `<a href="${value}" target="_blank"
+                    style="color: var(--b3-theme-primary); text-decoration: underline; word-break: break-all;"
+                    title="${value}">${displayUrl}</a>`;
+
         case 'date':
-            return `<span style="color: var(--b3-theme-on-surface-light);">${formatDateTime(value)}</span>`;
-        
+            return `<span style="color: var(--b3-theme-on-surface-light); font-family: monospace;">${formatDateTime(value)}</span>`;
+
         case 'boolean':
-            return `<span style="color: ${value ? 'var(--b3-theme-success)' : 'var(--b3-theme-error)'};">${value ? '是' : '否'}</span>`;
-        
+            const boolIcon = value ? '✓' : '✗';
+            const boolColor = value ? 'var(--b3-theme-success)' : 'var(--b3-theme-error)';
+            return `<span style="color: ${boolColor}; font-weight: bold;">${boolIcon} ${value ? '是' : '否'}</span>`;
+
         case 'number':
-            return `<span style="color: var(--b3-theme-on-surface-light); font-family: monospace;">${value}</span>`;
-        
+            return `<span style="color: var(--b3-theme-on-surface-light); font-family: monospace; font-weight: 500;">${value}</span>`;
+
         case 'string':
         default:
-            // 如果字符串太长，截断显示
-            const maxLength = 100;
-            const displayValue = value.length > maxLength ? value.substring(0, maxLength) + '...' : value;
-            return `<span style="color: var(--b3-theme-on-surface-light);" title="${value}">${displayValue}</span>`;
+            // 处理多行文本
+            if (typeof value === 'string' && value.includes('\n')) {
+                const lines = value.split('\n');
+                const maxLines = 3;
+                const displayLines = lines.slice(0, maxLines);
+                const hasMore = lines.length > maxLines;
+
+                let html = '<div style="white-space: pre-wrap; word-break: break-word;">';
+                html += displayLines.join('\n');
+                if (hasMore) {
+                    html += `\n<span style="color: var(--b3-theme-on-surface-light); font-style: italic;">... (还有 ${lines.length - maxLines} 行)</span>`;
+                }
+                html += '</div>';
+                return html;
+            } else {
+                // 单行文本，截断显示
+                const maxLength = 100;
+                const displayValue = value.length > maxLength ? value.substring(0, maxLength) + '...' : value;
+                return `<span style="color: var(--b3-theme-on-surface-light); word-break: break-word;" title="${value}">${displayValue}</span>`;
+            }
     }
 }
 
