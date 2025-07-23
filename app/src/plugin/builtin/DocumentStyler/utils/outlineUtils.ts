@@ -174,6 +174,9 @@ function generateHeaderNumber(
     // 找出所有占位符
     const placeholders = format.match(/\{(\d+)\}/g) || [];
 
+    // 获取当前级别的编号样式，用于所有占位符
+    const currentLevelStyle = numberStyles[actualLevel] || HeadingNumberStyle.ARABIC;
+
     for (const placeholder of placeholders) {
         // 获取占位符中的数字
         const match = placeholder.match(/\{(\d+)\}/);
@@ -182,10 +185,10 @@ function generateHeaderNumber(
 
         // 确保占位符级别不超过当前实际级别
         if (placeholderLevel <= actualLevel && placeholderLevel < newCounters.length) {
-            // 使用占位符对应级别的编号样式设置
-            const style = numberStyles[placeholderLevel] || HeadingNumberStyle.ARABIC;
+            // 使用当前级别的编号样式设置，而不是占位符对应级别的样式
+            // 这样可以确保同一级别的标题使用统一的样式，例如：❶.❶.❶ 而不是 1.❶.一
             const num = newCounters[placeholderLevel];
-            const numStr = NumberStyleConverter.convert(num, style);
+            const numStr = NumberStyleConverter.convert(num, currentLevelStyle);
             result = result.replace(placeholder, numStr);
         }
     }
