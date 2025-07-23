@@ -35,6 +35,9 @@ export class DocumentStylerPlugin extends Plugin {
     private eventListeners: Map<string, Function> = new Map();
     private currentDocId: string | null = null;
 
+    // 活跃的protyle跟踪 - 用于管理样式清理
+    private activeProtyles: Set<string> = new Set();
+
     // 防重复处理
     private lastSwitchTime = 0;
     private switchDebounceDelay = 300; // 300ms防抖
@@ -183,6 +186,11 @@ export class DocumentStylerPlugin extends Plugin {
         this.eventBus.on("loaded-protyle-static", onDocumentLoaded);
         this.eventListeners.set("loaded-protyle-static", onDocumentLoaded);
 
+        // 文档销毁事件
+        const onDocumentDestroy = this.onDocumentDestroy.bind(this);
+        this.eventBus.on("destroy-protyle", onDocumentDestroy);
+        this.eventListeners.set("destroy-protyle", onDocumentDestroy);
+
         // WebSocket 事件监听 - 简化版本
         this.setupWebSocketListener();
     }
@@ -260,6 +268,9 @@ export class DocumentStylerPlugin extends Plugin {
             // 添加data-doc-id属性到protyle元素上
             this.addDocIdToProtyle(protyle, newDocId);
 
+            // 跟踪活跃的protyle
+            this.activeProtyles.add(newDocId);
+
             // 防抖处理，避免短时间内重复的完整处理流程
             if (now - this.lastSwitchTime < this.switchDebounceDelay) {
                 console.log(`DocumentStyler: 快速切换到文档 ${newDocId}，仅更新ID，跳过完整处理`);
@@ -312,10 +323,44 @@ export class DocumentStylerPlugin extends Plugin {
             // 添加data-doc-id属性到protyle元素上
             this.addDocIdToProtyle(protyle, docId);
 
+            // 跟踪活跃的protyle
+            this.activeProtyles.add(docId);
+
             // 应用当前文档的设置
             await this.applyCurrentDocumentSettings();
         } catch (error) {
             console.error('DocumentStyler: 文档加载处理失败:', error);
+        }
+    }
+
+    /**
+     * 文档销毁事件处理
+     */
+    private async onDocumentDestroy(event: CustomEvent): Promise<void> {
+        try {
+            const protyle = event.detail?.protyle;
+            if (!protyle?.block?.rootID) return;
+
+            const docId = protyle.block.rootID;
+            console.log(`DocumentStyler: 处理文档销毁事件 - ${docId}`);
+
+            // 从活跃protyle集合中移除
+            this.activeProtyles.delete(docId);
+
+            // 检查是否还有其他protyle在使用样式
+            const hasActiveProtyles = this.activeProtyles.size > 0;
+
+            if (!hasActiveProtyles) {
+                // 如果没有活跃的protyle了，清理所有样式
+                console.log('DocumentStyler: 没有活跃的protyle，清理所有样式');
+                await this.headingNumbering.clearNumbering(null);
+                await this.crossReference.clearCrossReference(protyle);
+                await this.fontStyleManager.clearAllStyles();
+            } else {
+                console.log(`DocumentStyler: 还有 ${this.activeProtyles.size} 个活跃的protyle，保留样式`);
+            }
+        } catch (error) {
+            console.error('DocumentStyler: 文档销毁处理失败:', error);
         }
     }
 
@@ -353,25 +398,20 @@ export class DocumentStylerPlugin extends Plugin {
         try {
             const docSettings = await this.settingsManager.getDocumentSettings(this.currentDocId);
 
-            // 应用标题编号
+            // 应用标题编号 - 不清理，只应用当前文档的样式
             if (docSettings.headingNumberingEnabled) {
                 await this.headingNumbering.updateNumberingForDoc(this.currentDocId);
-            } else {
-                await this.headingNumbering.clearNumbering(null);
             }
+            // 注意：不在这里清理标题编号，因为其他protyle可能还在使用
 
-            // 应用交叉引用
+            // 应用交叉引用 - 不清理，只应用当前文档的样式
             if (docSettings.crossReferenceEnabled) {
                 const protyle = this.documentManager.getCurrentProtyle();
                 if (protyle) {
                     await this.crossReference.applyCrossReference(protyle);
                 }
-            } else {
-                const protyle = this.documentManager.getCurrentProtyle();
-                if (protyle) {
-                    await this.crossReference.clearCrossReference(protyle);
-                }
             }
+            // 注意：不在这里清理交叉引用，因为其他protyle可能还在使用
 
             // 应用字体设置
             await this.fontStyleManager.applyFontStyles(this.currentDocId, docSettings.fontSettings);
