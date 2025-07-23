@@ -5,6 +5,7 @@ import { MuxGlobalOverlayPlugin } from "./MuxGlobalOverlay";
 import { QuickSearchPlugin } from "./QuickSearch";
 import { GatewayConnectorPlugin } from "./GatewayConnector";
 import { DocumentStylerPlugin } from "./DocumentStyler";
+import { NocodbConnectorPlugin } from "./NocodbConnector";
 
 export interface IBuiltinPluginInfo {
     name: string;
@@ -44,6 +45,12 @@ export const BUILTIN_PLUGIN_INFOS: IBuiltinPluginInfo[] = [
         description: "文档样式设置，支持标题自动编号和图片表格交叉引用",
         iconURL: "/stage/images/icon.png",
     },
+    {
+        name: "nocodbConnector",
+        displayName: "Nocodb Connector",
+        description: "连接思源和Nocodb，在protyle-attr和文档属性视图中显示Nocodb数据",
+        iconURL: "/stage/images/icon.png",
+    },
 ];
 
 // Map of builtin plugin classes
@@ -53,6 +60,7 @@ export const BUILTIN_PLUGIN_CLASSES: Record<string, new (options: { app: App; na
     quickSearch: QuickSearchPlugin,
     gatewayConnector: GatewayConnectorPlugin,
     documentStyler: DocumentStylerPlugin,
+    nocodbConnector: NocodbConnectorPlugin,
 };
 
 /**
