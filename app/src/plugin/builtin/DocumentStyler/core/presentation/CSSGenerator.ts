@@ -351,29 +351,7 @@ ${scope} .${className}-highlight-fade {
         const tablePrefix = config.tablePrefix || '表';
         const animation = config.enableAnimation ? 'transition: all 0.2s ease;' : '';
 
-        // 生成基础样式
-        let styles = `
-/* 斜杠命令交叉引用样式 */
-${scope} [data-type="block-ref"][data-subtype="s"] {
-    position: relative;
-    color: var(--b3-theme-primary);
-    text-decoration: none;
-    cursor: pointer;
-    font-size: 0.8em;
-    vertical-align: super;
-    ${animation}
-}
-
-${scope} [data-type="block-ref"][data-subtype="s"]:hover {
-    background-color: var(--b3-theme-primary-lighter);
-    border-radius: 0.2em;
-    padding: 0.1em 0.2em;
-}
-
-${scope} [data-type="block-ref"][data-subtype="s"]:active {
-    background-color: var(--b3-theme-primary-light);
-}
-        `.trim();
+        let styles = "";
 
         // 为每个图表生成特定的::before样式
         if (figures && figures.length > 0) {
@@ -385,8 +363,6 @@ ${scope} [data-type="block-ref"][data-subtype="s"]:active {
 
                 styles += `\n${scope} [data-type="block-ref"][data-subtype="s"][data-id="${figure.id}"]::before {
     content: "${displayText}";
-    font-size: 1em;
-    vertical-align: baseline;
 }`;
             });
         }

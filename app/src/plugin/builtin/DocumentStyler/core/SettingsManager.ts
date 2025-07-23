@@ -16,11 +16,11 @@ const DEFAULT_SETTINGS: IDocumentStylerSettings = {
     crossReference: false,
     numberingFormats: [
         "{1}. ",        // h1
-        "{1}.{2} ",     // h2
-        "{1}.{2}.{3} ", // h3
-        "{1}.{2}.{3}.{4} ", // h4
-        "{1}.{2}.{3}.{4}.{5} ", // h5
-        "{1}.{2}.{3}.{4}.{5}.{6} ", // h6
+        "{1}.{2}. ",     // h2
+        "{1}.{2}.{3}. ", // h3
+        "{1}.{2}.{3}.{4}. ", // h4
+        "{1}.{2}.{3}.{4}.{5}. ", // h5
+        "{1}.{2}.{3}.{4}.{5}.{6}. ", // h6
     ],
     headingNumberStyles: [
         HeadingNumberStyle.ARABIC,    // h1: 1, 2, 3
