@@ -44,10 +44,10 @@ export class NocodbConnectorPlugin extends Plugin {
     async onload(): Promise<void> {
         try {
             console.log('NocodbConnector plugin loading...');
-            
+
             // 绑定事件监听器
             this.bindEvents();
-            
+
             console.log('NocodbConnector plugin loaded successfully');
         } catch (error) {
             console.error('NocodbConnector plugin failed to load:', error);
@@ -61,7 +61,7 @@ export class NocodbConnectorPlugin extends Plugin {
         try {
             // 解绑事件监听器
             this.unbindEvents();
-            
+
             console.log('NocodbConnector plugin unloaded successfully');
         } catch (error) {
             console.error('NocodbConnector plugin failed to unload:', error);
@@ -74,7 +74,7 @@ export class NocodbConnectorPlugin extends Plugin {
     private bindEvents(): void {
         // 监听protyle加载完成事件
         this.eventBus.on("loaded-protyle-static", this.onProtyleLoaded.bind(this));
-        
+
         // 监听文档切换事件
         this.eventBus.on("switch-protyle", this.onProtyleSwitched.bind(this));
     }
@@ -96,13 +96,13 @@ export class NocodbConnectorPlugin extends Plugin {
             if (!protyle?.block?.rootID) return;
 
             console.log('NocodbConnector: protyle loaded, checking for nocodb blocks...');
-            
+
             // 检查并处理带有nocodb属性的blocks
             await this.processNocodbBlocks(protyle);
-            
+
             // 检查并处理文档属性
             await this.processDocumentAttributes(protyle);
-            
+
         } catch (error) {
             console.error('NocodbConnector: protyle loaded event handling failed:', error);
         }
@@ -117,13 +117,13 @@ export class NocodbConnectorPlugin extends Plugin {
             if (!protyle?.block?.rootID) return;
 
             console.log('NocodbConnector: protyle switched, checking for nocodb blocks...');
-            
+
             // 检查并处理带有nocodb属性的blocks
             await this.processNocodbBlocks(protyle);
-            
+
             // 检查并处理文档属性
             await this.processDocumentAttributes(protyle);
-            
+
         } catch (error) {
             console.error('NocodbConnector: protyle switched event handling failed:', error);
         }
@@ -133,36 +133,19 @@ export class NocodbConnectorPlugin extends Plugin {
      * 处理带有nocodb属性的blocks
      */
     private async processNocodbBlocks(protyle: any): Promise<void> {
-        try {
-            // 查找所有带有custom-nocodb-table-row-id属性的blocks
-            const blocks = protyle.wysiwyg.element.querySelectorAll('[data-node-id]');
-            let processedCount = 0;
+        // 查找所有带有custom-nocodb-table-row-id属性的blocks
+        const blocks = protyle.wysiwyg.element.querySelectorAll('[data-node-id][custom-nocodb-table-row-id]');
+        let processedCount = 0;
 
-            for (const block of blocks) {
-                const blockId = block.getAttribute('data-node-id');
-                if (!blockId) continue;
+        for (const block of blocks) {
+            const nocodbId = block.getAttribute('custom-nocodb-table-row-id');
+            if (!nocodbId) continue;
 
-                try {
-                    // 获取block属性
-                    const attrs = await this.getBlockAttributes(blockId);
-                    const nocodbId = attrs['custom-nocodb-table-row-id'];
-
-                    if (nocodbId) {
-                        console.log(`NocodbConnector: Found nocodb block ${blockId} with id ${nocodbId}`);
-                        await this.renderNocodbDataInProtyleAttr(block, nocodbId);
-                        processedCount++;
-                    }
-                } catch (error) {
-                    console.error(`NocodbConnector: Failed to process block ${blockId}:`, error);
-                    // 继续处理其他blocks，不因为单个block失败而停止
-                }
-            }
-
+            await this.renderNocodbDataInProtyleAttr(block, nocodbId);
+            processedCount++;
             if (processedCount > 0) {
                 console.log(`NocodbConnector: Processed ${processedCount} nocodb blocks`);
             }
-        } catch (error) {
-            console.error('NocodbConnector: process nocodb blocks failed:', error);
         }
     }
 
@@ -172,11 +155,11 @@ export class NocodbConnectorPlugin extends Plugin {
     private async processDocumentAttributes(protyle: any): Promise<void> {
         try {
             const docId = protyle.block.rootID;
-            
+
             // 获取文档属性
             const attrs = await this.getBlockAttributes(docId);
             const nocodbId = attrs['custom-nocodb-table-row-id'];
-            
+
             if (nocodbId) {
                 console.log(`NocodbConnector: Found nocodb document ${docId} with id ${nocodbId}`);
                 await this.renderNocodbDataInDocumentAttr(protyle, nocodbId);
@@ -237,10 +220,10 @@ export class NocodbConnectorPlugin extends Plugin {
 
             // 获取nocodb数据
             const data = await this.apiClient.getRecord(tableId, rowId);
-            
+
             // 创建或更新文档属性面板
             await this.createDocumentAttributePanel(protyle, data, tableId);
-            
+
         } catch (error) {
             console.error('NocodbConnector: render nocodb data in document attr failed:', error);
         }
