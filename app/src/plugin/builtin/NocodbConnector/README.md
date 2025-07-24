@@ -6,7 +6,7 @@ NocodbConnector 是一个内置插件，用于连接思源笔记和 Nocodb 数�
 
 1. **protyle-attr 中显示 Nocodb 数据**：在加载 protyle 之后，检查所有带有 `custom-nocodb-table-row-id` 属性的 block，获取其值并显示对应的 Nocodb 数据。
 
-2. **文档属性视图中显示 Nocodb 数据**：模仿 `mux-doc-heading-attr-panel` 的显示方法，在文档属性视图中显示 Nocodb 数据，支持不同类型的字段渲染。
+2. **文档属性视图中显示 Nocodb 数据**：模仿 `mux-doc-heading-attr-panel` 的显示方法，使用思源 AttributeView 的 DOM 结构，在文档属性视图中显示 Nocodb 数据，支持不同类型的字段渲染和在线编辑。
 
 ## 配置说明
 
@@ -78,11 +78,37 @@ curl --location 'http://server:18866/api/v2/tables/m7vb2ve7wuh5fld/records/3?fie
 
 ## 字段类型支持
 
-- **string**: 字符串类型，支持多行文本显示
-- **link**: 链接类型，渲染为可点击的链接
-- **number**: 数字类型，使用等宽字体显示
-- **date**: 日期类型，自动格式化显示
-- **boolean**: 布尔类型，显示为是/否
+- **string**: 字符串类型，在 AttributeView 中显示为文本输入框
+- **link**: 链接类型，渲染为可点击的链接，可编辑时显示为 URL 输入框
+- **number**: 数字类型，显示为数字输入框
+- **date**: 日期类型，自动格式化显示，使用日期选择器
+- **boolean**: 布尔类型，显示为复选框，可点击切换状态
+
+## DOM 结构
+
+插件使用思源 AttributeView 的标准 DOM 结构：
+
+```html
+<div data-av-id="nocodb-{tableId}" data-av-type="table" data-node-id="{rowId}" data-type="NodeAttributeView">
+    <div class="custom-attr__avheader">
+        <div class="block__logo popover__block">
+            <svg class="block__logoicon"><use xlink:href="#iconDatabase"></use></svg>
+            <span class="fn__ellipsis">🗄️ Nocodb 数据</span>
+        </div>
+    </div>
+    <div class="block__icons av__row" data-id="{rowId}" data-col-id="nocodb-{columnName}">
+        <div class="block__icon" draggable="true">
+            <svg><use xlink:href="#iconDrag"></use></svg>
+        </div>
+        <div class="block__logo ariaLabel fn__pointer">
+            <!-- 字段图标和名称 -->
+        </div>
+        <div class="fn__flex-1 fn__flex custom-attr__avvalue">
+            <!-- 字段值 -->
+        </div>
+    </div>
+</div>
+```
 
 ## 文件结构
 
@@ -134,4 +160,5 @@ window.nocodbConnectorTests.runAllTests();
 
 ## 更新日志
 
+- v1.1.0: 重构文档属性面板，使用思源 AttributeView 的标准 DOM 结构，改进用户体验
 - v1.0.0: 初始版本，支持基本的数据显示和编辑功能
