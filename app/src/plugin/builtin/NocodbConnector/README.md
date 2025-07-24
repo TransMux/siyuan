@@ -8,6 +8,10 @@ NocodbConnector 是一个内置插件，用于连接思源笔记和 Nocodb 数�
 
 2. **文档属性视图中显示 Nocodb 数据**：模仿 `mux-doc-heading-attr-panel` 的显示方法，使用思源 AttributeView 的 DOM 结构，在文档属性视图中显示 Nocodb 数据，支持不同类型的字段渲染和在线编辑。
 
+3. **响应式布局**：文档属性面板自动跟随 protyle-title 的 margin 设置，确保在不同屏幕尺寸下保持一致的布局。
+
+4. **URL 字段交互**：URL 字段完全模仿思源原生的 URL 属性渲染方式，支持点击打开链接，双击编辑等交互功能。
+
 ## 配置说明
 
 插件的配置在 `index.ts` 中的 `config` 对象中定义：
@@ -79,7 +83,10 @@ curl --location 'http://server:18866/api/v2/tables/m7vb2ve7wuh5fld/records/3?fie
 ## 字段类型支持
 
 - **string**: 字符串类型，在 AttributeView 中显示为文本输入框
-- **link**: 链接类型，渲染为可点击的链接，可编辑时显示为 URL 输入框
+- **link**: 链接类型，完全模仿思源原生 URL 属性：
+  - 只读模式：显示为可点击的链接，自动截断长URL并显示域名
+  - 可编辑模式：双击进入编辑状态，支持 Enter 保存、Esc 取消
+  - 支持 http/https/mailto 等协议，自动在新窗口打开
 - **number**: 数字类型，显示为数字输入框
 - **date**: 日期类型，自动格式化显示，使用日期选择器
 - **boolean**: 布尔类型，显示为复选框，可点击切换状态
@@ -158,7 +165,29 @@ window.nocodbConnectorTests.runAllTests();
 3. 表格 ID 和行 ID 必须正确
 4. 字段配置必须与实际表格结构匹配
 
+## 技术特性
+
+### 响应式布局
+- 使用 `MutationObserver` 监控 protyle-title 的样式变化
+- 使用 `ResizeObserver` 监控布局变化
+- 自动同步面板的 margin 设置，确保与文档标题对齐
+
+### URL 字段交互
+- 完全模仿思源原生 URL 属性的渲染和交互方式
+- 支持域名显示和路径截断
+- 双击编辑，Enter 保存，Esc 取消
+- 安全的链接打开（使用 noopener, noreferrer）
+
+### 事件处理
+- 防抖更新机制，避免频繁 API 调用
+- 完善的错误处理和用户反馈
+- 支持键盘快捷键操作
+
 ## 更新日志
 
+- v1.2.0:
+  - 实现面板 margin 跟随 protyle-title 的响应式布局
+  - 完善 URL 字段交互，支持点击打开和双击编辑
+  - 改进用户体验和视觉反馈
 - v1.1.0: 重构文档属性面板，使用思源 AttributeView 的标准 DOM 结构，改进用户体验
 - v1.0.0: 初始版本，支持基本的数据显示和编辑功能
