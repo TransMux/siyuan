@@ -75,24 +75,31 @@ export class NocodbApiClient {
      */
     async updateRecord(tableId: string, rowId: string, data: Record<string, any>): Promise<any> {
         try {
-            const url = `${this.config.serverUrl}/api/v2/tables/${tableId}/records/${rowId}`;
-            
+            const url = `${this.config.serverUrl}/api/v2/tables/${tableId}/records`;
+
+            // 构建更新数据，包含Id字段
+            const updateData = [{
+                Id: parseInt(rowId),
+                ...data
+            }];
+
             const response = await fetch(url, {
                 method: 'PATCH',
                 headers: {
                     'xc-token': this.config.token,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(data)
+                body: JSON.stringify(updateData)
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorText = await response.text();
+                throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
             }
 
             const result = await response.json();
             return result;
-            
+
         } catch (error) {
             console.error(`NocodbApiClient: Failed to update record ${tableId}/${rowId}:`, error);
             throw error;
