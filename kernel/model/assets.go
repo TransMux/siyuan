@@ -29,6 +29,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/88250/go-humanize"
@@ -39,6 +41,7 @@ import (
 	"github.com/88250/lute/parse"
 	"github.com/disintegration/imaging"
 	"github.com/gabriel-vasile/mimetype"
+	"github.com/imroc/req/v3"
 	"github.com/siyuan-note/filelock"
 	"github.com/siyuan-note/httpclient"
 	"github.com/siyuan-note/logging"
@@ -49,6 +52,32 @@ import (
 	"github.com/siyuan-note/siyuan/kernel/sql"
 	"github.com/siyuan-note/siyuan/kernel/treenode"
 	"github.com/siyuan-note/siyuan/kernel/util"
+)
+
+// 并发下载相关的数据结构
+type DownloadTask struct {
+	URL         string
+	DestNode    *ast.Node
+	OriginalURL string
+	Index       int
+	Dest        string
+}
+
+type DownloadResult struct {
+	Task        DownloadTask
+	Success     bool
+	Error       error
+	LocalPath   string
+	Size        int64
+	Data        []byte
+	Name        string
+}
+
+// 并发下载配置
+const (
+	DefaultConcurrentDownloads = 10  // 默认并发下载数
+	MaxConcurrentDownloads     = 20 // 最大并发下载数
+	DownloadTimeout           = 60 * time.Second
 )
 
 func HandleAssetsRemoveEvent(assetAbsPath string) {
@@ -152,13 +181,187 @@ func DocAssets(rootID string) (ret []string, err error) {
 	return
 }
 
+// downloadWorker 并发下载工作函数
+func downloadWorker(tasks <-chan DownloadTask, results chan<- DownloadResult, assetsDirPath string, msgId string) {
+	// 为每个 worker 创建独立的客户端
+	browserClient := util.NewCustomReqClient()
+	browserClient.SetTimeout(DownloadTimeout)
+
+	for task := range tasks {
+		result := DownloadResult{
+			Task:    task,
+			Success: false,
+		}
+
+		// 处理本地文件链接
+		if strings.HasPrefix(strings.ToLower(task.URL), "file://") {
+			result = processLocalFile(task, assetsDirPath)
+			results <- result
+			continue
+		}
+
+		// 处理网络链接
+		if strings.HasPrefix(strings.ToLower(task.URL), "https://") || strings.HasPrefix(strings.ToLower(task.URL), "http://") || strings.HasPrefix(task.URL, "//") {
+			result = processNetworkFile(task, browserClient, assetsDirPath, msgId)
+		}
+
+		results <- result
+	}
+}
+
+// processLocalFile 处理本地文件
+func processLocalFile(task DownloadTask, assetsDirPath string) DownloadResult {
+	result := DownloadResult{Task: task, Success: false}
+
+	u := task.URL[7:]
+	unescaped, _ := url.PathUnescape(u)
+	if unescaped != u {
+		u = unescaped
+	}
+	if strings.Contains(u, ":") {
+		u = strings.TrimPrefix(u, "/")
+	}
+	if strings.Contains(u, "?") {
+		u = u[:strings.Index(u, "?")]
+	}
+
+	if !gulu.File.IsExist(u) || gulu.File.IsDir(u) {
+		result.Error = fmt.Errorf("local file not found or is directory: %s", u)
+		return result
+	}
+
+	name := filepath.Base(u)
+	name = util.FilterUploadFileName(name)
+	name = "network-asset-" + name
+	name = util.AssetName(name)
+	writePath := filepath.Join(assetsDirPath, name)
+
+	if err := filelock.Copy(u, writePath); err != nil {
+		result.Error = fmt.Errorf("copy local file failed: %s", err)
+		return result
+	}
+
+	result.Success = true
+	result.LocalPath = "assets/" + name
+	return result
+}
+
+// processNetworkFile 处理网络文件下载
+func processNetworkFile(task DownloadTask, browserClient *req.Client, assetsDirPath string, msgId string) DownloadResult {
+	result := DownloadResult{Task: task, Success: false}
+
+	u := task.URL
+	if strings.HasPrefix(u, "//") {
+		u = "https:" + u
+	}
+
+	// 微信图片特殊处理
+	if strings.Contains(u, "qpic.cn") {
+		if strings.Contains(u, "http://") {
+			u = strings.Replace(u, "http://", "https://", 1)
+		}
+	}
+
+	displayU := u
+	if 64 < len(displayU) {
+		displayU = displayU[:64] + "..."
+	}
+	util.PushUpdateMsg(msgId, fmt.Sprintf(Conf.Language(119), displayU), 15000)
+
+	request := browserClient.R()
+	request.SetRetryCount(1).SetRetryFixedInterval(3 * time.Second)
+	if "" != task.OriginalURL {
+		request.SetHeader("Referer", task.OriginalURL)
+	}
+
+	resp, reqErr := request.Get(u)
+	if nil != reqErr {
+		result.Error = fmt.Errorf("download failed: %s", reqErr)
+		return result
+	}
+
+	if http.StatusForbidden == resp.StatusCode || http.StatusUnauthorized == resp.StatusCode {
+		result.Error = fmt.Errorf("access forbidden: %d", resp.StatusCode)
+		return result
+	}
+
+	if strings.Contains(strings.ToLower(resp.GetContentType()), "text/html") {
+		result.Error = fmt.Errorf("content is webpage, ignored")
+		return result
+	}
+
+	if 200 != resp.StatusCode {
+		result.Error = fmt.Errorf("download failed with status: %d", resp.StatusCode)
+		return result
+	}
+
+	if 1024*1024*96 < resp.ContentLength {
+		result.Error = fmt.Errorf("file too large: %s", humanize.IBytes(uint64(resp.ContentLength)))
+		return result
+	}
+
+	data, repErr := resp.ToBytes()
+	if nil != repErr {
+		result.Error = fmt.Errorf("read response failed: %s", repErr)
+		return result
+	}
+
+	// 处理文件名
+	var name string
+	if strings.Contains(u, "?") {
+		name = u[:strings.Index(u, "?")]
+		name = path.Base(name)
+	} else {
+		name = path.Base(u)
+	}
+	if strings.Contains(name, "#") {
+		name = name[:strings.Index(name, "#")]
+	}
+	name, _ = url.PathUnescape(name)
+	name = util.FilterUploadFileName(name)
+	ext := util.Ext(name)
+	if !util.IsCommonExt(ext) {
+		if mtype := mimetype.Detect(data); nil != mtype {
+			ext = mtype.Extension()
+			name += ext
+		}
+	}
+	if "" == ext && bytes.HasPrefix(data, []byte("<svg ")) && bytes.HasSuffix(data, []byte("</svg>")) {
+		ext = ".svg"
+		name += ext
+	}
+	if "" == ext {
+		contentType := resp.Header.Get("Content-Type")
+		exts, _ := mime.ExtensionsByType(contentType)
+		if 0 < len(exts) {
+			ext = exts[0]
+			name += ext
+		}
+	}
+	name = util.AssetName(name)
+	name = "network-asset-" + name
+	writePath := filepath.Join(assetsDirPath, name)
+
+	if err := filelock.WriteFile(writePath, data); err != nil {
+		result.Error = fmt.Errorf("write file failed: %s", err)
+		return result
+	}
+
+	result.Success = true
+	result.LocalPath = "assets/" + name
+	result.Data = data
+	result.Name = name
+	result.Size = int64(len(data))
+	return result
+}
+
 func NetAssets2LocalAssets(rootID string, onlyImg bool, originalURL string) (err error) {
 	tree, err := LoadTreeByBlockID(rootID)
 	if err != nil {
 		return
 	}
 
-	var files int
+	var files int32
 	msgId := gulu.Rand.String(7)
 
 	docDirLocalPath := filepath.Join(util.DataDir, tree.Box, path.Dir(tree.Path))
@@ -169,10 +372,11 @@ func NetAssets2LocalAssets(rootID string, onlyImg bool, originalURL string) (err
 		}
 	}
 
-	browserClient := util.NewCustomReqClient() // 自定义了 TLS 指纹，增加下载成功率
-
-	forbiddenCount := 0
+	// 收集所有下载任务
+	var tasks []DownloadTask
 	destNodes := getRemoteAssetsLinkDestsInTree(tree, onlyImg)
+	taskIndex := 0
+
 	for _, destNode := range destNodes {
 		dests := getRemoteAssetsLinkDests(destNode, onlyImg)
 		if 1 > len(dests) {
@@ -180,158 +384,106 @@ func NetAssets2LocalAssets(rootID string, onlyImg bool, originalURL string) (err
 		}
 
 		for _, dest := range dests {
-			if strings.HasPrefix(strings.ToLower(dest), "file://") { // 处理本地文件链接
-				u := dest[7:]
-				unescaped, _ := url.PathUnescape(u)
-				if unescaped != u {
-					// `Convert network images/assets to local` supports URL-encoded local file names https://github.com/siyuan-note/siyuan/issues/9929
-					u = unescaped
-				}
-				if strings.Contains(u, ":") {
-					u = strings.TrimPrefix(u, "/")
-				}
-				if strings.Contains(u, "?") {
-					u = u[:strings.Index(u, "?")]
-				}
+			// 只处理网络链接和本地文件链接
+			if strings.HasPrefix(strings.ToLower(dest), "file://") ||
+			   strings.HasPrefix(strings.ToLower(dest), "https://") ||
+			   strings.HasPrefix(strings.ToLower(dest), "http://") ||
+			   strings.HasPrefix(dest, "//") {
 
-				if !gulu.File.IsExist(u) || gulu.File.IsDir(u) {
-					continue
+				task := DownloadTask{
+					URL:         dest,
+					DestNode:    destNode,
+					OriginalURL: originalURL,
+					Index:       taskIndex,
+					Dest:        dest,
 				}
-
-				name := filepath.Base(u)
-				name = util.FilterUploadFileName(name)
-				name = "network-asset-" + name
-				name = util.AssetName(name)
-				writePath := filepath.Join(assetsDirPath, name)
-				if err = filelock.Copy(u, writePath); err != nil {
-					logging.LogErrorf("copy [%s] to [%s] failed: %s", u, writePath, err)
-					continue
-				}
-
-				setAssetsLinkDest(destNode, dest, "assets/"+name)
-				files++
-				continue
-			}
-
-			if strings.HasPrefix(strings.ToLower(dest), "https://") || strings.HasPrefix(strings.ToLower(dest), "http://") || strings.HasPrefix(dest, "//") {
-				if strings.HasPrefix(dest, "//") {
-					// `Convert network images to local` supports `//` https://github.com/siyuan-note/siyuan/issues/10598
-					dest = "https:" + dest
-				}
-
-				u := dest
-				if strings.Contains(u, "qpic.cn") {
-					// 改进 `网络图片转换为本地图片` 微信图片拉取 https://github.com/siyuan-note/siyuan/issues/5052
-					if strings.Contains(u, "http://") {
-						u = strings.Replace(u, "http://", "https://", 1)
-					}
-
-					// 改进 `网络图片转换为本地图片` 微信图片拉取 https://github.com/siyuan-note/siyuan/issues/6431
-					// 下面这部分需要注释掉，否则会导致响应 400
-					//if strings.HasSuffix(u, "/0") {
-					//	u = strings.Replace(u, "/0", "/640", 1)
-					//} else if strings.Contains(u, "/0?") {
-					//	u = strings.Replace(u, "/0?", "/640?", 1)
-					//}
-				}
-
-				displayU := u
-				if 64 < len(displayU) {
-					displayU = displayU[:64] + "..."
-				}
-				util.PushUpdateMsg(msgId, fmt.Sprintf(Conf.Language(119), displayU), 15000)
-				request := browserClient.R()
-				request.SetRetryCount(1).SetRetryFixedInterval(3 * time.Second)
-				if "" != originalURL {
-					request.SetHeader("Referer", originalURL) // 改进浏览器剪藏扩展转换本地图片成功率 https://github.com/siyuan-note/siyuan/issues/7464
-				}
-				resp, reqErr := request.Get(u)
-				if nil != reqErr {
-					logging.LogErrorf("download network asset [%s] failed: %s", u, reqErr)
-					continue
-				}
-				if http.StatusForbidden == resp.StatusCode || http.StatusUnauthorized == resp.StatusCode {
-					forbiddenCount++
-				}
-				if strings.Contains(strings.ToLower(resp.GetContentType()), "text/html") {
-					// 忽略超链接网页 `Convert network assets to local` no longer process webpage https://github.com/siyuan-note/siyuan/issues/9965
-					continue
-				}
-				if 200 != resp.StatusCode {
-					logging.LogErrorf("download network asset [%s] failed: %d", u, resp.StatusCode)
-					continue
-				}
-
-				if 1024*1024*96 < resp.ContentLength {
-					logging.LogWarnf("network asset [%s]' size [%s] is large then [96 MB], ignore it", u, humanize.IBytes(uint64(resp.ContentLength)))
-					continue
-				}
-
-				data, repErr := resp.ToBytes()
-				if nil != repErr {
-					logging.LogErrorf("download network asset [%s] failed: %s", u, repErr)
-					continue
-				}
-				var name string
-				if strings.Contains(u, "?") {
-					name = u[:strings.Index(u, "?")]
-					name = path.Base(name)
-				} else {
-					name = path.Base(u)
-				}
-				if strings.Contains(name, "#") {
-					name = name[:strings.Index(name, "#")]
-				}
-				name, _ = url.PathUnescape(name)
-				name = util.FilterUploadFileName(name)
-				ext := util.Ext(name)
-				if !util.IsCommonExt(ext) {
-					if mtype := mimetype.Detect(data); nil != mtype {
-						ext = mtype.Extension()
-						name += ext
-					}
-				}
-				if "" == ext && bytes.HasPrefix(data, []byte("<svg ")) && bytes.HasSuffix(data, []byte("</svg>")) {
-					ext = ".svg"
-					name += ext
-				}
-				if "" == ext {
-					contentType := resp.Header.Get("Content-Type")
-					exts, _ := mime.ExtensionsByType(contentType)
-					if 0 < len(exts) {
-						ext = exts[0]
-						name += ext
-					}
-				}
-				name = util.AssetName(name)
-				name = "network-asset-" + name
-				writePath := filepath.Join(assetsDirPath, name)
-				if err = filelock.WriteFile(writePath, data); err != nil {
-					logging.LogErrorf("write downloaded network asset [%s] to local asset [%s] failed: %s", u, writePath, err)
-					continue
-				}
-
-				setAssetsLinkDest(destNode, dest, "assets/"+name)
-				files++
-				continue
+				tasks = append(tasks, task)
+				taskIndex++
 			}
 		}
 	}
 
+	// 如果没有任务，直接返回
+	if len(tasks) == 0 {
+		util.PushMsg(Conf.Language(121), 3000)
+		return
+	}
+
+	// 设置并发数量
+	concurrency := DefaultConcurrentDownloads
+	if len(tasks) < concurrency {
+		concurrency = len(tasks)
+	}
+
+	// 创建任务和结果通道
+	taskChan := make(chan DownloadTask, len(tasks))
+	resultChan := make(chan DownloadResult, len(tasks))
+
+	// 启动工作协程
+	var wg sync.WaitGroup
+	for i := 0; i < concurrency; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			downloadWorker(taskChan, resultChan, assetsDirPath, msgId)
+		}()
+	}
+
+	// 发送任务
+	for _, task := range tasks {
+		taskChan <- task
+	}
+	close(taskChan)
+
+	// 等待所有工作协程完成
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
+
+	// 收集结果
+	var forbiddenCount int32
+	completedTasks := 0
+	totalTasks := len(tasks)
+
+	for result := range resultChan {
+		completedTasks++
+
+		if result.Success {
+			setAssetsLinkDest(result.Task.DestNode, result.Task.Dest, result.LocalPath)
+			atomic.AddInt32(&files, 1)
+		} else {
+			if result.Error != nil {
+				if strings.Contains(result.Error.Error(), "forbidden") || strings.Contains(result.Error.Error(), "access forbidden") {
+					atomic.AddInt32(&forbiddenCount, 1)
+				}
+				logging.LogErrorf("download task failed [%s]: %s", result.Task.URL, result.Error)
+			}
+		}
+
+		// 更新进度
+		progress := float64(completedTasks) / float64(totalTasks) * 100
+		util.PushUpdateMsg(msgId, fmt.Sprintf("下载进度: %.1f%% (%d/%d)", progress, completedTasks, totalTasks), 15000)
+	}
+
+	// 处理结果和消息
 	util.PushClearMsg(msgId)
-	if 0 < files {
+	finalFiles := int(atomic.LoadInt32(&files))
+	finalForbiddenCount := int(atomic.LoadInt32(&forbiddenCount))
+
+	if 0 < finalFiles {
 		msgId = util.PushMsg(Conf.Language(113), 7000)
 		if err = writeTreeUpsertQueue(tree); err != nil {
 			return
 		}
-		util.PushUpdateMsg(msgId, fmt.Sprintf(Conf.Language(120), files), 5000)
+		util.PushUpdateMsg(msgId, fmt.Sprintf(Conf.Language(120), finalFiles), 5000)
 
-		if 0 < forbiddenCount {
-			util.PushErrMsg(fmt.Sprintf(Conf.Language(255), forbiddenCount), 5000)
+		if 0 < finalForbiddenCount {
+			util.PushErrMsg(fmt.Sprintf(Conf.Language(255), finalForbiddenCount), 5000)
 		}
 	} else {
-		if 0 < forbiddenCount {
-			util.PushErrMsg(fmt.Sprintf(Conf.Language(255), forbiddenCount), 5000)
+		if 0 < finalForbiddenCount {
+			util.PushErrMsg(fmt.Sprintf(Conf.Language(255), finalForbiddenCount), 5000)
 		} else {
 			util.PushMsg(Conf.Language(121), 3000)
 		}
