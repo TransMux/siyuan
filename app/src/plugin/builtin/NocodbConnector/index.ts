@@ -20,6 +20,7 @@ export class NocodbConnectorPlugin extends Plugin {
             token: "QCQt9Ud_C9BW3JPG6djcn02XRr57ffi1SgYotFup",
             tableConfigs: {
                 "m7vb2ve7wuh5fld": {
+                    name: "外部输入",
                     columns: {
                         "CreatedAt": { type: "string", readonly: true },
                         "inserted_at": { type: "string", readonly: true },
@@ -206,14 +207,8 @@ export class NocodbConnectorPlugin extends Plugin {
                 return;
             }
 
-            // 显示加载状态
-            this.showLoadingInElement(attrElement, 'nocodb-data');
-
-            // 获取nocodb数据
-            const data = await this.apiClient.getRecord(tableId, rowId);
-
             // 渲染数据
-            this.renderNocodbDataInElement(attrElement, data, tableId);
+            this.renderNocodbDataInElement(attrElement, tableId);
 
         } catch (error) {
             console.error('NocodbConnector: render nocodb data in protyle-attr failed:', error);
@@ -254,45 +249,15 @@ export class NocodbConnectorPlugin extends Plugin {
     /**
      * 在元素中渲染nocodb数据
      */
-    private renderNocodbDataInElement(element: Element, data: any, tableId: string): void {
-        const tableConfig = this.config.tableConfigs[tableId];
-        if (!tableConfig) {
+    private renderNocodbDataInElement(element: Element, tableId: string): void {
+        const tableName = this.config.tableConfigs[tableId].name || tableId;
+        if (!tableName) {
             console.warn(`NocodbConnector: No config found for table ${tableId}`);
-            this.showErrorInElement(element, 'nocodb-data', `未找到表格 ${tableId} 的配置`);
+            this.showErrorInElement(element, 'nocodb-data', `未找到表格 ${tableId} 的名称`);
             return;
         }
 
-        let html = '<div class="nocodb-data" style="margin-top: 8px; padding: 8px; border: 1px solid var(--b3-border-color); border-radius: 4px; background-color: var(--b3-theme-surface);">';
-        html += '<div style="font-weight: bold; margin-bottom: 8px; color: var(--b3-theme-primary); display: flex; align-items: center;">';
-        html += '<svg style="width: 16px; height: 16px; margin-right: 4px;" viewBox="0 0 24 24" fill="currentColor">';
-        html += '<path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6Z"/>';
-        html += '</svg>';
-        html += 'Nocodb 数据</div>';
-
-        // 检查是否有数据
-        const hasData = Object.keys(data).some(key =>
-            tableConfig.columns[key] && data[key] !== undefined && data[key] !== null && data[key] !== ''
-        );
-
-        if (!hasData) {
-            html += '<div style="color: var(--b3-theme-on-surface-light); font-style: italic; text-align: center; padding: 16px;">暂无数据</div>';
-        } else {
-            html += '<div style="display: grid; gap: 6px;">';
-
-            for (const [columnName, columnConfig] of Object.entries(tableConfig.columns)) {
-                const value = data[columnName];
-                if (value !== undefined && value !== null && value !== '') {
-                    html += `<div style="display: flex; align-items: flex-start; padding: 4px 0; border-bottom: 1px solid var(--b3-border-color-light);">`;
-                    html += `<span style="font-weight: 500; color: var(--b3-theme-on-surface); min-width: 80px; margin-right: 12px; flex-shrink: 0;">${columnName}:</span>`;
-                    html += `<div style="flex: 1; word-break: break-all;">${renderField(columnName, value, columnConfig)}</div>`;
-                    html += `</div>`;
-                }
-            }
-
-            html += '</div>';
-        }
-
-        html += '</div>';
+        let html = `<div class="protyle-attr--av protyle-custom"><svg><use xlink:href="#iconDatabase"></use></svg><span data-av-id="nocodb-${tableId}" class="popover__block">${tableName}</span></div>`;
 
         // 移除已存在的nocodb数据显示
         const existingNocodbData = element.querySelector('.nocodb-data');
@@ -353,7 +318,7 @@ export class NocodbConnectorPlugin extends Plugin {
         html += `<div class="custom-attr__avheader">`;
         html += `<div class="block__logo popover__block" style="max-width:calc(100% - 40px)">`;
         html += `<svg class="block__logoicon"><use xlink:href="#iconDatabase"></use></svg>`;
-        html += `<span class="fn__ellipsis">🗄️ Nocodb 数据</span>`;
+        html += `<span class="fn__ellipsis">${tableConfig.name || tableId}</span>`;
         html += `</div>`;
         html += `<div class="fn__flex-1"></div>`;
         html += `</div>`;

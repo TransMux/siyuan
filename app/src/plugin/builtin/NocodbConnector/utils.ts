@@ -8,6 +8,7 @@ export interface NocodbColumnConfig {
 }
 
 export interface NocodbTableConfig {
+    name: string;
     columns: Record<string, NocodbColumnConfig>;
 }
 
