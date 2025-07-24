@@ -284,13 +284,15 @@ export class NocodbConnectorPlugin extends Plugin {
             if (!nocodbDocElement) {
                 nocodbDocElement = document.createElement("div");
                 nocodbDocElement.className = "mux-doc-nocodb-panel";
-                // 设置样式，模仿mux-doc-heading-attr-panel
-                nocodbDocElement.style.marginRight = "96px";
-                nocodbDocElement.style.marginLeft = "96px";
-                nocodbDocElement.style.transition = "margin 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+
+                // 设置初始样式，跟随protyle-title的margin
+                this.syncPanelMarginWithTitle(nocodbDocElement, protyle.title.element);
 
                 // 插入到title元素的父容器中
                 protyle.title.element.parentElement.appendChild(nocodbDocElement);
+
+                // 监控protyle-title的margin变化
+                this.observeTitleMarginChanges(nocodbDocElement, protyle.title.element);
             }
 
             // 渲染nocodb数据面板
@@ -299,6 +301,49 @@ export class NocodbConnectorPlugin extends Plugin {
         } catch (error) {
             console.error('NocodbConnector: create document attribute panel failed:', error);
         }
+    }
+
+    /**
+     * 同步面板margin与title的margin
+     */
+    private syncPanelMarginWithTitle(panelElement: HTMLElement, titleElement: HTMLElement): void {
+        const titleStyles = window.getComputedStyle(titleElement);
+        const marginLeft = titleStyles.marginLeft;
+        const marginRight = titleStyles.marginRight;
+
+        panelElement.style.marginLeft = marginLeft;
+        panelElement.style.marginRight = marginRight;
+        panelElement.style.transition = "margin 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+    }
+
+    /**
+     * 监控title的margin变化
+     */
+    private observeTitleMarginChanges(panelElement: HTMLElement, titleElement: HTMLElement): void {
+        // 使用MutationObserver监控style属性变化
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                    this.syncPanelMarginWithTitle(panelElement, titleElement);
+                }
+            });
+        });
+
+        observer.observe(titleElement, {
+            attributes: true,
+            attributeFilter: ['style']
+        });
+
+        // 使用ResizeObserver监控布局变化
+        const resizeObserver = new ResizeObserver(() => {
+            this.syncPanelMarginWithTitle(panelElement, titleElement);
+        });
+
+        resizeObserver.observe(titleElement.parentElement);
+
+        // 保存observer引用以便后续清理
+        (panelElement as any)._marginObserver = observer;
+        (panelElement as any)._resizeObserver = resizeObserver;
     }
 
     /**
@@ -374,6 +419,12 @@ export class NocodbConnectorPlugin extends Plugin {
 
         // 绑定可编辑字段的事件
         this.bindEditableFieldEvents(element, tableId, data);
+
+        // 绑定URL点击事件
+        this.bindUrlClickEvents(element);
+
+        // 绑定可编辑URL字段事件
+        this.bindEditableUrlEvents(element, tableId, data);
     }
 
     /**
@@ -420,9 +471,7 @@ export class NocodbConnectorPlugin extends Plugin {
     private renderReadonlyAvField(columnName: string, value: any, config: any): string {
         switch (config.type) {
             case 'link':
-                const maxLinkLength = 50;
-                const displayUrl = value.length > maxLinkLength ? value.substring(0, maxLinkLength) + '...' : value;
-                return `<a href="${value}" target="_blank" class="av__celltext" title="${value}">${displayUrl}</a>`;
+                return this.renderCellURL(value);
 
             case 'date':
                 return `<span class="av__celltext" data-content="${value}">${this.formatDateForDisplay(value)}</span>`;
@@ -441,6 +490,49 @@ export class NocodbConnectorPlugin extends Plugin {
     }
 
     /**
+     * 渲染URL单元格（模仿思源的renderCellURL）
+     */
+    private renderCellURL(urlContent: string): string {
+        if (!urlContent) {
+            return `<span class="av__celltext av__celltext--url" data-type="url" data-href=""></span>`;
+        }
+
+        let host = urlContent;
+        let suffix = "";
+        try {
+            const urlObj = new URL(urlContent);
+            if (urlObj.protocol.startsWith("http")) {
+                host = urlObj.host;
+                suffix = urlObj.href.replace(urlObj.origin, "");
+                if (suffix.length > 12) {
+                    suffix = suffix.substring(0, 4) + "..." + suffix.substring(suffix.length - 6);
+                }
+            }
+        } catch (e) {
+            // 不是 url 地址，进行HTML转义
+            host = this.escapeHtml(urlContent);
+        }
+
+        return `<span class="av__celltext av__celltext--url" data-type="url" data-href="${this.escapeAttr(urlContent)}"><span>${host}</span><span class="ft__on-surface">${suffix}</span></span>`;
+    }
+
+    /**
+     * HTML转义
+     */
+    private escapeHtml(text: string): string {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    /**
+     * 属性值转义
+     */
+    private escapeAttr(text: string): string {
+        return text.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    /**
      * 渲染可编辑AttributeView字段
      */
     private renderEditableAvField(columnName: string, value: any, config: any, tableId: string, data: any): string {
@@ -448,10 +540,22 @@ export class NocodbConnectorPlugin extends Plugin {
 
         switch (config.type) {
             case 'link':
-                return `<input type="url" id="${fieldId}" value="${value || ''}"
-                        class="av__celltext b3-text-field"
-                        placeholder="请输入链接地址"
-                        data-column="${columnName}">`;
+                // 对于可编辑的URL字段，显示当前值并支持点击打开
+                if (value) {
+                    return `<div class="av__celltext--url-editable" data-column="${columnName}">
+                            ${this.renderCellURL(value)}
+                            <input type="url" id="${fieldId}" value="${value}"
+                                   class="av__celltext b3-text-field"
+                                   placeholder="请输入链接地址"
+                                   data-column="${columnName}"
+                                   style="display: none;">
+                            </div>`;
+                } else {
+                    return `<input type="url" id="${fieldId}" value="${value || ''}"
+                            class="av__celltext b3-text-field"
+                            placeholder="请输入链接地址"
+                            data-column="${columnName}">`;
+                }
 
             case 'boolean':
                 const iconHref = value ? '#iconCheck' : '#iconUncheck';
@@ -628,6 +732,128 @@ export class NocodbConnectorPlugin extends Plugin {
                 }
             }
         });
+    }
+
+    /**
+     * 绑定URL点击事件
+     */
+    private bindUrlClickEvents(element: HTMLElement): void {
+        const urlElements = element.querySelectorAll('.av__celltext--url[data-href]');
+
+        urlElements.forEach((urlElement: Element) => {
+            urlElement.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+
+                const href = urlElement.getAttribute('data-href');
+                if (href) {
+                    this.openURL(href);
+                }
+            });
+
+            // 添加鼠标悬停样式
+            urlElement.addEventListener('mouseenter', () => {
+                (urlElement as HTMLElement).style.cursor = 'pointer';
+                (urlElement as HTMLElement).style.textDecoration = 'underline';
+            });
+
+            urlElement.addEventListener('mouseleave', () => {
+                (urlElement as HTMLElement).style.textDecoration = 'none';
+            });
+        });
+    }
+
+    /**
+     * 绑定可编辑URL字段事件
+     */
+    private bindEditableUrlEvents(element: HTMLElement, tableId: string, originalData: any): void {
+        const editableUrlElements = element.querySelectorAll('.av__celltext--url-editable');
+
+        editableUrlElements.forEach((container: Element) => {
+            const urlDisplay = container.querySelector('.av__celltext--url');
+            const urlInput = container.querySelector('input[data-column]') as HTMLInputElement;
+            const columnName = container.getAttribute('data-column');
+
+            if (!urlDisplay || !urlInput || !columnName) return;
+
+            // 双击进入编辑模式
+            urlDisplay.addEventListener('dblclick', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+
+                (urlDisplay as HTMLElement).style.display = 'none';
+                urlInput.style.display = 'block';
+                urlInput.focus();
+                urlInput.select();
+            });
+
+            // 输入框失去焦点时保存并退出编辑模式
+            urlInput.addEventListener('blur', async () => {
+                await this.saveUrlAndExitEdit(urlDisplay as HTMLElement, urlInput, columnName, tableId, originalData);
+            });
+
+            // 按Enter键保存
+            urlInput.addEventListener('keydown', async (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    await this.saveUrlAndExitEdit(urlDisplay as HTMLElement, urlInput, columnName, tableId, originalData);
+                } else if (event.key === 'Escape') {
+                    // 按Esc键取消编辑
+                    event.preventDefault();
+                    urlInput.style.display = 'none';
+                    (urlDisplay as HTMLElement).style.display = 'block';
+                }
+            });
+        });
+    }
+
+    /**
+     * 保存URL并退出编辑模式
+     */
+    private async saveUrlAndExitEdit(urlDisplay: HTMLElement, urlInput: HTMLInputElement, columnName: string, tableId: string, originalData: any): Promise<void> {
+        try {
+            const newValue = urlInput.value.trim();
+
+            // 更新数据
+            await this.updateNocodbField(tableId, originalData, columnName, newValue);
+
+            // 更新显示
+            urlDisplay.innerHTML = this.renderCellURL(newValue).replace(/^<span[^>]*>/, '').replace(/<\/span>$/, '');
+            urlDisplay.setAttribute('data-href', newValue);
+
+            // 退出编辑模式
+            urlInput.style.display = 'none';
+            urlDisplay.style.display = 'block';
+
+            this.showUpdateSuccess(urlInput);
+
+        } catch (error) {
+            console.error('NocodbConnector: Save URL failed:', error);
+            this.showUpdateError(urlInput, error.message);
+
+            // 退出编辑模式
+            urlInput.style.display = 'none';
+            urlDisplay.style.display = 'block';
+        }
+    }
+
+    /**
+     * 打开URL
+     */
+    private openURL(url: string): void {
+        try {
+            // 检查是否是有效的URL
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+                window.open(url, '_blank', 'noopener,noreferrer');
+            } else if (url.startsWith('mailto:')) {
+                window.location.href = url;
+            } else {
+                // 尝试作为HTTP URL打开
+                window.open('http://' + url, '_blank', 'noopener,noreferrer');
+            }
+        } catch (error) {
+            console.error('NocodbConnector: Failed to open URL:', error);
+        }
     }
 
     /**
