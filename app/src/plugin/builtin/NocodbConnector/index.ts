@@ -250,6 +250,7 @@ export class NocodbConnectorPlugin extends Plugin {
      * 在元素中渲染nocodb数据
      */
     private renderNocodbDataInElement(element: Element, tableId: string): void {
+        return
         const tableName = this.config.tableConfigs[tableId].name || tableId;
         if (!tableName) {
             console.warn(`NocodbConnector: No config found for table ${tableId}`);
