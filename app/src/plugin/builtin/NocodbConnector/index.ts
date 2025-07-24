@@ -346,21 +346,17 @@ export class NocodbConnectorPlugin extends Plugin {
             return;
         }
 
-        // 创建面板HTML结构，模仿思源的属性面板样式
-        let html = `<div class="fn__flex-column" style="background-color: var(--b3-theme-surface); border: 1px solid var(--b3-border-color); border-radius: var(--b3-border-radius); margin-top: 16px;">`;
+        // 使用思源AttributeView的DOM结构
+        let html = `<div data-av-id="nocodb-${tableId}" data-av-type="table" data-node-id="${data.Id || 'unknown'}" data-type="NodeAttributeView">`;
 
-        // 面板标题
-        html += `<div class="block__icons" style="padding: 8px 16px; border-bottom: 1px solid var(--b3-border-color);">`;
-        html += `<div class="block__logo" style="display: flex; align-items: center;">`;
-        html += `<svg class="block__logoicon" style="width: 16px; height: 16px; margin-right: 8px;" viewBox="0 0 24 24" fill="currentColor">`;
-        html += `<path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6Z"/>`;
-        html += `</svg>`;
-        html += `<span style="color: var(--b3-theme-on-surface); font-weight: 500;">Nocodb 数据</span>`;
+        // 面板头部
+        html += `<div class="custom-attr__avheader">`;
+        html += `<div class="block__logo popover__block" style="max-width:calc(100% - 40px)">`;
+        html += `<svg class="block__logoicon"><use xlink:href="#iconDatabase"></use></svg>`;
+        html += `<span class="fn__ellipsis">🗄️ Nocodb 数据</span>`;
         html += `</div>`;
+        html += `<div class="fn__flex-1"></div>`;
         html += `</div>`;
-
-        // 面板内容
-        html += `<div style="padding: 16px;">`;
 
         // 检查是否有数据
         const hasData = Object.keys(data).some(key =>
@@ -369,47 +365,165 @@ export class NocodbConnectorPlugin extends Plugin {
 
         if (!hasData) {
             html += `<div style="text-align: center; color: var(--b3-theme-on-surface-light); font-style: italic; padding: 32px;">`;
-            html += `<svg style="width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.5;" viewBox="0 0 24 24" fill="currentColor">`;
-            html += `<path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4Z"/>`;
-            html += `</svg>`;
             html += `<div>暂无数据</div>`;
             html += `</div>`;
         } else {
-            // 渲染数据字段
+            // 渲染数据行
             for (const [columnName, columnConfig] of Object.entries(tableConfig.columns)) {
                 const value = data[columnName];
                 if (value !== undefined && value !== null && value !== '') {
-                    html += `<label class="b3-label b3-label--noborder" style="margin-bottom: 12px;">`;
-                    html += `<div class="fn__flex" style="margin-bottom: 4px;">`;
-                    html += `<span class="fn__flex-1" style="font-weight: 500; color: var(--b3-theme-on-surface);">${columnName}</span>`;
-                    if (columnConfig.readonly) {
-                        html += `<span style="font-size: 12px; color: var(--b3-theme-on-surface-light); opacity: 0.7;">只读</span>`;
-                    }
+                    html += `<div class="block__icons av__row" data-id="${data.Id || 'unknown'}" data-col-id="nocodb-${columnName}">`;
+
+                    // 拖拽图标
+                    html += `<div class="block__icon" draggable="true"><svg><use xlink:href="#iconDrag"></use></svg></div>`;
+
+                    // 字段标签
+                    html += `<div class="block__logo ariaLabel fn__pointer" data-type="editCol" data-position="parentW" aria-label="${columnName}">`;
+                    html += this.getFieldIcon(columnConfig.type);
+                    html += `<span>${columnName}</span>`;
                     html += `</div>`;
-                    html += `<div class="fn__hr"></div>`;
+
+                    // 字段值
+                    const readonlyClass = columnConfig.readonly ? ' custom-attr__avvalue--readonly' : '';
+                    html += `<div data-av-id="nocodb-${tableId}" data-col-id="nocodb-${columnName}" data-block-id="${data.Id || 'unknown'}" `;
+                    html += `data-id="nocodb-${columnName}-${data.Id || 'unknown'}" data-type="${this.getAvType(columnConfig.type)}" `;
+                    html += `data-options="[]" class="fn__flex-1 fn__flex custom-attr__avvalue${readonlyClass}">`;
 
                     if (columnConfig.readonly) {
-                        // 只读字段，直接显示值
-                        html += `<div style="padding: 8px; background-color: var(--b3-theme-surface-light); border-radius: 4px; color: var(--b3-theme-on-surface-light);">`;
-                        html += renderField(columnName, value, columnConfig);
-                        html += `</div>`;
+                        // 只读字段
+                        html += this.renderReadonlyAvField(columnName, value, columnConfig);
                     } else {
                         // 可编辑字段
-                        html += this.renderEditableFieldForPanel(columnName, value, columnConfig, tableId, data);
+                        html += this.renderEditableAvField(columnName, value, columnConfig, tableId, data);
                     }
 
-                    html += `</label>`;
+                    html += `</div>`;
+                    html += `</div>`;
                 }
             }
         }
 
-        html += `</div>`;
         html += `</div>`;
 
         element.innerHTML = html;
 
         // 绑定可编辑字段的事件
         this.bindEditableFieldEvents(element, tableId, data);
+    }
+
+    /**
+     * 获取字段图标
+     */
+    private getFieldIcon(fieldType: string): string {
+        switch (fieldType) {
+            case 'link':
+                return `<svg class="block__logoicon"><use xlink:href="#iconLink"></use></svg>`;
+            case 'date':
+                return `<svg class="block__logoicon"><use xlink:href="#iconCalendar"></use></svg>`;
+            case 'boolean':
+                return `<svg class="block__logoicon"><use xlink:href="#iconCheck"></use></svg>`;
+            case 'number':
+                return `<span class="block__logoicon">🔢</span>`;
+            case 'string':
+            default:
+                return `<svg class="block__logoicon"><use xlink:href="#iconText"></use></svg>`;
+        }
+    }
+
+    /**
+     * 获取AttributeView类型
+     */
+    private getAvType(fieldType: string): string {
+        switch (fieldType) {
+            case 'link':
+                return 'url';
+            case 'date':
+                return 'date';
+            case 'boolean':
+                return 'checkbox';
+            case 'number':
+                return 'number';
+            case 'string':
+            default:
+                return 'text';
+        }
+    }
+
+    /**
+     * 渲染只读AttributeView字段
+     */
+    private renderReadonlyAvField(columnName: string, value: any, config: any): string {
+        switch (config.type) {
+            case 'link':
+                const maxLinkLength = 50;
+                const displayUrl = value.length > maxLinkLength ? value.substring(0, maxLinkLength) + '...' : value;
+                return `<a href="${value}" target="_blank" class="av__celltext" title="${value}">${displayUrl}</a>`;
+
+            case 'date':
+                return `<span class="av__celltext" data-content="${value}">${this.formatDateForDisplay(value)}</span>`;
+
+            case 'boolean':
+                const iconHref = value ? '#iconCheck' : '#iconUncheck';
+                return `<svg class="av__checkbox"><use xlink:href="${iconHref}"></use></svg>`;
+
+            case 'number':
+                return `<span class="av__celltext">${value}</span>`;
+
+            case 'string':
+            default:
+                return `<span class="av__celltext">${value}</span>`;
+        }
+    }
+
+    /**
+     * 渲染可编辑AttributeView字段
+     */
+    private renderEditableAvField(columnName: string, value: any, config: any, tableId: string, data: any): string {
+        const fieldId = `nocodb-av-field-${columnName}-${Date.now()}`;
+
+        switch (config.type) {
+            case 'link':
+                return `<input type="url" id="${fieldId}" value="${value || ''}"
+                        class="av__celltext b3-text-field"
+                        placeholder="请输入链接地址"
+                        data-column="${columnName}">`;
+
+            case 'boolean':
+                const iconHref = value ? '#iconCheck' : '#iconUncheck';
+                return `<svg class="av__checkbox" id="${fieldId}" data-column="${columnName}" data-checked="${!!value}">
+                        <use xlink:href="${iconHref}"></use></svg>`;
+
+            case 'number':
+                return `<input type="number" id="${fieldId}" value="${value || ''}"
+                        class="av__celltext b3-text-field"
+                        data-column="${columnName}">`;
+
+            case 'string':
+            default:
+                return `<input type="text" id="${fieldId}" value="${value || ''}"
+                        class="av__celltext b3-text-field"
+                        placeholder="请输入内容"
+                        data-column="${columnName}">`;
+        }
+    }
+
+    /**
+     * 格式化日期显示
+     */
+    private formatDateForDisplay(dateString: string): string {
+        if (!dateString) return '';
+
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+        } catch (error) {
+            console.error('formatDateForDisplay error:', error);
+            return dateString;
+        }
     }
 
     /**
@@ -459,69 +573,114 @@ export class NocodbConnectorPlugin extends Plugin {
      * 绑定可编辑字段事件
      */
     private bindEditableFieldEvents(element: HTMLElement, tableId: string, originalData: any): void {
+        // 处理输入框
         const inputs = element.querySelectorAll('input[data-column], textarea[data-column]');
-
         inputs.forEach((input: HTMLInputElement | HTMLTextAreaElement) => {
-            const columnName = input.getAttribute('data-column');
-            if (!columnName) return;
+            this.bindInputFieldEvent(input, tableId, originalData);
+        });
 
-            // 防抖更新
-            let updateTimeout: NodeJS.Timeout;
+        // 处理复选框
+        const checkboxes = element.querySelectorAll('.av__checkbox[data-column]');
+        checkboxes.forEach((checkbox: Element) => {
+            this.bindCheckboxFieldEvent(checkbox, tableId, originalData);
+        });
+    }
 
-            const handleUpdate = () => {
-                clearTimeout(updateTimeout);
-                updateTimeout = setTimeout(async () => {
-                    try {
-                        let newValue: any = input.value;
+    /**
+     * 绑定输入框字段事件
+     */
+    private bindInputFieldEvent(input: HTMLInputElement | HTMLTextAreaElement, tableId: string, originalData: any): void {
+        const columnName = input.getAttribute('data-column');
+        if (!columnName) return;
 
-                        // 根据字段类型转换值
-                        const columnConfig = this.config.tableConfigs[tableId]?.columns[columnName];
-                        if (columnConfig) {
-                            switch (columnConfig.type) {
-                                case 'boolean':
-                                    newValue = (input as HTMLInputElement).checked;
-                                    break;
-                                case 'number':
-                                    newValue = parseFloat(input.value) || 0;
-                                    break;
-                                default:
-                                    newValue = input.value;
-                            }
+        // 防抖更新
+        let updateTimeout: NodeJS.Timeout;
+
+        const handleUpdate = () => {
+            clearTimeout(updateTimeout);
+            updateTimeout = setTimeout(async () => {
+                try {
+                    let newValue: any = input.value;
+
+                    // 根据字段类型转换值
+                    const columnConfig = this.config.tableConfigs[tableId]?.columns[columnName];
+                    if (columnConfig) {
+                        switch (columnConfig.type) {
+                            case 'number':
+                                newValue = parseFloat(input.value) || 0;
+                                break;
+                            default:
+                                newValue = input.value;
                         }
-
-                        // 解析nocodb ID - 从原始数据中获取正确的ID
-                        // 通常nocodb返回的数据中会有Id字段作为行ID
-                        const rowId = originalData.Id || originalData.id;
-                        if (!rowId) {
-                            console.error('NocodbConnector: No row ID found in data for update');
-                            return;
-                        }
-
-                        // 更新数据
-                        await this.apiClient.updateRecord(tableId, rowId, {
-                            [columnName]: newValue
-                        });
-
-                        console.log(`NocodbConnector: Updated ${columnName} to ${newValue}`);
-
-                        // 显示成功提示
-                        this.showUpdateSuccess(input);
-
-                    } catch (error) {
-                        console.error('NocodbConnector: Update field failed:', error);
-                        this.showUpdateError(input, error.message);
                     }
-                }, 1000); // 1秒防抖
-            };
 
-            // 绑定事件
-            if (input.type === 'checkbox') {
-                input.addEventListener('change', handleUpdate);
-            } else {
-                input.addEventListener('input', handleUpdate);
-                input.addEventListener('blur', handleUpdate);
+                    await this.updateNocodbField(tableId, originalData, columnName, newValue);
+                    this.showUpdateSuccess(input);
+
+                } catch (error) {
+                    console.error('NocodbConnector: Update field failed:', error);
+                    this.showUpdateError(input, error.message);
+                }
+            }, 1000); // 1秒防抖
+        };
+
+        input.addEventListener('input', handleUpdate);
+        input.addEventListener('blur', handleUpdate);
+    }
+
+    /**
+     * 绑定复选框字段事件
+     */
+    private bindCheckboxFieldEvent(checkbox: Element, tableId: string, originalData: any): void {
+        const columnName = checkbox.getAttribute('data-column');
+        if (!columnName) return;
+
+        checkbox.addEventListener('click', async () => {
+            try {
+                const currentChecked = checkbox.getAttribute('data-checked') === 'true';
+                const newValue = !currentChecked;
+
+                // 更新UI
+                checkbox.setAttribute('data-checked', newValue.toString());
+                const useElement = checkbox.querySelector('use');
+                if (useElement) {
+                    useElement.setAttribute('xlink:href', newValue ? '#iconCheck' : '#iconUncheck');
+                }
+
+                await this.updateNocodbField(tableId, originalData, columnName, newValue);
+                this.showUpdateSuccess(checkbox as HTMLElement);
+
+            } catch (error) {
+                console.error('NocodbConnector: Update checkbox failed:', error);
+                this.showUpdateError(checkbox as HTMLElement, error.message);
+
+                // 回滚UI状态
+                const currentChecked = checkbox.getAttribute('data-checked') === 'true';
+                checkbox.setAttribute('data-checked', (!currentChecked).toString());
+                const useElement = checkbox.querySelector('use');
+                if (useElement) {
+                    useElement.setAttribute('xlink:href', !currentChecked ? '#iconCheck' : '#iconUncheck');
+                }
             }
         });
+    }
+
+    /**
+     * 更新Nocodb字段
+     */
+    private async updateNocodbField(tableId: string, originalData: any, columnName: string, newValue: any): Promise<void> {
+        // 获取行ID
+        const rowId = originalData.Id || originalData.id;
+        if (!rowId) {
+            throw new Error('No row ID found in data for update');
+        }
+
+        // 更新数据
+        await this.apiClient.updateRecord(tableId, rowId, {
+            [columnName]: newValue
+        });
+
+        console.log(`NocodbConnector: Updated ${columnName} to ${newValue}`);
     }
 
     /**
@@ -614,7 +773,7 @@ export class NocodbConnectorPlugin extends Plugin {
 
         // 验证表格配置
         Object.entries(this.config.tableConfigs).forEach(([tableId, tableConfig]) => {
-            if (!tableConfig.columns || Object.keys(tableConfig.columns).length === 0) {
+            if (!(tableConfig as any).columns || Object.keys((tableConfig as any).columns).length === 0) {
                 console.warn(`NocodbConnector: No column configurations found for table ${tableId}`);
             }
         });
