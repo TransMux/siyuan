@@ -116,7 +116,8 @@ func appendDailyNoteBlock(c *gin.Context) {
 	if dataType == "markdown" || dataType == "dom" {
 		luteEngine2 := util.NewLute()
 		tree2 := luteEngine2.BlockDOM2Tree(data)
-		if tree2 != nil && tree2.Root != nil && tree2.Root.FirstChild != nil && tree2.Root.FirstChild.Type == ast.NodeList {
+		if tree2 != nil && tree2.Root != nil && tree2.Root.FirstChild != nil &&
+			(tree2.Root.FirstChild.Type == ast.NodeList || tree2.Root.FirstChild.Type == ast.NodeListItem) {
 			dailyTree, lerr := model.LoadTreeByBlockID(parentID)
 			if lerr == nil && dailyTree != nil && dailyTree.Root != nil && dailyTree.Root.LastChild != nil && dailyTree.Root.LastChild.Type == ast.NodeList {
 				parentID = dailyTree.Root.LastChild.ID
