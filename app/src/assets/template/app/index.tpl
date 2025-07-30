@@ -13,8 +13,12 @@
 <div id="loading" class="b3-dialog b3-dialog--open">
     <div class="b3-dialog__scrim" style="background-color: #1e1e1e"></div>
     <button onclick="window.location.reload()" id="loadingRefresh"
-            style="display: none;position: absolute;bottom: 16px;background: transparent;border: 1px solid #4285f4;color: #4285f4;border-radius: 6px;line-height: 20px;padding: 4px 8px;">
+            style="display: none;position: absolute;bottom: 16px;right: 16px;background: transparent;border: 1px solid #4285f4;color: #4285f4;border-radius: 6px;line-height: 20px;padding: 4px 8px;">
         Click to Refresh<br>点　击　刷　新
+    </button>
+    <button onclick="openDevTools()" id="loadingDevTools"
+            style="display: none;position: absolute;bottom: 16px;right: 140px;background: transparent;border: 1px solid #f44336;color: #f44336;border-radius: 6px;line-height: 20px;padding: 4px 8px;">
+        Open DevTools<br>打开开发工具
     </button>
 </div>
 <div id="toolbar" class="toolbar fn__flex"></div>
@@ -35,10 +39,21 @@
 <div id="message" class="b3-snackbars"></div>
 <div id="tooltip" class="tooltip fn__none"></div>
 <script>
+    function openDevTools() {
+        if (window.require) {
+            const { ipcRenderer } = window.require('electron');
+            ipcRenderer.send('siyuan-cmd', 'openDevTools');
+        }
+    }
+
     setTimeout(() => {
         const refreshElement = document.getElementById("loadingRefresh")
+        const devToolsElement = document.getElementById("loadingDevTools")
         if (refreshElement) {
             refreshElement.style.display = ""
+        }
+        if (devToolsElement) {
+            devToolsElement.style.display = ""
         }
     }, 7000)
 </script>
