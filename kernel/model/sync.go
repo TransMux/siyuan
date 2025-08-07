@@ -704,6 +704,37 @@ func getSyncIgnoreLines() (ret []string) {
 	return
 }
 
+// getSyncLazyLoadPatterns 读取 synclazyload 文件获取懒加载匹配规则
+func getSyncLazyLoadPatterns() (ret []string) {
+	lazy := filepath.Join(util.DataDir, ".siyuan", "synclazyload")
+	if err := os.MkdirAll(filepath.Dir(lazy), 0755); err != nil {
+		return
+	}
+	if !gulu.File.IsExist(lazy) {
+		// 创建空文件，方便用户自定义
+		if err := gulu.File.WriteFileSafer(lazy, nil, 0644); err != nil {
+			logging.LogErrorf("create synclazyload [%s] failed: %s", lazy, err)
+		}
+	}
+	data, err := os.ReadFile(lazy)
+	if err != nil {
+		logging.LogErrorf("read synclazyload [%s] failed: %s", lazy, err)
+		return
+	}
+	dataStr := strings.ReplaceAll(string(data), "\r\n", "\n")
+	lines := strings.Split(dataStr, "\n")
+
+	// 过滤空行和注释行
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line != "" && !strings.HasPrefix(line, "#") {
+			ret = append(ret, line)
+		}
+	}
+	ret = gulu.Str.RemoveDuplicatedElem(ret)
+	return
+}
+
 func IncSync() {
 	syncSameCount.Store(0)
 	planSyncAfter(time.Duration(Conf.Sync.Interval) * time.Second)

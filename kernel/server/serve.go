@@ -494,6 +494,14 @@ func serveAssets(ginServer *gin.Engine) {
 			}
 
 			if err != nil {
+				// 尝试懒加载未命中的资源
+				if model.TryLazyLoad(relativePath) {
+					// 懒加载成功，重新获取文件路径并返回
+					if newP, getErr := model.GetAssetAbsPath(relativePath); getErr == nil {
+						http.ServeFile(context.Writer, context.Request, newP)
+						return
+					}
+				}
 				context.Status(http.StatusNotFound)
 				return
 			}

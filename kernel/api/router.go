@@ -489,6 +489,12 @@ func ServeAPI(ginServer *gin.Engine) {
 	// ginServer.Handle("GET", "/j/:block_id", model.CheckAuth, mux.Jump)
 	ginServer.Handle("GET", "/j/:block_id", mux.Jump)
 
+	// 懒加载相关API
+	ginServer.Handle("POST", "/api/lazy/loadFile", model.CheckAuth, lazyLoadFile)
+	ginServer.Handle("POST", "/api/lazy/getFiles", model.CheckAuth, getLazyLoadingFiles)
+	ginServer.Handle("POST", "/api/lazy/setTimeout", model.CheckAuth, model.CheckAdminRole, setLazyLoadTimeout)
+	ginServer.Handle("POST", "/api/lazy/getStats", model.CheckAuth, getLazyLoadingStats)
+
 	// 插件数据库路由
 	ginServer.Handle("POST", "/api/db/query", model.CheckAuth, mux.HandleQuery)
 	ginServer.Handle("POST", "/api/db/exec", model.CheckAuth, mux.HandleExec)
