@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/88250/gulu"
 	"github.com/siyuan-note/dejavu"
 	"github.com/siyuan-note/eventbus"
 	"github.com/siyuan-note/logging"
@@ -23,11 +22,11 @@ const (
 
 // 懒加载文件信息
 type LazyLoadFileInfo struct {
-	FilePath    string
-	Status      string
-	Error       error
-	LoadTimeMs  int64
-	StartTime   time.Time
+	FilePath   string
+	Status     string
+	Error      error
+	LoadTimeMs int64
+	StartTime  time.Time
 }
 
 var (
@@ -75,10 +74,10 @@ func getOrCreateRepo() (*dejavu.Repo, error) {
 
 // LazyLoadResult 表示懒加载结果
 type LazyLoadResult struct {
-	Success     bool
-	FilePath    string
-	Error       error
-	LoadTimeMs  int64
+	Success    bool
+	FilePath   string
+	Error      error
+	LoadTimeMs int64
 }
 
 // TryLazyLoad 在资源文件未命中时尝试懒加载，返回是否加载成功
@@ -154,7 +153,7 @@ func TryLazyLoad(relativePath string) bool {
 
 		ctx := map[string]interface{}{
 			eventbus.CtxPushMsg: eventbus.CtxPushMsgToStatusBar,
-			eventbus.CtxFilePath: relativePath,
+			"filePath": relativePath,
 		}
 		if err := repo.LazyLoadFile(absPath, ctx); err != nil {
 			util.PushClearMsg(msgId)
@@ -256,14 +255,14 @@ func GetLazyLoadingStats() map[string]interface{} {
 		case LazyLoadStatusCompleted:
 			completedCount++
 			completedFiles[path] = map[string]interface{}{
-				"status":    info.Status,
+				"status":     info.Status,
 				"loadTimeMs": info.LoadTimeMs,
 			}
 		case LazyLoadStatusFailed:
 			failedCount++
 			failedFiles[path] = map[string]interface{}{
-				"status":    info.Status,
-				"error":     info.Error.Error(),
+				"status":     info.Status,
+				"error":      info.Error.Error(),
 				"loadTimeMs": info.LoadTimeMs,
 			}
 		}

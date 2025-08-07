@@ -1,9 +1,7 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/88250/gulu"
@@ -34,16 +32,16 @@ func lazyLoadFile(c *gin.Context) {
 
 	if success {
 		ret.Data = map[string]interface{}{
-			"success":  success,
-			"filePath": filePath,
+			"success":    success,
+			"filePath":   filePath,
 			"loadTimeMs": elapsed,
 		}
 	} else {
 		ret.Code = -1
 		ret.Msg = "lazy load failed"
 		ret.Data = map[string]interface{}{
-			"success":  success,
-			"filePath": filePath,
+			"success":    success,
+			"filePath":   filePath,
 			"loadTimeMs": elapsed,
 		}
 	}
