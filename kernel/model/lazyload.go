@@ -85,14 +85,14 @@ type LazyLoadResult struct {
 func TryLazyLoad(relativePath string) bool {
 	// 必须启用了数据仓库密钥才有懒加载环境
 	if len(Conf.Repo.Key) == 0 {
-		logging.LogWarnf("lazy load skipped: data repo key is empty")
+		logging.LogWarnf("[Lazy Load] skipped: data repo key is empty")
 		return false
 	}
 
 	// 解码URL编码的路径
 	decodedPath, err := url.QueryUnescape(relativePath)
 	if err != nil {
-		logging.LogWarnf("decode relative path failed: %s", err)
+		logging.LogWarnf("[Lazy Load] decode relative path failed: %s", err)
 		decodedPath = relativePath
 	}
 
@@ -133,19 +133,12 @@ func TryLazyLoad(relativePath string) bool {
 
 	// 异步执行懒加载
 	go func() {
-		defer func() {
-			statusPoolMutex.Lock()
-			defer statusPoolMutex.Unlock()
-
-			// 任务完成后立即从状态池中移除，避免重复加载
-			delete(lazyLoadStatusPool, decodedPath)
-		}()
 
 		startTime := time.Now()
 
 		repo, err := getOrCreateRepo()
 		if err != nil {
-			logging.LogErrorf("init repository for lazy load failed: %s", err)
+			logging.LogErrorf("[Lazy Load] init repository failed: %s", err)
 			updateLazyLoadStatus(decodedPath, LazyLoadStatusFailed, err)
 			return
 		}
@@ -157,7 +150,7 @@ func TryLazyLoad(relativePath string) bool {
 			"filePath":          decodedPath,
 		}
 		if err := repo.LazyLoadFile(absPath, ctx); err != nil {
-			logging.LogWarnf("lazy load file [%s] failed: %s", decodedPath, err)
+			logging.LogWarnf("[Lazy Load] file [%s] failed: %s", decodedPath, err)
 
 			// 向前端推送详细错误信息
 			util.PushErrMsg(fmt.Sprintf("懒加载文件失败: %s", err), 3000)
@@ -167,9 +160,12 @@ func TryLazyLoad(relativePath string) bool {
 
 		elapsed := time.Since(startTime).Milliseconds()
 		util.PushMsg(fmt.Sprintf("Lazy load file [%s] completed in %.2f seconds", decodedPath, float64(elapsed)/1000), 2000)
-		logging.LogInfof("lazy load file [%s] completed in %dms", decodedPath, elapsed)
+		logging.LogInfof("[Lazy Load] file [%s] completed in %dms", decodedPath, elapsed)
 
 		updateLazyLoadStatus(decodedPath, LazyLoadStatusCompleted, nil)
+
+		// 延迟清理状态，避免等待方在完成瞬间取不到状态导致误判
+		go scheduleLazyStatusCleanup(decodedPath, 5*time.Second)
 	}()
 
 	// 等待懒加载完成后再返回结果
@@ -190,12 +186,17 @@ func waitForLazyLoadCompletion(decodedPath string) bool {
 		time.Sleep(checkInterval)
 
 		statusPoolMutex.RLock()
-		_, exists := lazyLoadStatusPool[decodedPath]
+		fileInfo, exists := lazyLoadStatusPool[decodedPath]
 		statusPoolMutex.RUnlock()
 
-		if !exists {
-			// 文件信息已被清理，说明加载完成，可能失败或者成功，尝试加载
-			return true
+		if exists {
+			if fileInfo.Status == LazyLoadStatusCompleted {
+				return true
+			}
+			if fileInfo.Status == LazyLoadStatusFailed {
+				logging.LogWarnf("[Lazy Load] failed for file: %s, error: %v", decodedPath, fileInfo.Error)
+				return false
+			}
 		}
 
 		// 动态调整检查间隔，避免频繁检查
@@ -205,7 +206,7 @@ func waitForLazyLoadCompletion(decodedPath string) bool {
 		}
 	}
 
-	logging.LogWarnf("lazy load timed out waiting for file: %s", decodedPath)
+	logging.LogWarnf("[Lazy Load] timed out waiting for file: %s", decodedPath)
 	return false
 }
 
@@ -230,6 +231,14 @@ func updateLazyLoadStatus(decodedPath string, status string, err error) {
 	fileInfo.Status = status
 	fileInfo.Error = err
 	fileInfo.LoadTimeMs = time.Since(fileInfo.StartTime).Milliseconds()
+}
+
+// scheduleLazyStatusCleanup 延迟清理状态
+func scheduleLazyStatusCleanup(decodedPath string, delay time.Duration) {
+	time.Sleep(delay)
+	statusPoolMutex.Lock()
+	delete(lazyLoadStatusPool, decodedPath)
+	statusPoolMutex.Unlock()
 }
 
 // GetRepository 获取仓库实例，供 API 调用
