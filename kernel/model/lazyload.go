@@ -40,7 +40,7 @@ var (
 	statusPoolMutex    sync.RWMutex
 
 	// 懒加载超时配置，单位毫秒
-	lazyLoadTimeout = 5000 // 默认5秒
+	lazyLoadTimeout = 60000 // 默认60秒
 )
 
 // SetLazyLoadTimeout 设置懒加载超时时间
