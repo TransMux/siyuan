@@ -190,22 +190,12 @@ func waitForLazyLoadCompletion(decodedPath string) bool {
 		time.Sleep(checkInterval)
 
 		statusPoolMutex.RLock()
-		fileInfo, exists := lazyLoadStatusPool[decodedPath]
+		_, exists := lazyLoadStatusPool[decodedPath]
 		statusPoolMutex.RUnlock()
 
 		if !exists {
-			// 文件信息已被清理，假定加载失败
-			logging.LogWarnf("lazy load file not found in status pool: %s", decodedPath)
-			return false
-		}
-
-		if fileInfo.Status == LazyLoadStatusCompleted {
+			// 文件信息已被清理，说明加载完成，可能失败或者成功，尝试加载
 			return true
-		}
-
-		if fileInfo.Status == LazyLoadStatusFailed {
-			logging.LogWarnf("lazy load failed for file: %s, error: %v", decodedPath, fileInfo.Error)
-			return false
 		}
 
 		// 动态调整检查间隔，避免频繁检查
