@@ -166,7 +166,7 @@ func TryLazyLoad(relativePath string) bool {
 		}
 
 		elapsed := time.Since(startTime).Milliseconds()
-		util.PushMsg(fmt.Sprintf("懒加载文件成功: %s (耗时 %.2f 秒)", decodedPath, float64(elapsed)/1000), 2000)
+		util.PushMsg(fmt.Sprintf("Lazy load file [%s] completed in %.2f seconds", decodedPath, float64(elapsed)/1000), 2000)
 		logging.LogInfof("lazy load file [%s] completed in %dms", decodedPath, elapsed)
 
 		updateLazyLoadStatus(decodedPath, LazyLoadStatusCompleted, nil)
