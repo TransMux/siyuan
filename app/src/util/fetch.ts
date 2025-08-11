@@ -2,6 +2,8 @@ import {Constants} from "../constants";
 /// #if !BROWSER
 import {ipcRenderer} from "electron";
 /// #endif
+import {processMessage} from "./processMessage";
+import {kernelError} from "../dialog/processSystem";
 
 export const fetchPost = (url: string, data?: any, cb?: (response: IWebSocketData) => void, headers?: IObject) => {
     const init: RequestInit = {
@@ -67,22 +69,16 @@ export const fetchPost = (url: string, data?: any, cb?: (response: IWebSocketDat
             }
         }
         if (typeof response === "object" && typeof response.msg === "string" && typeof response.code === "number") {
-            // 使用动态导入避免循环依赖
-            import("./processMessage").then(({processMessage}) => {
-                if (processMessage(response) && cb) {
-                    cb(response);
-                }
-            });
+            if (processMessage(response) && cb) {
+                cb(response);
+            }
         } else if (cb) {
             cb(response);
         }
     }).catch((e) => {
         console.warn("fetch post failed [" + e + "], url [" + url + "]");
         if (url === "/api/transactions" && (e.message === "Failed to fetch" || e.message === "Unexpected end of JSON input")) {
-            // 使用动态导入避免循环依赖
-            import("../dialog/processSystem").then(({kernelError}) => {
-                kernelError();
-            });
+            kernelError();
             return;
         }
         /// #if !BROWSER
@@ -108,8 +104,6 @@ export const fetchSyncPost = async (url: string, data?: any) => {
     }
     const res = await fetch(url, init);
     const res2 = await res.json() as IWebSocketData;
-    // 使用动态导入避免循环依赖
-    const {processMessage} = await import("./processMessage");
     processMessage(res2);
     return res2;
 };
