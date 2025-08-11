@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -110,12 +111,12 @@ func TryLazyLoad(relativePath string) bool {
 		logging.LogWarnf("decode relative path failed: %s", err)
 		decodedPath = relativePath
 	}
-	
+
 	// 标准化路径格式（去除开头的斜杠，如果存在）
 	if len(decodedPath) > 0 && decodedPath[0] == '/' {
 		decodedPath = decodedPath[1:]
 	}
-	
+
 	// 创建新的加载任务
 	statusPoolMutex.Lock()
 	// 双重检查，防止竞态条件
@@ -142,13 +143,10 @@ func TryLazyLoad(relativePath string) bool {
 			statusPoolMutex.Lock()
 			defer statusPoolMutex.Unlock()
 
-			// 清理长时间完成的任务，防止内存泄漏
-			go func() {
-				time.Sleep(5 * time.Minute)
-				statusPoolMutex.Lock()
-				delete(lazyLoadStatusPool, relativePath)
-				statusPoolMutex.Unlock()
-			}()
+			// 任务完成后立即从状态池中移除，避免重复加载
+			statusPoolMutex.Lock()
+			delete(lazyLoadStatusPool, relativePath)
+			statusPoolMutex.Unlock()
 		}()
 
 		startTime := time.Now()
@@ -166,28 +164,48 @@ func TryLazyLoad(relativePath string) bool {
 
 		ctx := map[string]interface{}{
 			eventbus.CtxPushMsg: eventbus.CtxPushMsgToStatusBar,
-			"filePath": decodedPath,
+			"filePath":          decodedPath,
 		}
 		if err := repo.LazyLoadFile(absPath, ctx); err != nil {
 			// 确保使用正确的绝对路径变量 absPath
 			util.PushClearMsg(msgId)
-		logging.LogWarnf("lazy load file [%s] failed: %s", decodedPath, err)
-		// 向前端推送详细错误信息
-		util.PushErrMsg(fmt.Sprintf("懒加载文件失败: %s", err), 3000)
-		updateLazyLoadStatus(decodedPath, LazyLoadStatusFailed, err)
+			logging.LogWarnf("lazy load file [%s] failed: %s", decodedPath, err)
+
+			// 如果错误是文件未在最新索引中找到，输出索引列表
+			if errMsg := err.Error(); strings.Contains(errMsg, "not found in latest index") {
+				// 获取最新索引
+				latest, idxErr := repo.Latest()
+				if idxErr != nil {
+					logging.LogErrorf("get latest index failed: %s", idxErr)
+				} else {
+					// 获取索引中的文件列表
+					latestFiles, filesErr := repo.GetFiles(latest)
+					if filesErr != nil {
+						logging.LogErrorf("get latest files failed: %s", filesErr)
+					} else {
+						logging.LogWarnf("latest index contains %d files:", len(latestFiles))
+						for _, file := range latestFiles {
+							logging.LogWarnf("  - %s", file.Path)
+						}
+					}
+				}
+			}
+
+			// 向前端推送详细错误信息
+			util.PushErrMsg(fmt.Sprintf("懒加载文件失败: %s", err), 3000)
+			updateLazyLoadStatus(decodedPath, LazyLoadStatusFailed, err)
 			return
 		}
 
 		elapsed := time.Since(startTime).Milliseconds()
-		util.PushUpdateMsg(msgId, fmt.Sprintf("懒加载文件成功 (耗时 %.2f 秒)", float64(elapsed)/1000), 2000)
+		util.PushUpdateMsg(msgId, fmt.Sprintf("懒加载文件成功: %s (耗时 %.2f 秒)", decodedPath, float64(elapsed)/1000), 2000)
 		logging.LogInfof("lazy load file [%s] completed in %dms", decodedPath, elapsed)
 
 		updateLazyLoadStatus(decodedPath, LazyLoadStatusCompleted, nil)
 	}()
 
-	// 立即返回，让调用者知道加载已开始
-	// 实际加载结果将通过状态池异步更新
-	return true
+	// 等待懒加载完成后再返回结果
+	return waitForLazyLoadCompletion(relativePath)
 }
 
 // waitForLazyLoadCompletion 等待懒加载完成

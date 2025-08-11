@@ -48,8 +48,18 @@ func statAsset(c *gin.Context) {
 		var err error
 		p, err = model.GetAssetAbsPath(path)
 		if err != nil {
-			ret.Code = 1
-			return
+			// 尝试懒加载文件
+			if model.TryLazyLoad(path) {
+				// 再次尝试获取绝对路径
+				p, err = model.GetAssetAbsPath(path)
+				if err != nil {
+					ret.Code = 1
+					return
+				}
+			} else {
+				ret.Code = 1
+				return
+			}
 		}
 
 	} else if strings.HasPrefix(path, "file://") {
@@ -115,6 +125,24 @@ func getImageOCRText(c *gin.Context) {
 
 	path := arg["path"].(string)
 
+	// 检查文件是否存在，如果不存在则尝试懒加载
+	_, err := model.GetAssetAbsPath(path)
+	if err != nil {
+		// 尝试懒加载文件
+		if !model.TryLazyLoad(path) {
+			ret.Code = -1
+			ret.Msg = err.Error()
+			return
+		}
+		// 再次检查文件是否存在
+		_, err = model.GetAssetAbsPath(path)
+		if err != nil {
+			ret.Code = -1
+			ret.Msg = err.Error()
+			return
+		}
+	}
+
 	ret.Data = map[string]interface{}{
 		"text": util.GetAssetText(path),
 	}
@@ -130,6 +158,25 @@ func setImageOCRText(c *gin.Context) {
 	}
 
 	path := arg["path"].(string)
+
+	// 检查文件是否存在，如果不存在则尝试懒加载
+	_, err := model.GetAssetAbsPath(path)
+	if err != nil {
+		// 尝试懒加载文件
+		if !model.TryLazyLoad(path) {
+			ret.Code = -1
+			ret.Msg = err.Error()
+			return
+		}
+		// 再次检查文件是否存在
+		_, err = model.GetAssetAbsPath(path)
+		if err != nil {
+			ret.Code = -1
+			ret.Msg = err.Error()
+			return
+		}
+	}
+
 	text := arg["text"].(string)
 	util.SetAssetText(path, text)
 
@@ -153,6 +200,24 @@ func ocr(c *gin.Context) {
 
 	path := arg["path"].(string)
 
+	// 检查文件是否存在，如果不存在则尝试懒加载
+	_, err := model.GetAssetAbsPath(path)
+	if err != nil {
+		// 尝试懒加载文件
+		if !model.TryLazyLoad(path) {
+			ret.Code = -1
+			ret.Msg = err.Error()
+			return
+		}
+		// 再次检查文件是否存在
+		_, err = model.GetAssetAbsPath(path)
+		if err != nil {
+			ret.Code = -1
+			ret.Msg = err.Error()
+			return
+		}
+	}
+
 	ocrJSON := util.OcrAsset(path)
 	ret.Data = map[string]interface{}{
 		"text":    util.GetOcrJsonText(ocrJSON),
@@ -171,6 +236,27 @@ func renameAsset(c *gin.Context) {
 
 	oldPath := arg["oldPath"].(string)
 	newName := arg["newName"].(string)
+
+	// 检查文件是否存在，如果不存在则尝试懒加载
+	_, err := model.GetAssetAbsPath(oldPath)
+	if err != nil {
+		// 尝试懒加载文件
+		if !model.TryLazyLoad(oldPath) {
+			ret.Code = -1
+			ret.Msg = err.Error()
+			ret.Data = map[string]interface{}{"closeTimeout": 5000}
+			return
+		}
+		// 再次检查文件是否存在
+		_, err = model.GetAssetAbsPath(oldPath)
+		if err != nil {
+			ret.Code = -1
+			ret.Msg = err.Error()
+			ret.Data = map[string]interface{}{"closeTimeout": 5000}
+			return
+		}
+	}
+
 	newPath, err := model.RenameAsset(oldPath, newName)
 	if err != nil {
 		ret.Code = -1
@@ -199,6 +285,28 @@ func getDocImageAssets(c *gin.Context) {
 		ret.Msg = err.Error()
 		return
 	}
+
+	// 检查每个资产是否存在，如果不存在则尝试懒加载
+	for i, assetPath := range assets {
+		_, err := model.GetAssetAbsPath(assetPath)
+		if err != nil {
+			// 尝试懒加载文件
+			if model.TryLazyLoad(assetPath) {
+				// 再次检查文件是否存在
+				_, err = model.GetAssetAbsPath(assetPath)
+				if err != nil {
+					// 如果仍然不存在，从结果中移除该资产
+					assets = append(assets[:i], assets[i+1:]...)
+					i--
+				}
+			} else {
+				// 如果懒加载失败，从结果中移除该资产
+				assets = append(assets[:i], assets[i+1:]...)
+				i--
+			}
+		}
+	}
+
 	ret.Data = assets
 }
 
@@ -218,6 +326,28 @@ func getDocAssets(c *gin.Context) {
 		ret.Msg = err.Error()
 		return
 	}
+
+	// 检查每个资产是否存在，如果不存在则尝试懒加载
+	for i, assetPath := range assets {
+		_, err := model.GetAssetAbsPath(assetPath)
+		if err != nil {
+			// 尝试懒加载文件
+			if model.TryLazyLoad(assetPath) {
+				// 再次检查文件是否存在
+				_, err = model.GetAssetAbsPath(assetPath)
+				if err != nil {
+					// 如果仍然不存在，从结果中移除该资产
+					assets = append(assets[:i], assets[i+1:]...)
+					i--
+				}
+			} else {
+				// 如果懒加载失败，从结果中移除该资产
+				assets = append(assets[:i], assets[i+1:]...)
+				i--
+			}
+		}
+	}
+
 	ret.Data = assets
 }
 
@@ -286,7 +416,16 @@ func resolveFileAnnotationAbsPath(assetRelPath string) (ret string, err error) {
 	filePath := strings.TrimSuffix(assetRelPath, ".sya")
 	absPath, err := model.GetAssetAbsPath(filePath)
 	if err != nil {
-		return
+		// 尝试懒加载文件
+		if model.TryLazyLoad(filePath) {
+			// 再次尝试获取绝对路径
+			absPath, err = model.GetAssetAbsPath(filePath)
+			if err != nil {
+				return
+			}
+		} else {
+			return
+		}
 	}
 	dir := filepath.Dir(absPath)
 	base := filepath.Base(assetRelPath)
@@ -361,10 +500,22 @@ func resolveAssetPath(c *gin.Context) {
 	path := arg["path"].(string)
 	p, err := model.GetAssetAbsPath(path)
 	if err != nil {
-		ret.Code = -1
-		ret.Msg = err.Error()
-		ret.Data = map[string]interface{}{"closeTimeout": 3000}
-		return
+		// 尝试懒加载文件
+		if model.TryLazyLoad(path) {
+			// 再次尝试获取绝对路径
+			p, err = model.GetAssetAbsPath(path)
+			if err != nil {
+				ret.Code = -1
+				ret.Msg = err.Error()
+				ret.Data = map[string]interface{}{"closeTimeout": 3000}
+				return
+			}
+		} else {
+			ret.Code = -1
+			ret.Msg = err.Error()
+			ret.Data = map[string]interface{}{"closeTimeout": 3000}
+			return
+		}
 	}
 	ret.Data = p
 	return
