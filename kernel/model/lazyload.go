@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/url"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -152,37 +151,13 @@ func TryLazyLoad(relativePath string) bool {
 		}
 
 		absPath := filepath.Join(repo.DataPath, decodedPath)
-		// 推送前端提示
-		msgId := util.PushMsg(fmt.Sprintf("正在下载懒加载文件: %s", decodedPath), 5000)
 
 		ctx := map[string]interface{}{
 			eventbus.CtxPushMsg: eventbus.CtxPushMsgToStatusBar,
 			"filePath":          decodedPath,
 		}
 		if err := repo.LazyLoadFile(absPath, ctx); err != nil {
-			// 确保使用正确的绝对路径变量 absPath
-			util.PushClearMsg(msgId)
 			logging.LogWarnf("lazy load file [%s] failed: %s", decodedPath, err)
-
-			// 如果错误是文件未在最新索引中找到，输出索引列表
-			if errMsg := err.Error(); strings.Contains(errMsg, "not found in latest index") {
-				// 获取最新索引
-				latest, idxErr := repo.Latest()
-				if idxErr != nil {
-					logging.LogErrorf("get latest index failed: %s", idxErr)
-				} else {
-					// 获取索引中的文件列表
-					latestFiles, filesErr := repo.GetFiles(latest)
-					if filesErr != nil {
-						logging.LogErrorf("get latest files failed: %s", filesErr)
-					} else {
-						logging.LogWarnf("latest index contains %d files:", len(latestFiles))
-						for _, file := range latestFiles {
-							logging.LogWarnf("  - %s", file.Path)
-						}
-					}
-				}
-			}
 
 			// 向前端推送详细错误信息
 			util.PushErrMsg(fmt.Sprintf("懒加载文件失败: %s", err), 3000)
@@ -191,7 +166,7 @@ func TryLazyLoad(relativePath string) bool {
 		}
 
 		elapsed := time.Since(startTime).Milliseconds()
-		util.PushUpdateMsg(msgId, fmt.Sprintf("懒加载文件成功: %s (耗时 %.2f 秒)", decodedPath, float64(elapsed)/1000), 2000)
+		util.PushMsg(fmt.Sprintf("懒加载文件成功: %s (耗时 %.2f 秒)", decodedPath, float64(elapsed)/1000), 2000)
 		logging.LogInfof("lazy load file [%s] completed in %dms", decodedPath, elapsed)
 
 		updateLazyLoadStatus(decodedPath, LazyLoadStatusCompleted, nil)
