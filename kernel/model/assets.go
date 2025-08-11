@@ -64,20 +64,20 @@ type DownloadTask struct {
 }
 
 type DownloadResult struct {
-	Task        DownloadTask
-	Success     bool
-	Error       error
-	LocalPath   string
-	Size        int64
-	Data        []byte
-	Name        string
+	Task      DownloadTask
+	Success   bool
+	Error     error
+	LocalPath string
+	Size      int64
+	Data      []byte
+	Name      string
 }
 
 // 并发下载配置
 const (
-	DefaultConcurrentDownloads = 10  // 默认并发下载数
+	DefaultConcurrentDownloads = 10 // 默认并发下载数
 	MaxConcurrentDownloads     = 20 // 最大并发下载数
-	DownloadTimeout           = 60 * time.Second
+	DownloadTimeout            = 60 * time.Second
 )
 
 func HandleAssetsRemoveEvent(assetAbsPath string) {
@@ -234,7 +234,17 @@ func processLocalFile(task DownloadTask, assetsDirPath string) DownloadResult {
 	name = util.FilterUploadFileName(name)
 	name = "network-asset-" + name
 	name = util.AssetName(name)
-	writePath := filepath.Join(assetsDirPath, name)
+
+	// Use date-based subfolder (YYYY/MM)
+	timeString := time.Now().Format("2006/01")
+	datedAssetsDirPath := filepath.Join(assetsDirPath, timeString)
+	if !gulu.File.IsExist(datedAssetsDirPath) {
+		if err := os.MkdirAll(datedAssetsDirPath, 0755); err != nil {
+			result.Error = fmt.Errorf("create dated assets dir failed: %s", err)
+			return result
+		}
+	}
+	writePath := filepath.Join(datedAssetsDirPath, name)
 
 	if err := filelock.Copy(u, writePath); err != nil {
 		result.Error = fmt.Errorf("copy local file failed: %s", err)
@@ -242,7 +252,7 @@ func processLocalFile(task DownloadTask, assetsDirPath string) DownloadResult {
 	}
 
 	result.Success = true
-	result.LocalPath = "assets/" + name
+	result.LocalPath = "assets/" + timeString + "/" + name
 	return result
 }
 
@@ -340,7 +350,17 @@ func processNetworkFile(task DownloadTask, browserClient *req.Client, assetsDirP
 	}
 	name = util.AssetName(name)
 	name = "network-asset-" + name
-	writePath := filepath.Join(assetsDirPath, name)
+
+	// Use date-based subfolder (YYYY/MM)
+	timeString := time.Now().Format("2006/01")
+	datedAssetsDirPath := filepath.Join(assetsDirPath, timeString)
+	if !gulu.File.IsExist(datedAssetsDirPath) {
+		if err := os.MkdirAll(datedAssetsDirPath, 0755); err != nil {
+			result.Error = fmt.Errorf("create dated assets dir failed: %s", err)
+			return result
+		}
+	}
+	writePath := filepath.Join(datedAssetsDirPath, name)
 
 	if err := filelock.WriteFile(writePath, data); err != nil {
 		result.Error = fmt.Errorf("write file failed: %s", err)
@@ -348,7 +368,7 @@ func processNetworkFile(task DownloadTask, browserClient *req.Client, assetsDirP
 	}
 
 	result.Success = true
-	result.LocalPath = "assets/" + name
+	result.LocalPath = "assets/" + timeString + "/" + name
 	result.Data = data
 	result.Name = name
 	result.Size = int64(len(data))
@@ -386,9 +406,9 @@ func NetAssets2LocalAssets(rootID string, onlyImg bool, originalURL string) (err
 		for _, dest := range dests {
 			// 只处理网络链接和本地文件链接
 			if strings.HasPrefix(strings.ToLower(dest), "file://") ||
-			   strings.HasPrefix(strings.ToLower(dest), "https://") ||
-			   strings.HasPrefix(strings.ToLower(dest), "http://") ||
-			   strings.HasPrefix(dest, "//") {
+				strings.HasPrefix(strings.ToLower(dest), "https://") ||
+				strings.HasPrefix(strings.ToLower(dest), "http://") ||
+				strings.HasPrefix(dest, "//") {
 
 				task := DownloadTask{
 					URL:         dest,
