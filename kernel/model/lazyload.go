@@ -144,9 +144,7 @@ func TryLazyLoad(relativePath string) bool {
 			defer statusPoolMutex.Unlock()
 
 			// 任务完成后立即从状态池中移除，避免重复加载
-			statusPoolMutex.Lock()
 			delete(lazyLoadStatusPool, relativePath)
-			statusPoolMutex.Unlock()
 		}()
 
 		startTime := time.Now()
@@ -212,9 +210,14 @@ func TryLazyLoad(relativePath string) bool {
 func waitForLazyLoadCompletion(relativePath string) bool {
 	timeout := time.Duration(lazyLoadTimeout) * time.Millisecond
 	startTime := time.Now()
+	lastCheckTime := startTime
+
+	// 指数退避策略，初始检查间隔为100ms
+	checkInterval := 100 * time.Millisecond
+	maxCheckInterval := 1 * time.Second
 
 	for time.Since(startTime) < timeout {
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(checkInterval)
 
 		statusPoolMutex.RLock()
 		fileInfo, exists := lazyLoadStatusPool[relativePath]
@@ -222,6 +225,7 @@ func waitForLazyLoadCompletion(relativePath string) bool {
 
 		if !exists {
 			// 文件信息已被清理，假定加载失败
+			logging.LogWarnf("lazy load file not found in status pool: %s", relativePath)
 			return false
 		}
 
@@ -230,12 +234,27 @@ func waitForLazyLoadCompletion(relativePath string) bool {
 		}
 
 		if fileInfo.Status == LazyLoadStatusFailed {
+			logging.LogWarnf("lazy load failed for file: %s, error: %v", relativePath, fileInfo.Error)
 			return false
+		}
+
+		// 动态调整检查间隔，避免频繁检查
+		if time.Since(lastCheckTime) > checkInterval*2 {
+			checkInterval = min(checkInterval*2, maxCheckInterval)
+			lastCheckTime = time.Now()
 		}
 	}
 
 	logging.LogWarnf("lazy load timed out waiting for file: %s", relativePath)
 	return false
+}
+
+// min 返回两个时间的较小值
+func min(a, b time.Duration) time.Duration {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 // updateLazyLoadStatus 更新懒加载状态
