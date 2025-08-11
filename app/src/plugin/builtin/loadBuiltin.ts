@@ -4,7 +4,6 @@ import { QuickAppendPlugin } from "./QuickAppend";
 import { MuxGlobalOverlayPlugin } from "./MuxGlobalOverlay";
 import { QuickSearchPlugin } from "./QuickSearch";
 import { GatewayConnectorPlugin } from "./GatewayConnector";
-import { DocumentStylerPlugin } from "./DocumentStyler";
 
 export interface IBuiltinPluginInfo {
     name: string;
@@ -38,12 +37,6 @@ export const BUILTIN_PLUGIN_INFOS: IBuiltinPluginInfo[] = [
         description: "连接 Gateway 服务",
         iconURL: "/stage/images/icon.png",
     },
-    {
-        name: "documentStyler",
-        displayName: "Document Styler",
-        description: "文档样式设置，支持标题自动编号和图片表格交叉引用",
-        iconURL: "/stage/images/icon.png",
-    },
 ];
 
 // Map of builtin plugin classes
@@ -52,7 +45,6 @@ export const BUILTIN_PLUGIN_CLASSES: Record<string, new (options: { app: App; na
     muxGlobalOverlay: MuxGlobalOverlayPlugin,
     quickSearch: QuickSearchPlugin,
     gatewayConnector: GatewayConnectorPlugin,
-    documentStyler: DocumentStylerPlugin,
 };
 
 /**
