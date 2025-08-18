@@ -226,7 +226,7 @@ const setHTML = (options: {
     highlightRender(protyle.wysiwyg.element);
     avRender(protyle.wysiwyg.element, protyle);
     blockRender(protyle, protyle.wysiwyg.element);
-    avAttrRender(protyle.wysiwyg.element);
+    // avAttrRender(protyle.wysiwyg.element);
     if (options.action.includes(Constants.CB_GET_HISTORY)) {
         return;
     }
