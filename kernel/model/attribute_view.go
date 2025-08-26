@@ -38,7 +38,6 @@ import (
 	"github.com/siyuan-note/siyuan/kernel/av"
 	"github.com/siyuan-note/siyuan/kernel/cache"
 	"github.com/siyuan-note/siyuan/kernel/filesys"
-	"github.com/siyuan-note/siyuan/kernel/mux"
 	"github.com/siyuan-note/siyuan/kernel/sql"
 	"github.com/siyuan-note/siyuan/kernel/treenode"
 	"github.com/siyuan-note/siyuan/kernel/util"
@@ -3161,18 +3160,6 @@ func addAttributeViewBlock(now int64, avID, dbBlockID, viewID, groupID, previous
 
 	regenAttrViewGroups(attrView)
 	err = av.SaveAttributeView(attrView)
-	if err != nil {
-		mux.SendWebhook("addAttributeViewBlock", map[string]interface{}{
-			"now":                now,
-			"avID":               avID,
-			"blockID":            blockID,
-			"previousBlockID":    previousBlockID,
-			"addingBlockID":      addingBlockID,
-			"addingBlockContent": addingBlockContent,
-			"isDetached":         isDetached,
-			"ignoreFillFilter":   ignoreFillFilter,
-		})
-	}
 	return
 }
 
