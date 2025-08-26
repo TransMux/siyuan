@@ -272,6 +272,9 @@ func processNetworkFile(task DownloadTask, browserClient *req.Client, assetsDirP
 		}
 	}
 
+	// 处理 HTML 实体，例如 &amp; 应该转换为 &，否则签名参数会失效导致 403
+	u = strings.TrimSpace(html.UnescapeString(u))
+
 	displayU := u
 	if 64 < len(displayU) {
 		displayU = displayU[:64] + "..."
@@ -287,6 +290,7 @@ func processNetworkFile(task DownloadTask, browserClient *req.Client, assetsDirP
 		lowerU := strings.ToLower(u)
 		if strings.Contains(lowerU, "bilivideo.com") || strings.Contains(lowerU, "bilibili.com") {
 			request.SetHeader("Referer", "https://www.bilibili.com")
+			request.SetHeader("Origin", "https://www.bilibili.com")
 		}
 	}
 
