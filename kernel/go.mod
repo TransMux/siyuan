@@ -168,7 +168,6 @@ require (
 	github.com/richardlehane/msoleps v1.0.4 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
-	github.com/siyuan-note/dataparser v0.0.0-20250804100744-b41253b236f3 // indirect
 	github.com/ssor/bom v0.0.0-20170718123548-6386211fdfcf // indirect
 	github.com/teambition/rrule-go v1.8.2 // indirect
 	github.com/tetratelabs/wazero v1.9.0 // indirect

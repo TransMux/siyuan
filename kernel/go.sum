@@ -38,6 +38,8 @@ github.com/Masterminds/sprig/v3 v3.3.0/go.mod h1:Zy1iXRYNqNLUolqCpL4uhk6SHUMAOSC
 github.com/PuerkitoBio/goquery v1.4.1/go.mod h1:T9ezsOHcCrDCgA8aF1Cqr3sSYbO/xgdy8/R/XiIMAhA=
 github.com/PuerkitoBio/goquery v1.10.3 h1:pFYcNSqHxBD06Fpj/KsbStFRsgRATgnf3LeXiUkhzPo=
 github.com/PuerkitoBio/goquery v1.10.3/go.mod h1:tMUX0zDMHXYlAQk6p35XxQMqMweEKB7iK7iLNd4RH4Y=
+github.com/TransMux/dejavu v0.0.0-20250826032745-26ce113c06bf h1:ca1q06MeoshVGojTAPpL8lco1Myg/XJ47OZEeK+6feU=
+github.com/TransMux/dejavu v0.0.0-20250826032745-26ce113c06bf/go.mod h1:VRQL1YRGxZn6QOV0ZugkG1V8TrJvI4UBpio+Bo1G6BQ=
 github.com/Xuanwo/go-locale v1.1.3 h1:EWZZJJt5rqPHHbqPRH1zFCn5D7xHjjebODctA4aUO3A=
 github.com/Xuanwo/go-locale v1.1.3/go.mod h1:REn+F/c+AtGSWYACBSYZgl23AP+0lfQC+SEFPN+hj30=
 github.com/advancedlogic/GoOse v0.0.0-20231203033844-ae6b36caf275 h1:Kuhf+w+ilOGoXaR4O4nZ6Dp+ZS83LdANUjwyMXsPGX4=
@@ -372,8 +374,6 @@ github.com/shurcooL/gofontwoff v0.0.0-20181114050219-180f79e6909d/go.mod h1:05Ut
 github.com/simplereach/timeutils v1.2.0/go.mod h1:VVbQDfN/FHRZa1LSqcwo4kNZ62OOyqLLGQKYB3pB0Q8=
 github.com/siyuan-note/dataparser v0.0.0-20250804100744-b41253b236f3 h1:EH063L0HD1f82DvddurUmEXS0obXypv8pQrcaC/zNgI=
 github.com/siyuan-note/dataparser v0.0.0-20250804100744-b41253b236f3/go.mod h1:8lb+SsWAPQblGbjmwEBsBdJszMCcLeECtB95fv6mReg=
-github.com/siyuan-note/dejavu v0.0.0-20250823083709-147ab94b046a h1:VBsNIc1MGVvHbHl1NMe4RMg+VVyCC4qVYtjpP2cC9hQ=
-github.com/siyuan-note/dejavu v0.0.0-20250823083709-147ab94b046a/go.mod h1:9u6fFkH30VBjtozHDjNA/MZCULOuDtiPfGhV7DbYzww=
 github.com/siyuan-note/encryption v0.0.0-20250326023622-24a67e6956ec h1:D8Sjwa+7WxP3XrIBscT4PxBZZddZ83/O+5nX1sq6g6g=
 github.com/siyuan-note/encryption v0.0.0-20250326023622-24a67e6956ec/go.mod h1:6iAxXPOOAG3+M4bCiKQZTQ+n4gSUx/OyHhsP57dJlS8=
 github.com/siyuan-note/eventbus v0.0.0-20240627125516-396fdb0f0f97 h1:lM5v8BfNtbOL5jYwhCdMYBcYtr06IYBKjjSLAPMKTM8=
