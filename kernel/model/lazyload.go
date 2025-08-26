@@ -115,11 +115,16 @@ func TryLazyLoad(relativePath string) bool {
 	statusPoolMutex.Lock()
 	// 双重检查，防止竞态条件
 	if fileInfo, exists := lazyLoadStatusPool[decodedPath]; exists {
-		statusPoolMutex.Unlock()
+		if fileInfo.Status == LazyLoadStatusCompleted {
+			statusPoolMutex.Unlock()
+			return true
+		}
 		if fileInfo.Status == LazyLoadStatusLoading {
+			statusPoolMutex.Unlock()
 			return waitForLazyLoadCompletion(decodedPath)
 		}
-		return fileInfo.Status == LazyLoadStatusCompleted
+		// Failed/Idle: 重新发起加载，先移除旧状态
+		delete(lazyLoadStatusPool, decodedPath)
 	}
 
 	// 初始化文件信息
