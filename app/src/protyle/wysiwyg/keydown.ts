@@ -119,7 +119,7 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
 
         // https://ld246.com/article/1694506408293
         const endElement = hasClosestBlock(range.endContainer);
-        if (!matchHotKey("⌘C", event) && endElement && !nodeElement.isSameNode(endElement)) {
+        if (!matchHotKey("⌘C", event) && endElement && nodeElement !== endElement) {
             event.stopPropagation();
             event.preventDefault();
             return;
@@ -544,7 +544,7 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                 centerElement = document.elementFromPoint(contentRect.x + contentRect.width / 2, contentRect.y + contentRect.height / 2 + Constants.SIZE_TOOLBAR_HEIGHT);
             }
             const centerBlockElement = hasClosestBlock(centerElement);
-            if (centerBlockElement && !centerBlockElement.isSameNode(nodeElement)) {
+            if (centerBlockElement && centerBlockElement !== nodeElement) {
                 focusBlock(centerBlockElement, undefined, false);
             }
             event.stopPropagation();
@@ -598,7 +598,7 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                         return;
                     } else if (!previousSibling &&
                         range.startContainer.parentElement.previousSibling &&
-                        range.startContainer.parentElement.previousSibling.isSameNode(range.startContainer.parentElement.previousElementSibling) &&
+                        range.startContainer.parentElement.previousSibling === range.startContainer.parentElement.previousElementSibling &&
                         range.startContainer.parentElement.previousElementSibling.getAttribute("data-type")?.indexOf("inline-math") > -1
                     ) {
                         inlineMathMenu(protyle, range.startContainer.parentElement.previousElementSibling);
@@ -650,10 +650,10 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
             } else if (event.key === "ArrowUp") {
                 const firstEditElement = getContenteditableElement(protyle.wysiwyg.element.firstElementChild);
                 if ((
-                    !getPreviousBlock(nodeElement) &&  // 列表第一个块为嵌入块，第二个块为段落块，上键应选中第一个块 https://ld246.com/article/1652667912155
-                    nodeElement.contains(firstEditElement)
-                ) ||
-                    (!firstEditElement && nodeElement.isSameNode(protyle.wysiwyg.element.firstElementChild))) {
+                        !getPreviousBlock(nodeElement) &&  // 列表第一个块为嵌入块，第二个块为段落块，上键应选中第一个块 https://ld246.com/article/1652667912155
+                        nodeElement.contains(firstEditElement)
+                    ) ||
+                    (!firstEditElement && nodeElement === protyle.wysiwyg.element.firstElementChild)) {
                     // 不能用\n判断，否则文字过长折行将错误 https://github.com/siyuan-note/siyuan/issues/6156
                     if (getSelectionPosition(nodeEditableElement, range).top - nodeEditableElement.getBoundingClientRect().top < 20 || nodeElement.classList.contains("av")) {
                         if (protyle.title && protyle.title.editElement &&
@@ -685,7 +685,7 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                                     scrollCenter(protyle, previousElement);
                                     event.stopPropagation();
                                     event.preventDefault();
-                                } else if (foldElement && foldElement.getAttribute("data-type") !== "NodeListItem") {
+                                } else if (foldElement) {
                                     // 遇到折叠块
                                     foldElement.scrollTop = 0;
                                     focusBlock(foldElement, undefined, true);
@@ -695,8 +695,8 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                                 } else {
                                     // 修正光标上移至 \n 结尾的块时落点错误 https://github.com/siyuan-note/siyuan/issues/14443
                                     const prevEditableElement = getContenteditableElement(previousElement) as HTMLElement;
-                                    if (prevEditableElement && prevEditableElement.lastChild.nodeType === 3 &&
-                                        prevEditableElement.lastChild.textContent.endsWith("\n")) {
+                                    if (prevEditableElement && prevEditableElement.lastChild?.nodeType === 3 &&
+                                        prevEditableElement.lastChild?.textContent.endsWith("\n")) {
                                         //  不能移除 /n, 否则两个 /n 导致界面异常
                                         focusBlock(previousElement, undefined, false);
                                         event.preventDefault();
@@ -708,7 +708,7 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                         }
                     }
                 }
-            } else if (selectText === "" && (event.key === "ArrowDown" || event.key === "ArrowRight") && nodeElement.isSameNode(getLastBlock(protyle.wysiwyg.element.lastElementChild)) &&
+            } else if (selectText === "" && (event.key === "ArrowDown" || event.key === "ArrowRight") && nodeElement === getLastBlock(protyle.wysiwyg.element.lastElementChild) &&
                 // 表格无法右移动 https://ld246.com/article/1631434502215
                 !hasClosestByTag(range.startContainer, "TD") && !hasClosestByTag(range.startContainer, "TH")) {
                 // 页面按向下/右箭头丢失焦点 https://ld246.com/article/1629954026096
@@ -719,7 +719,7 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                     event.preventDefault();
                     focusByRange(range);
                 }
-            } else if (selectText === "" && event.key === "ArrowLeft" && nodeElement.isSameNode(getFirstBlock(protyle.wysiwyg.element.firstElementChild))) {
+            } else if (selectText === "" && event.key === "ArrowLeft" && nodeElement === getFirstBlock(protyle.wysiwyg.element.firstElementChild)) {
                 // 页面向左箭头丢失焦点 https://github.com/siyuan-note/siyuan/issues/2768
                 const firstEditElement = getContenteditableElement(nodeElement);
                 if (firstEditElement && getSelectionOffset(firstEditElement, undefined, range).start === 0) {
@@ -730,7 +730,7 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
             }
             if (event.key === "ArrowDown") {
                 if (nodeEditableElement?.innerText.trimRight().substr(position.start).indexOf("\n") === -1 &&
-                    nodeElement.isSameNode(protyle.wysiwyg.element.lastElementChild)) {
+                    nodeElement === protyle.wysiwyg.element.lastElementChild) {
                     setLastNodeRange(getContenteditableElement(nodeEditableElement), range, false);
                     range.collapse(false);
                     event.stopPropagation();
@@ -859,13 +859,15 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                         const cloneRange = range.cloneRange();
                         const nextElement = getNextBlock(getTopAloneElement(nodeElement));
                         if (nextElement) {
-                            const nextRange = focusBlock(nextElement);
-                            if (nextRange) {
-                                const nextBlockElement = hasClosestBlock(nextRange.startContainer);
-                                if (nextBlockElement) {
-                                    // 反向删除合并为一个块时，光标应保持在尾部 https://github.com/siyuan-note/siyuan/issues/14290#issuecomment-2849810529
-                                    cloneRange.insertNode(document.createElement("wbr"));
-                                    removeBlock(protyle, nextBlockElement, nextRange, "Delete");
+                            if (!nodeElement.classList.contains("code-block")) {
+                                const nextRange = focusBlock(nextElement);
+                                if (nextRange) {
+                                    const nextBlockElement = hasClosestBlock(nextRange.startContainer);
+                                    if (nextBlockElement) {
+                                        // 反向删除合并为一个块时，光标应保持在尾部 https://github.com/siyuan-note/siyuan/issues/14290#issuecomment-2849810529
+                                        cloneRange.insertNode(document.createElement("wbr"));
+                                        removeBlock(protyle, nextBlockElement, nextRange, "Delete");
+                                    }
                                 }
                             }
                             event.stopPropagation();
@@ -914,7 +916,9 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                             // 需使用 textContent，文本元素没有 innerText
                             currentNode.textContent === "") // https://ld246.com/article/1649251218696
                     )) {
-                        removeBlock(protyle, nodeElement, range, "Backspace");
+                        if (!nodeElement.classList.contains("code-block")) {
+                            removeBlock(protyle, nodeElement, range, "Backspace");
+                        }
                         event.stopPropagation();
                         event.preventDefault();
                         return;
@@ -935,10 +939,18 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                         event.preventDefault();
                         return;
                     }
+                    const rangeNextElement = hasNextSibling(range.startContainer) as HTMLElement;
+                    // \n1`2` 1后按 Backspace 光标错误 https://github.com/siyuan-note/siyuan/issues/15424
+                    if (rangeNextElement && rangeNextElement.nodeType === 1 &&
+                        ["code", "tag", "kbd"].includes(rangeNextElement.dataset.type)) {
+                        if (position.start === 1 || range.startContainer.textContent.slice(-2, -1) === "\n") {
+                            range.insertNode(document.createTextNode(Constants.ZWSP));
+                            range.collapse(true);
+                        }
+                    }
                     if (range.startOffset === 1 && range.startContainer.textContent.length === 1) {
                         // 图片后为空格，在空格后删除 https://github.com/siyuan-note/siyuan/issues/13949
                         const rangePreviousElement = hasPreviousSibling(range.startContainer) as HTMLElement;
-                        const rangeNextElement = hasNextSibling(range.startContainer) as HTMLElement;
                         if (rangePreviousElement && rangePreviousElement.nodeType === 1 && rangePreviousElement.classList.contains("img") &&
                             rangeNextElement && rangeNextElement.nodeType === 1 && rangeNextElement.classList.contains("img")) {
                             const wbrElement = document.createElement("wbr");
@@ -1655,7 +1667,7 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                 let isContinuous = true;
                 selectElements.forEach((item, index) => {
                     if (item.nextElementSibling && selectElements[index + 1]) {
-                        if (!selectElements[index + 1].isSameNode(item.nextElementSibling)) {
+                        if (selectElements[index + 1] !== item.nextElementSibling) {
                             isContinuous = false;
                         }
                     }
@@ -1681,7 +1693,7 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                 let isContinuous = true;
                 selectElements.forEach((item, index) => {
                     if (item.nextElementSibling && selectElements[index + 1]) {
-                        if (!selectElements[index + 1].isSameNode(item.nextElementSibling)) {
+                        if (selectElements[index + 1] !== item.nextElementSibling) {
                             isContinuous = false;
                         }
                     }
@@ -1770,7 +1782,7 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                         return true;
                     }
                     if (item.nextElementSibling && selectsElement[index + 1] &&
-                        item.nextElementSibling.isSameNode(selectsElement[index + 1])) {
+                        item.nextElementSibling === selectsElement[index + 1]) {
                         isContinue = true;
                     } else if (index !== selectsElement.length - 1) {
                         isContinue = false;
@@ -1997,7 +2009,7 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
                     if (snippetClassName.startsWith("language-")) {
                         language = snippetClassName.replace("language-", "");
                         // https://github.com/siyuan-note/siyuan/issues/14767
-                        if (!wbrElement.parentElement.isSameNode(range.commonAncestorContainer)) {
+                        if (wbrElement.parentElement !== range.commonAncestorContainer) {
                             wbrElement.parentElement.after(wbrElement);
                             wbrElement.previousElementSibling.remove();
                         }

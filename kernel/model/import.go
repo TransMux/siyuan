@@ -44,6 +44,7 @@ import (
 	"github.com/88250/lute/parse"
 	"github.com/88250/lute/render"
 	util2 "github.com/88250/lute/util"
+	"github.com/siyuan-note/dataparser"
 	"github.com/siyuan-note/filelock"
 	"github.com/siyuan-note/logging"
 	"github.com/siyuan-note/riff"
@@ -163,7 +164,7 @@ func ImportSY(zipPath, boxID, toPath string) (err error) {
 			err = readErr
 			return
 		}
-		tree, _, parseErr := filesys.ParseJSON(data, luteEngine.ParseOptions)
+		tree, _, parseErr := dataparser.ParseJSON(data, luteEngine.ParseOptions)
 		if nil != parseErr {
 			logging.LogErrorf("parse .sy [%s] failed: %s", syPath, parseErr)
 			err = parseErr
@@ -1373,12 +1374,36 @@ func htmlBlock2Inline(tree *parse.Tree) {
 			img.AppendChild(&ast.Node{Type: ast.NodeLinkTitle})
 		}
 		img.AppendChild(&ast.Node{Type: ast.NodeCloseParen})
+		if width := domAttrValue(htmlImg, "width"); "" != width {
+			if util2.IsDigit(width) {
+				width += "px"
+			}
+			style := "width: " + width + ";"
+			ial := &ast.Node{Type: ast.NodeKramdownSpanIAL, Tokens: parse.IAL2Tokens([][]string{{"style", style}})}
+			img.SetIALAttr("style", style)
+			img.InsertAfter(ial)
+		} else if height := domAttrValue(htmlImg, "height"); "" != height {
+			if util2.IsDigit(height) {
+				height += "px"
+			}
+			style := "height: " + height + ";"
+			ial := &ast.Node{Type: ast.NodeKramdownSpanIAL, Tokens: parse.IAL2Tokens([][]string{{"style", style}})}
+			img.SetIALAttr("style", style)
+			img.InsertAfter(ial)
+		}
 
-		if nil != n.Parent && ast.NodeText == n.Type {
-			// 行级 HTML 会被解析为文本，所以这里要在父级段落前面插入，避免形成段落嵌套 https://github.com/siyuan-note/siyuan/issues/13080
-			n.Parent.InsertBefore(p)
-		} else {
+		if ast.NodeHTMLBlock == n.Type {
 			n.InsertBefore(p)
+		} else if ast.NodeText == n.Type {
+			if nil != n.Parent {
+				if n.Parent.IsContainerBlock() {
+					n.InsertBefore(p)
+				} else {
+					n.InsertBefore(img)
+				}
+			} else {
+				n.InsertBefore(p)
+			}
 		}
 		unlinks = append(unlinks, n)
 	}

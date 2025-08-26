@@ -459,6 +459,7 @@ interface IProtyleOptions {
         scroll?: boolean
         breadcrumb?: boolean
         breadcrumbDocName?: boolean
+        hideTitleOnZoom?: boolean
     }
     /** 内部调试时使用 */
     _lutePath?: string;
@@ -482,6 +483,8 @@ interface IProtyleOptions {
         /** 点击末尾是否阻止插入新块 */
         preventInsetEmptyBlock?: boolean
     }
+
+    handleEmptyContent?(): void
 
     /** 编辑器异步渲染完成后的回调方法 */
     after?(protyle: import("../protyle").Protyle): void;

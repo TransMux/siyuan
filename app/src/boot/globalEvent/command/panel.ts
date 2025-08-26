@@ -16,14 +16,14 @@ import { Files } from "../../../layout/dock/Files";
 import { Search } from "../../../search";
 import { openSearch } from "../../../search/spread";
 /// #endif
-import { addEditorToDatabase, addFilesToDatabase } from "../../../protyle/render/av/addToDatabase";
-import { hasClosestBlock, hasClosestByClassName, hasTopClosestByTag } from "../../../protyle/util/hasClosest";
-import { onlyProtyleCommand } from "./protyle";
-import { globalCommand } from "./global";
-import { getDisplayName, getNotebookName, getTopPaths, movePathTo, moveToPath, pathPosix } from "../../../util/pathName";
-import { hintMoveBlock } from "../../../protyle/hint/extend";
-import { fetchPost, fetchSyncPost } from "../../../util/fetch";
-import { focusByRange } from "../../../protyle/util/selection";
+import {addEditorToDatabase, addFilesToDatabase} from "../../../protyle/render/av/addToDatabase";
+import {hasClosestBlock, hasClosestByClassName, hasTopClosestByTag} from "../../../protyle/util/hasClosest";
+import {onlyProtyleCommand} from "./protyle";
+import {globalCommand} from "./global";
+import {getDisplayName, getNotebookName, getTopPaths, movePathTo, moveToPath, pathPosix} from "../../../util/pathName";
+import {hintMoveBlock} from "../../../protyle/hint/extend";
+import {fetchPost, fetchSyncPost} from "../../../util/fetch";
+import {focusByRange} from "../../../protyle/util/selection";
 import { unicode2Emoji } from "../../../emoji";
 import { escapeHtml } from "../../../util/escape";
 import { openFileById } from "../../../editor/util";
@@ -71,7 +71,6 @@ const commandKeyToLabel: { [key: string]: string } = {
     move: "move selected block to..."
 };
 
-
 export const commandPanel = (app: App) => {
     const range = getSelection().rangeCount > 0 ? getSelection().getRangeAt(0) : undefined;
     const dialog = new Dialog({
@@ -89,9 +88,8 @@ export const commandPanel = (app: App) => {
         <kbd>Esc</kbd> ${window.siyuan.languages.close}
     </div>
 </div>`,
-        // [打开时不要取消之前的焦点](siyuan://blocks/20241025222946-jwrrwo3)
-        destroyCallback(options: IObject) {
-            if (range && !options) {
+        destroyCallback() {
+            if (range) {
                 focusByRange(range);
             }
         },

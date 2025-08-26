@@ -218,7 +218,13 @@ func ocr(c *gin.Context) {
 		}
 	}
 
-	ocrJSON := util.OcrAsset(path)
+	ocrJSON, err := util.OcrAsset(path)
+	if nil != err {
+		ret.Code = -1
+		ret.Msg = err.Error()
+		ret.Data = map[string]interface{}{"closeTimeout": 7000}
+		return
+	}
 	ret.Data = map[string]interface{}{
 		"text":    util.GetOcrJsonText(ocrJSON),
 		"ocrJSON": ocrJSON,
@@ -530,8 +536,8 @@ func uploadCloud(c *gin.Context) {
 		return
 	}
 
-	rootID := arg["id"].(string)
-	count, err := model.UploadAssets2Cloud(rootID)
+	id := arg["id"].(string)
+	count, err := model.UploadAssets2Cloud(id)
 	if err != nil {
 		ret.Code = -1
 		ret.Msg = err.Error()

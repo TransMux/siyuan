@@ -458,7 +458,7 @@ ${genHintItemHTML(item)}
             if (!rowElement) {
                 return;
             }
-            const previousID = cellElement.dataset.blockId;
+            const previousID = rowElement.dataset.id;
             const avID = nodeElement.getAttribute("data-av-id");
             let tempElement = document.createElement("div");
             tempElement.innerHTML = value.replace(/<mark>/g, "").replace(/<\/mark>/g, "");
@@ -762,7 +762,7 @@ ${genHintItemHTML(item)}
                 focusByRange(range);
                 this.genEmojiHTML(protyle);
                 return;
-            } else if (value.indexOf("style") > -1) {
+            } else if (value.startsWith("style")) {
                 range.deleteContents();
                 this.fixImageCursor(range);
                 nodeElement.setAttribute("style", value.split(Constants.ZWSP)[1] || "");
@@ -893,7 +893,11 @@ ${genHintItemHTML(item)}
                     focusBlock(nodeElement);
                 } else if (nodeElement.classList.contains("av")) {
                     avRender(nodeElement, protyle, () => {
-                        (nodeElement.querySelector(".av__title") as HTMLInputElement).focus();
+                        const titleHTMLElement = nodeElement.querySelector(".av__title") as HTMLInputElement;
+                        titleHTMLElement.focus();
+                        range.setStart(titleHTMLElement, 0);
+                        range.collapse(true);
+                        focusByRange(range);
                     });
                 } else {
                     focusByWbr(nodeElement, range);

@@ -48,9 +48,7 @@ import {getAllModels} from "../layout/getAll";
 import {isSupportCSSHL} from "./render/searchMarkRender";
 import {renderAVAttribute} from "./render/av/blockAttr";
 import {genEmptyElement} from "../block/util";
-import { initStickyScroll } from "./plugins/stickyScroll";
-import { get } from "../mux/settings";
-import {handleFloatingWindowCleanup} from "./util/floatingWindowManager";
+import {zoomOut} from "../menus/protyle";
 
 export class Protyle {
 
@@ -150,7 +148,7 @@ export class Protyle {
                             }
                             break;
                         case "refreshAttributeView":
-                            Array.from(this.protyle.wysiwyg.element.querySelectorAll(`[data-av-id="${data.data.id}"]`)).forEach((item: HTMLElement) => {
+                            Array.from(this.protyle.wysiwyg.element.querySelectorAll(`.av[data-av-id="${data.data.id}"]`)).forEach((item: HTMLElement) => {
                                 item.removeAttribute("data-render");
                                 avRender(item, this.protyle);
                             });
@@ -162,9 +160,7 @@ export class Protyle {
                             break;
                         case "transactions":
                             data.data[0].doOperations.find((item: IOperation) => {
-                                if (!this.protyle.preview.element.classList.contains("fn__none") &&
-                                    item.action !== "updateAttrs"   // 预览模式下点击只读
-                                ) {
+                                if (!this.protyle.preview.element.classList.contains("fn__none")) {
                                     this.protyle.preview.render(this.protyle);
                                 } else if (options.backlinkData && ["delete", "move"].includes(item.action)) {
                                     // 只对特定情况刷新，否则展开、编辑等操作刷新会频繁
@@ -179,10 +175,30 @@ export class Protyle {
                                     return true;
                                 } else {
                                     onTransaction(this.protyle, item, false);
-                                    // 如果编辑区为空，使用浮窗清理逻辑
-                                    if (this.protyle.wysiwyg.element.childElementCount === 0 && this.protyle.block.parentID) {
-                                        if (!handleFloatingWindowCleanup(this.protyle)) {
-                                            return;
+                                    // 反链面板移除元素后，文档为空
+                                    if (this.protyle.wysiwyg.element.childElementCount === 0 && this.protyle.block.parentID &&
+                                        !(item.action === "delete" && typeof item.data?.createEmptyParagraph === "boolean" && !item.data.createEmptyParagraph)) {
+                                        if (item.action === "delete" && this.protyle.block.showAll) {
+                                            if (this.protyle.options.handleEmptyContent) {
+                                                this.protyle.options.handleEmptyContent();
+                                            } else {
+                                                zoomOut({
+                                                    protyle: this.protyle,
+                                                    id: this.protyle.block.rootID,
+                                                    focusId: this.protyle.block.id
+                                                });
+                                            }
+                                        } else {
+                                            const newID = Lute.NewNodeID();
+                                            const emptyElement = genEmptyElement(false, false, newID);
+                                            this.protyle.wysiwyg.element.append(emptyElement);
+                                            transaction(this.protyle, [{
+                                                action: "insert",
+                                                data: emptyElement.outerHTML,
+                                                id: newID,
+                                                parentID: this.protyle.block.parentID
+                                            }]);
+                                            this.protyle.undo.clear();
                                         }
                                     }
                                 }
@@ -400,9 +416,6 @@ export class Protyle {
         this.protyle.preview = new Preview(this.protyle);
 
         initUI(this.protyle);
-        if (get<boolean>('stickyScroll')) {
-            initStickyScroll(this.protyle);
-        }
     }
 
     /** 聚焦到编辑器 */

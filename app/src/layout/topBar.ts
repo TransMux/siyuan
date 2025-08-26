@@ -133,6 +133,7 @@ export const initBar = (app: App) => {
                 window.siyuan.menus.menu.remove();
                 window.siyuan.menus.menu.element.setAttribute("data-name", "barmode");
                 window.siyuan.menus.menu.append(new MenuItem({
+                    id: "themeLight",
                     label: window.siyuan.languages.themeLight,
                     icon: "iconLight",
                     current: window.siyuan.config.appearance.mode === 0 && !window.siyuan.config.appearance.modeOS,
@@ -141,6 +142,7 @@ export const initBar = (app: App) => {
                     }
                 }).element);
                 window.siyuan.menus.menu.append(new MenuItem({
+                    id: "themeDark",
                     label: window.siyuan.languages.themeDark,
                     current: window.siyuan.config.appearance.mode === 1 && !window.siyuan.config.appearance.modeOS,
                     icon: "iconDark",
@@ -149,6 +151,7 @@ export const initBar = (app: App) => {
                     }
                 }).element);
                 window.siyuan.menus.menu.append(new MenuItem({
+                    id: "themeOS",
                     label: window.siyuan.languages.themeOS,
                     current: window.siyuan.config.appearance.modeOS,
                     icon: "iconMode",

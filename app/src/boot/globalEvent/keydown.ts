@@ -13,35 +13,35 @@ import {
     hasClosestByClassName,
     hasTopClosestByTag,
 } from "../../protyle/util/hasClosest";
-import { newFile } from "../../util/newFile";
-import { Constants } from "../../constants";
-import { openSetting } from "../../config";
-import { getInstanceById } from "../../layout/util";
-import { getActiveTab, getDockByType, switchTabByIndex } from "../../layout/tabUtil";
-import { Tab } from "../../layout/Tab";
-import { Editor } from "../../editor";
-import { setEditMode } from "../../protyle/util/setEditMode";
-import { rename } from "../../editor/rename";
-import { Files } from "../../layout/dock/Files";
-import { newDailyNote } from "../../util/mount";
-import { hideElements } from "../../protyle/ui/hideElements";
-import { fetchPost } from "../../util/fetch";
-import { goBack, goForward } from "../../util/backForward";
-import { onGet } from "../../protyle/util/onGet";
-import { getDisplayName, getNotebookName } from "../../util/pathName";
-import { openFileById } from "../../editor/util";
-import { getAllDocks, getAllModels, getAllTabs } from "../../layout/getAll";
-import { focusBlock, focusByOffset, focusByRange, getSelectionOffset } from "../../protyle/util/selection";
-import { initFileMenu, initNavigationMenu } from "../../menus/navigation";
-import { bindMenuKeydown } from "../../menus/Menu";
-import { Dialog } from "../../dialog";
-import { unicode2Emoji } from "../../emoji";
-import { deleteFiles } from "../../editor/deleteFile";
-import { escapeHtml } from "../../util/escape";
-import { syncGuide } from "../../sync/syncGuide";
-import { duplicateBlock, getStartEndElement, goEnd, goHome } from "../../protyle/wysiwyg/commonHotkey";
-import { getNextFileLi, getPreviousFileLi } from "../../protyle/wysiwyg/getBlock";
-import { Backlink } from "../../layout/dock/Backlink";
+import {newFile} from "../../util/newFile";
+import {Constants} from "../../constants";
+import {openSetting} from "../../config";
+import {getInstanceById, saveLayout} from "../../layout/util";
+import {getActiveTab, getDockByType, switchTabByIndex} from "../../layout/tabUtil";
+import {Tab} from "../../layout/Tab";
+import {Editor} from "../../editor";
+import {setEditMode} from "../../protyle/util/setEditMode";
+import {rename} from "../../editor/rename";
+import {Files} from "../../layout/dock/Files";
+import {newDailyNote} from "../../util/mount";
+import {hideElements} from "../../protyle/ui/hideElements";
+import {fetchPost} from "../../util/fetch";
+import {goBack, goForward} from "../../util/backForward";
+import {onGet} from "../../protyle/util/onGet";
+import {getDisplayName, getNotebookName} from "../../util/pathName";
+import {openFileById} from "../../editor/util";
+import {getAllDocks, getAllModels, getAllTabs} from "../../layout/getAll";
+import {focusBlock, focusByOffset, focusByRange, getSelectionOffset} from "../../protyle/util/selection";
+import {initFileMenu, initNavigationMenu} from "../../menus/navigation";
+import {bindMenuKeydown} from "../../menus/Menu";
+import {Dialog} from "../../dialog";
+import {unicode2Emoji} from "../../emoji";
+import {deleteFiles} from "../../editor/deleteFile";
+import {escapeHtml} from "../../util/escape";
+import {syncGuide} from "../../sync/syncGuide";
+import {duplicateBlock, getStartEndElement, goEnd, goHome} from "../../protyle/wysiwyg/commonHotkey";
+import {getNextFileLi, getPreviousFileLi} from "../../protyle/wysiwyg/getBlock";
+import {Backlink} from "../../layout/dock/Backlink";
 /// #if !BROWSER
 import { setZoom } from "../../layout/topBar";
 import { ipcRenderer } from "electron";
@@ -80,7 +80,7 @@ import { bindAVPanelKeydown } from "../../protyle/render/av/keydown";
 const switchDialogEvent = (app: App, event: MouseEvent) => {
     event.preventDefault();
     let target = event.target as HTMLElement;
-    while (!target.isSameNode(switchDialog.element)) {
+    while (target !== switchDialog.element) {
         if (target.classList.contains("b3-list-item")) {
             const currentType = target.getAttribute("data-type");
             if (currentType) {
@@ -522,6 +522,7 @@ const editKeydown = (app: App, event: KeyboardEvent) => {
     }
     if (matchHotKey(window.siyuan.config.keymap.editor.general.preview.custom, event)) {
         setEditMode(protyle, "preview");
+        saveLayout();
         event.preventDefault();
         return true;
     }
@@ -529,11 +530,16 @@ const editKeydown = (app: App, event: KeyboardEvent) => {
         setEditMode(protyle, "wysiwyg");
         protyle.scroll.lastScrollTop = 0;
         fetchPost("/api/filetree/getDoc", {
-            id: protyle.block.parentID,
-            size: window.siyuan.config.editor.dynamicLoadBlocks,
+            id: protyle.block.id,
+            size: protyle.block.id === protyle.block.rootID ? window.siyuan.config.editor.dynamicLoadBlocks : Constants.SIZE_GET_MAX,
         }, getResponse => {
-            onGet({ data: getResponse, protyle });
+            onGet({
+                data: getResponse,
+                protyle,
+                action: protyle.block.id === protyle.block.rootID ? [Constants.CB_GET_FOCUS, Constants.CB_GET_HTML, Constants.CB_GET_UNUNDO] : [Constants.CB_GET_ALL, Constants.CB_GET_FOCUS, Constants.CB_GET_UNUNDO, Constants.CB_GET_HTML]
+            });
         });
+        saveLayout();
         event.preventDefault();
         return true;
     }
