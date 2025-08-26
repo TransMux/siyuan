@@ -711,8 +711,8 @@ func getSyncLazyLoadPatterns() (ret []string) {
 		return
 	}
 	if !gulu.File.IsExist(lazy) {
-		// 创建空文件，方便用户自定义
-		if err := gulu.File.WriteFileSafer(lazy, nil, 0644); err != nil {
+		// 创建文件并写入默认懒加载规则，方便用户自定义
+		if err := gulu.File.WriteFileSafer(lazy, []byte("assets/**/*\n"), 0644); err != nil {
 			logging.LogErrorf("create synclazyload [%s] failed: %s", lazy, err)
 		}
 	}
