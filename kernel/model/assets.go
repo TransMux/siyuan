@@ -282,6 +282,12 @@ func processNetworkFile(task DownloadTask, browserClient *req.Client, assetsDirP
 	request.SetRetryCount(1).SetRetryFixedInterval(3 * time.Second)
 	if "" != task.OriginalURL {
 		request.SetHeader("Referer", task.OriginalURL)
+	} else {
+		// 部分站点需要 Referer 才能下载，例如 bilibili
+		lowerU := strings.ToLower(u)
+		if strings.Contains(lowerU, "bilivideo.com") || strings.Contains(lowerU, "bilibili.com") {
+			request.SetHeader("Referer", "https://www.bilibili.com")
+		}
 	}
 
 	resp, reqErr := request.Get(u)
@@ -1485,6 +1491,11 @@ func getRemoteAssetsLinkDests(node *ast.Node, onlyImg bool) (ret []string) {
 					ret = append(ret, string(node.Tokens))
 				}
 
+			}
+		} else if ast.NodeVideo == node.Type { // 仅图片模式下也处理视频资源
+			src := treenode.GetNodeSrcTokens(node)
+			if !util.IsAssetLinkDest([]byte(src)) {
+				ret = append(ret, src)
 			}
 		} else if ast.NodeAttributeView == node.Type {
 			attrView, _ := av.ParseAttributeView(node.AttributeViewID)
