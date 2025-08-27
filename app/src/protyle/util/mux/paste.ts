@@ -22,6 +22,11 @@ function extractBilibiliWatchLaterInfo(textContent: string) {
     return results.length ? results.join('\n\n') : textContent;
 }
 
+function 替换小红书短链(text: string) {
+    const pattern = /^[0-9]\s.*?小红书笔记.*?(http:\/\/xhslink\.com\/\S+).*?查看精彩内容[!！].*$/gm;
+    return text.replace(pattern, (_, url) => `[${url}](${url})`);
+}
+
 function removeSmallImages(htmlString: string) {
     // 将 HTML 字符串转换为 DOM 对象
     let parser = new DOMParser();
@@ -47,7 +52,7 @@ export function modifyPasteContent(textContent: string, textHTML: string, siyuan
     textContent = textContent.replace(/🔤/g, "");
     // remove \\r\\n
     // textContent = textContent.replace("\r\n", "\n");
-    textContent = extractBilibiliWatchLaterInfo(textContent)
+    textContent = extractBilibiliWatchLaterInfo(textContent);
 
     // Process \( x \) style formulas
     textContent = textContent.replace(/\\\((.*?)\\\)/g, function (match, p1) {
@@ -99,6 +104,10 @@ export function modifyPasteContent(textContent: string, textHTML: string, siyuan
     if (textHTML) {
         textHTML = removeSmallImages(textHTML);
     }
+
+    textContent = 替换小红书短链(textContent);
+    textHTML = 替换小红书短链(textHTML);
+    siyuanHTML = 替换小红书短链(siyuanHTML);
 
     return [textContent, textHTML, siyuanHTML];
 }
