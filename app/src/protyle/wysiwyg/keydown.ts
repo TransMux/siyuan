@@ -2236,47 +2236,5 @@ export const keydown = (protyle: IProtyle, editorElement: HTMLElement) => {
             event.stopPropagation();
             return;
         }
-
-        // Handle translate shortcut
-        if (matchHotKey(window.siyuan.config.keymap.editor.insert.translate.custom, event)) {
-            hideElements(["select"], protyle);
-            const range = getSelection().getRangeAt(0);
-            if (range.toString() === "") {
-                return true;
-            }
-
-            // Get the selected text and translate
-            const selectedText = range.toString();
-            translateText(selectedText).then(translatedText => {
-                // Store the current block element and its HTML before making changes
-                const currentBlock = hasClosestBlock(range.startContainer);
-                const oldHTML = currentBlock ? currentBlock.outerHTML : "";
-
-                // Insert as inline-memo
-                const newNodes = protyle.toolbar.setInlineMark(protyle, "inline-memo", "range", {
-                    type: "inline-memo"
-                }, true);
-
-                if (newNodes.length > 0) {
-                    // Get the last memo element, which should be the one we just created
-                    const lastMemo = newNodes[newNodes.length - 1];
-                    (lastMemo as HTMLElement).setAttribute("data-inline-memo-content", translatedText);
-
-                    // Get the closest block element and update transaction
-                    const nodeElement = hasClosestBlock(lastMemo);
-                    if (nodeElement) {
-                        const id = nodeElement.getAttribute("data-node-id");
-                        // Update the transaction with old and new HTML
-                        nodeElement.setAttribute("updated", dayjs().format("YYYYMMDDHHmmss"));
-                        updateTransaction(protyle, id, nodeElement.outerHTML, oldHTML);
-                    }
-                }
-            }).catch(error => {
-                console.error("Translation error:", error);
-            });
-
-            event.preventDefault();
-            return true;
-        }
     });
 };
