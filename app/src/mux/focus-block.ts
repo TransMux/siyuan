@@ -33,7 +33,23 @@ function focusHandler() {
     if (editor) {
         editor.querySelectorAll(`.block-focus`).forEach((element: HTMLElement) => element.classList.remove(`block-focus`));
         block.classList.add(`block-focus`);
-        window.dispatchEvent(new CustomEvent('muxBlockFocus', { detail: block }));
+
+        // 将焦点块 ID 发送到后端状态
+        const id = block?.dataset?.nodeId;
+        if (id) {
+            try {
+                // 使用全局内核地址和 Token。前端已有统一 fetch 封装，这里直接调用 fetch 并依赖浏览器注入的 Token 头部中间件。
+                fetch('/api/status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ focusBlockId: id }),
+                });
+            } catch (e) {
+                // 忽略错误
+            }
+        }
     }
 }
 

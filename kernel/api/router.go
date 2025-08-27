@@ -277,6 +277,10 @@ func ServeAPI(ginServer *gin.Engine) {
 
 	ginServer.Handle("POST", "/api/extension/copy", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, extensionCopy)
 
+	// 状态记录（内存）
+	ginServer.Handle("POST", "/api/status", model.CheckAuth, model.CheckAdminRole, statusPost)
+	ginServer.Handle("GET", "/api/status", model.CheckAuth, model.CheckAdminRole, statusGet)
+
 	ginServer.Handle("POST", "/api/clipboard/readFilePaths", model.CheckAuth, model.CheckAdminRole, readFilePaths)
 
 	ginServer.Handle("POST", "/api/asset/uploadCloud", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, uploadCloud)

@@ -26,6 +26,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/88250/gulu"
 	"github.com/88250/lute"
@@ -45,6 +46,13 @@ func extensionCopy(c *gin.Context) {
 	defer c.JSON(200, ret)
 
 	form, _ := c.MultipartForm()
+	insertAtFocus := false
+	if v, ok := form.Value["insertAtFocus"]; ok && 0 < len(v) {
+		if strings.ToLower(v[0]) == "true" || v[0] == "1" {
+			insertAtFocus = true
+		}
+	}
+
 	dom := form.Value["dom"][0]
 	assets := filepath.Join(util.DataDir, "assets")
 	if notebookVal := form.Value["notebook"]; 0 < len(notebookVal) {
@@ -287,6 +295,47 @@ func extensionCopy(c *gin.Context) {
 	parse.NestedInlines2FlattedSpansHybrid(tree, false)
 
 	md, _ = lute.FormatNodeSync(tree.Root, luteEngine.ParseOptions, luteEngine.RenderOptions)
+
+	if insertAtFocus {
+		if focusID, ts, ok := loadStatus("focusBlockId"); ok {
+			if 0 < ts && time.Now().UnixMilli()-ts <= 60*1000 {
+				luteEngine2 := util.NewLute()
+				dataDOM, err := dataBlockDOM(md, luteEngine2)
+				if nil != err {
+					ret.Code = -1
+					ret.Msg = "data block DOM failed: " + err.Error()
+					return
+				}
+				transactions := []*model.Transaction{
+					{
+						DoOperations: []*model.Operation{
+							{
+								Action:   "appendInsert",
+								Data:     dataDOM,
+								ParentID: focusID,
+							},
+						},
+					},
+				}
+				model.PerformTransactions(&transactions)
+				model.FlushTxQueue()
+				ret.Data = map[string]interface{}{
+					"md":       md,
+					"withMath": withMath,
+				}
+				ret.Msg = model.Conf.Language(72)
+				broadcastTransactions(transactions)
+				return
+			}
+			ret.Code = -1
+			ret.Msg = "focus expired"
+			return
+		}
+		ret.Code = -1
+		ret.Msg = "focus not set"
+		return
+	}
+
 	ret.Data = map[string]interface{}{
 		"md":       md,
 		"withMath": withMath,
