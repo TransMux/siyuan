@@ -319,6 +319,18 @@ func extensionCopy(c *gin.Context) {
 				}
 				model.PerformTransactions(&transactions)
 				model.FlushTxQueue()
+				var newID string
+				if len(transactions) > 0 && len(transactions[0].DoOperations) > 0 {
+					op := transactions[0].DoOperations[0]
+					if op.ID != "" {
+						newID = op.ID
+					} else if op.BlockID != "" {
+						newID = op.BlockID
+					}
+				}
+				if newID != "" {
+					saveStatus("focusBlockId", newID)
+				}
 				ret.Data = map[string]interface{}{
 					"md":       md,
 					"withMath": withMath,

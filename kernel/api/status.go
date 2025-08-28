@@ -106,3 +106,9 @@ func loadStatus(key string) (val string, ts int64, ok bool) {
     return entry.Value, entry.Time, true
 }
 
+func saveStatus(key, value string) {
+    statusMu.Lock()
+    statusStore[key] = statusEntry{Value: value, Time: time.Now().UnixMilli()}
+    statusMu.Unlock()
+}
+
