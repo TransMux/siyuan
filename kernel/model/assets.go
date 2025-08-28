@@ -282,7 +282,8 @@ func processNetworkFile(task DownloadTask, browserClient *req.Client, assetsDirP
 	util.PushUpdateMsg(msgId, fmt.Sprintf(Conf.Language(119), displayU), 15000)
 
 	request := browserClient.R()
-	request.SetRetryCount(1).SetRetryFixedInterval(3 * time.Second)
+	// Increase retries with shorter interval to improve robustness
+	request.SetRetryCount(3).SetRetryFixedInterval(2 * time.Second)
 	if "" != task.OriginalURL {
 		request.SetHeader("Referer", task.OriginalURL)
 	} else {
@@ -328,11 +329,30 @@ func processNetworkFile(task DownloadTask, browserClient *req.Client, assetsDirP
 
 	// 处理文件名
 	var name string
-	if strings.Contains(u, "?") {
-		name = u[:strings.Index(u, "?")]
-		name = path.Base(name)
-	} else {
-		name = path.Base(u)
+	// Prefer Content-Disposition filename when available
+	if cd := resp.Header.Get("Content-Disposition"); cd != "" {
+		if _, params, err := mime.ParseMediaType(cd); err == nil {
+			if fn := params["filename"]; fn != "" {
+				name = path.Base(fn)
+			} else if fnStar := params["filename*"]; fnStar != "" {
+				// e.g. UTF-8''file-name.png
+				if idx := strings.Index(fnStar, "''"); -1 != idx {
+					fnStar = fnStar[idx+2:]
+				}
+				if un, err := url.PathUnescape(fnStar); err == nil && un != "" {
+					fnStar = un
+				}
+				name = path.Base(fnStar)
+			}
+		}
+	}
+	if name == "" {
+		if strings.Contains(u, "?") {
+			name = u[:strings.Index(u, "?")]
+			name = path.Base(name)
+		} else {
+			name = path.Base(u)
+		}
 	}
 	if strings.Contains(name, "#") {
 		name = name[:strings.Index(name, "#")]
@@ -439,15 +459,27 @@ func NetAssets2LocalAssets(rootID string, onlyImg bool, originalURL string) (err
 		return
 	}
 
-	// 设置并发数量
-	concurrency := DefaultConcurrentDownloads
-	if len(tasks) < concurrency {
-		concurrency = len(tasks)
+	// 去重相同 URL，避免重复下载；但仍会更新所有引用
+	urlToTasks := map[string][]DownloadTask{}
+	for _, t := range tasks {
+		urlToTasks[t.URL] = append(urlToTasks[t.URL], t)
+	}
+	var uniqueTasks []DownloadTask
+	for _, group := range urlToTasks {
+		if 0 < len(group) {
+			uniqueTasks = append(uniqueTasks, group[0])
+		}
 	}
 
-	// 创建任务和结果通道
-	taskChan := make(chan DownloadTask, len(tasks))
-	resultChan := make(chan DownloadResult, len(tasks))
+	// 设置并发数量：对所有唯一资源并行请求，上限为 MaxConcurrentDownloads
+	concurrency := len(uniqueTasks)
+	if concurrency > MaxConcurrentDownloads {
+		concurrency = MaxConcurrentDownloads
+	}
+
+	// 创建任务和结果通道（按唯一任务数量分配容量）
+	taskChan := make(chan DownloadTask, len(uniqueTasks))
+	resultChan := make(chan DownloadResult, len(uniqueTasks))
 
 	// 启动工作协程
 	var wg sync.WaitGroup
@@ -459,8 +491,8 @@ func NetAssets2LocalAssets(rootID string, onlyImg bool, originalURL string) (err
 		}()
 	}
 
-	// 发送任务
-	for _, task := range tasks {
+	// 发送唯一任务
+	for _, task := range uniqueTasks {
 		taskChan <- task
 	}
 	close(taskChan)
@@ -474,13 +506,20 @@ func NetAssets2LocalAssets(rootID string, onlyImg bool, originalURL string) (err
 	// 收集结果
 	var forbiddenCount int32
 	completedTasks := 0
+	// 进度按原始任务数统计
 	totalTasks := len(tasks)
 
 	for result := range resultChan {
-		completedTasks++
+		// 将该唯一 URL 的结果应用到所有相同 URL 的任务上
+		group := urlToTasks[result.Task.URL]
+		if 0 == len(group) {
+			group = []DownloadTask{result.Task}
+		}
 
 		if result.Success {
-			setAssetsLinkDest(result.Task.DestNode, result.Task.Dest, result.LocalPath)
+			for _, t := range group {
+				setAssetsLinkDest(t.DestNode, t.Dest, result.LocalPath)
+			}
 			atomic.AddInt32(&files, 1)
 		} else {
 			if result.Error != nil {
@@ -491,7 +530,11 @@ func NetAssets2LocalAssets(rootID string, onlyImg bool, originalURL string) (err
 			}
 		}
 
-		// 更新进度
+		// 该唯一 URL 完成后，按其引用的原始链接数量推进进度
+		completedTasks += len(group)
+		if completedTasks > totalTasks {
+			completedTasks = totalTasks
+		}
 		progress := float64(completedTasks) / float64(totalTasks) * 100
 		util.PushUpdateMsg(msgId, fmt.Sprintf("下载进度: %.1f%% (%d/%d)", progress, completedTasks, totalTasks), 15000)
 	}
