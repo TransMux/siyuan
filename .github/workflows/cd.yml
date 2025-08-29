@@ -13,7 +13,7 @@ on:
 # ref https://docs.github.com/zh/actions/learn-github-actions/variables
 env:
   repo_name: "siyuan"  # 仓库名称
-  android_repo_owner: "siyuan-android"  # 安卓项目仓库所有者
+  android_repo_owner: "siyuan-note"  # 安卓项目仓库所有者
   repo_owner: "siyuan-note"  # 仓库所有者
   package_json: "app/package.json"  # package.json文件路径
   repo_name_android: "siyuan-android"  # 安卓项目仓库名（请根据实际仓库名修改）
