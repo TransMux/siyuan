@@ -205,7 +205,6 @@ jobs:
             ${{ github.workspace }}/${{ env.repo_owner }}/${{ env.repo_name_android }}/${{ env.android_gradle_build_output }}/*.apk
 
       - name: Sign APK (optional)
-        if: ${{ secrets.APK_SIGN_KEY_JKS_BASE64 != '' && secrets.APK_SIGN_KEY_ALIAS != '' && secrets.APK_SIGN_KEY_JKS_PW != '' && secrets.APK_SIGN_KEY_PW != '' }}
         id: sign_app
         uses: noriban/sign-android-release@v5
         with:
