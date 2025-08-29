@@ -54,11 +54,27 @@ jobs:
             mingwsys: "MINGW64"
             goarch: "amd64"
             suffix: "win.exe"
+          - os: windows-latest
+            name: windows build android.apk
+            kernel_path: "../app/kernel/SiYuan-Kernel.exe"
+            build_args_prefix: "-s -w -H=windowsgui -X"
+            build_args_suffix: "Mode=prod"
+            electron_args: "dist"
+            goos: "windows"
+            gobin: "bin"
+            mingwsys: "MINGW64"
+            goarch: "amd64"
+            suffix: "apk"
 
     steps:
       - uses: actions/checkout@v4  # 检出代码
         with:
           path: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}
+
+      - name: 🔨 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
       - name: Set up MingGW  # 设置MingGW
         uses: msys2/setup-msys2@v2
@@ -101,36 +117,42 @@ jobs:
         working-directory: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app
 
       - name: Remove Build Directory
+        if: ${{ !contains(matrix.config.suffix, 'apk') }}
         uses: JesseTG/rm@v1.0.2
         with:
           path: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app/build
 
       - name: Remove Kernel Directory for Linux
+        if: ${{ !contains(matrix.config.suffix, 'apk') }}
         uses: JesseTG/rm@v1.0.2
         with:
           path: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app/kernel-linux
 
       - name: Remove Kernel Directory for Windows
+        if: ${{ !contains(matrix.config.suffix, 'apk') }}
         uses: JesseTG/rm@v1.0.2
         with:
           path: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app/kernel
 
       - name: Remove Kernel Directory for macOS
+        if: ${{ !contains(matrix.config.suffix, 'apk') }}
         uses: JesseTG/rm@v1.0.2
         with:
           path: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app/kernel-darwin
 
       - name: Remove Kernel Directory for macOS ARM64
+        if: ${{ !contains(matrix.config.suffix, 'apk') }}
         uses: JesseTG/rm@v1.0.2
         with:
           path: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app/kernel-darwin-arm64
 
       - name: Generate Icon Resource and Properties/Version Info For Windows  # 为Windows生成图标资源和属性/版本信息
+        if: ${{ contains(matrix.config.goos, 'windows') && !contains(matrix.config.suffix, 'apk') }}
         run: ${{ github.workspace }}\go\${{ matrix.config.gobin }}\goversioninfo -platform-specific=true -icon="resource\icon.ico" -manifest="resource\goversioninfo.exe.manifest"
-        if: "contains( matrix.config.goos, 'windows')"
         working-directory: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/kernel
       
       - name: Building Kernel  # 构建内核
+        if: ${{ !contains(matrix.config.suffix, 'apk') }}
         run: go build --tags fts5 -o "${{ matrix.config.kernel_path }}" -v -ldflags "${{ matrix.config.build_args_prefix }} github.com/${{ env.repo_owner }}/${{ env.repo_name }}/kernel/util.${{ matrix.config.build_args_suffix }}"
         working-directory: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/kernel
         env:
@@ -141,36 +163,25 @@ jobs:
           GOARCH: ${{ matrix.config.goarch }}
 
       - name: Building Electron App
+        if: ${{ !contains(matrix.config.suffix, 'apk') }}
         run: pnpm run ${{ matrix.config.electron_args }}
         working-directory: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app
 
       - name: List build directory  # 列出构建目录
+        if: ${{ !contains(matrix.config.suffix, 'apk') }}
         run: Get-ChildItem -Recurse -Force ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app/build/
         shell: pwsh
 
       - name: Upload build artifact  # 上传构建产物
+        if: ${{ !contains(matrix.config.suffix, 'apk') }}
         uses: actions/upload-artifact@v4
         with:
           name: siyuan-${{ matrix.config.suffix }}  # 产物名称
           path: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}/app/build/*${{ matrix.config.suffix }}  # 产物路径
 
-      - name: Report Build Success  # 报告构建成功
-        run: |
-          curl -d "SiYuan Build successful!" "${{ secrets.PUSH_SERVICE_URL }}"
-        shell: bash
-        continue-on-error: true
-
-  android-apk:
-    needs: check-commit
-    if: needs.check-commit.outputs.should-build == 'true' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-    name: android build apk
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          path: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}
-
+      # Android-only steps within matrix (windows runner)
       - name: Setup JDK
+        if: contains(matrix.config.suffix, 'apk')
         uses: actions/setup-java@v3
         with:
           java-version: '17'
@@ -178,27 +189,53 @@ jobs:
           overwrite-settings: true
 
       - name: Setup Android SDK
+        if: contains(matrix.config.suffix, 'apk')
         uses: android-actions/setup-android@v3.2.0
 
       - name: Install Android NDK
+        if: contains(matrix.config.suffix, 'apk')
         uses: nttld/setup-ndk@v1
         with:
           ndk-version: r25b
           add-to-path: true
 
+      - name: Remove android Directory
+        if: contains(matrix.config.suffix, 'apk')
+        uses: JesseTG/rm@v1.0.2
+        with:
+          path: ${{ github.workspace }}/${{ env.android_repo_owner }}/${{ env.repo_name_android }}
+
       - name: Checkout android repo
+        if: contains(matrix.config.suffix, 'apk')
         uses: actions/checkout@v4
         with:
           repository: ${{ env.android_repo_owner }}/${{ env.repo_name_android }}
           path: ${{ github.workspace }}/${{ env.android_repo_owner }}/${{ env.repo_name_android }}
 
+      - name: Prepare android build (runs batch script)
+        if: contains(matrix.config.suffix, 'apk')
+        run: |
+          cd ${{ github.workspace }}/${{ env.repo_owner }}/${{ env.repo_name }}
+          .\.github\sillot-android-build-action.bat
+        shell: pwsh
+
       - name: Build with Gradle
+        if: contains(matrix.config.suffix, 'apk')
         working-directory: ${{ github.workspace }}/${{ env.android_repo_owner }}/${{ env.repo_name_android }}
         run: |
           chmod +x ./gradlew
           ./gradlew ${{ env.android_gradle_build_params }}
 
+      - name: Upload Gradle profile reports to artifact
+        if: contains(matrix.config.suffix, 'apk')
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: Gradle_profile_reports
+          path: ${{ github.workspace }}/${{ env.android_repo_owner }}/${{ env.repo_name_android }}/build/reports/profile/
+
       - name: Upload unsigned APK(s) to artifact
+        if: contains(matrix.config.suffix, 'apk')
         uses: actions/upload-artifact@v4
         with:
           name: android-apk-unsigned
@@ -206,6 +243,7 @@ jobs:
             ${{ github.workspace }}/${{ env.android_repo_owner }}/${{ env.repo_name_android }}/${{ env.android_gradle_build_output }}/*.apk
 
       - name: Sign APK (optional)
+        if: contains(matrix.config.suffix, 'apk')
         id: sign_app
         uses: noriban/sign-android-release@v5
         with:
@@ -218,10 +256,25 @@ jobs:
           BUILD_TOOLS_VERSION: "34.0.0"
 
       - name: Upload signed APK(s) to artifact
-        if: steps.sign_app.outcome == 'success'
+        if: contains(matrix.config.suffix, 'apk') && steps.sign_app.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: android-apk-signed
           path: |
             ${{ steps.sign_app.outputs.signedReleaseFile0 }}
             ${{ steps.sign_app.outputs.signedReleaseFile1 }}
+
+      - name: Report Build Success  # 报告构建成功
+        run: |
+          curl -d "SiYuan Build successful!" "${{ secrets.PUSH_SERVICE_URL }}"
+        shell: bash
+        continue-on-error: true
+
+      - name: Upload logs to artifact if failure
+        if: failure()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: ./**/*.log
+
