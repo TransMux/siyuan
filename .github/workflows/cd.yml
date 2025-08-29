@@ -15,6 +15,9 @@ env:
   repo_name: "siyuan"  # 仓库名称
   repo_owner: "TransMux"  # 仓库所有者
   package_json: "app/package.json"  # package.json文件路径
+  repo_name_android: "siyuan-android"  # 安卓项目仓库名（请根据实际仓库名修改）
+  android_gradle_build_output: "app/build-release/"  # APK 输出目录（根据你的 Android 项目结构调整）
+  android_gradle_build_params: "assembleOfficialAction -profile --quiet --stacktrace"  # Gradle 构建任务（如需多渠道请改为相应任务）
 
 jobs:
   check-commit:
@@ -155,3 +158,70 @@ jobs:
           curl -d "SiYuan Build successful!" "${{ secrets.PUSH_SERVICE_URL }}"
         shell: bash
         continue-on-error: true
+
+  android-apk:
+    needs: check-commit
+    if: needs.check-commit.outputs.should-build == 'true' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    name: android build apk
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: ${{ github.workspace }}/go/src/github.com/${{ env.repo_owner }}/${{ env.repo_name }}
+
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+          overwrite-settings: true
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3.2.0
+
+      - name: Install Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r25b
+          add-to-path: true
+
+      - name: Checkout android repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.repo_owner }}/${{ env.repo_name_android }}
+          path: ${{ github.workspace }}/${{ env.repo_owner }}/${{ env.repo_name_android }}
+
+      - name: Build with Gradle
+        working-directory: ${{ github.workspace }}/${{ env.repo_owner }}/${{ env.repo_name_android }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew ${{ env.android_gradle_build_params }}
+
+      - name: Upload unsigned APK(s) to artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk-unsigned
+          path: |
+            ${{ github.workspace }}/${{ env.repo_owner }}/${{ env.repo_name_android }}/${{ env.android_gradle_build_output }}/*.apk
+
+      - name: Sign APK (optional)
+        if: ${{ secrets.APK_SIGN_KEY_JKS_BASE64 != '' && secrets.APK_SIGN_KEY_ALIAS != '' && secrets.APK_SIGN_KEY_JKS_PW != '' && secrets.APK_SIGN_KEY_PW != '' }}
+        id: sign_app
+        uses: noriban/sign-android-release@v5
+        with:
+          releaseDirectory: ${{ github.workspace }}/${{ env.repo_owner }}/${{ env.repo_name_android }}/${{ env.android_gradle_build_output }}
+          signingKeyBase64: ${{ secrets.APK_SIGN_KEY_JKS_BASE64 }}
+          alias: ${{ secrets.APK_SIGN_KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.APK_SIGN_KEY_JKS_PW }}
+          keyPassword: ${{ secrets.APK_SIGN_KEY_PW }}
+        env:
+          BUILD_TOOLS_VERSION: "34.0.0"
+
+      - name: Upload signed APK(s) to artifact
+        if: steps.sign_app.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk-signed
+          path: |
+            ${{ steps.sign_app.outputs.signedReleaseFile0 }}
+            ${{ steps.sign_app.outputs.signedReleaseFile1 }}
