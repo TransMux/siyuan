@@ -886,6 +886,94 @@ func createDocWithMd(c *gin.Context) {
 	box := model.Conf.Box(notebook)
 	b, _ := model.GetBlock(id, nil)
 	pushCreate(box, b.Path, arg)
+
+	// Handle Attribute View insertion and value updates after document creation
+	attributeViewArg := arg["attributeViews"]
+	if nil != attributeViewArg {
+		if avItems, ok := attributeViewArg.([]interface{}); ok {
+			for _, avItem := range avItems {
+				avMap, ok := avItem.(map[string]interface{})
+				if !ok {
+					continue
+				}
+
+				avID, _ := avMap["avID"].(string)
+				if avID == "" {
+					continue
+				}
+
+				// Optional parameters pass-through for AddAttributeViewBlock
+				viewID := ""
+				groupID := ""
+				previousID := ""
+				dbBlockID := ""
+				if viewObj, ok := avMap["view"].(map[string]interface{}); ok {
+					if s, ok := viewObj["viewID"].(string); ok {
+						viewID = s
+					}
+					if s, ok := viewObj["groupID"].(string); ok {
+						groupID = s
+					}
+					if s, ok := viewObj["previousID"].(string); ok {
+						previousID = s
+					}
+					if s, ok := viewObj["dbBlockID"].(string); ok {
+						dbBlockID = s
+					}
+				}
+				ignoreDefaultFill := false
+
+				var context = map[string]interface{}{}
+
+				// Determine row/item ID to allow cell updates later
+				itemID := ast.NewNodeID()
+				if v := avMap["itemID"]; nil != v {
+					if s, ok := v.(string); ok && s != "" {
+						itemID = s
+					}
+				}
+
+				src := map[string]interface{}{
+					"id":         id,
+					"isDetached": false,
+					"itemID":     itemID,
+				}
+				if err := model.AddAttributeViewBlock(nil, []map[string]interface{}{src}, avID, dbBlockID, viewID, groupID, previousID, ignoreDefaultFill, context); nil != err {
+					ret.Code = -1
+					ret.Msg = err.Error()
+					return
+				}
+
+				// Build batch updates from values
+				var valueMaps []map[string]interface{}
+				if raw := avMap["values"]; nil != raw {
+					if m, ok := raw.(map[string]interface{}); ok {
+						valueMaps = append(valueMaps, m)
+					}
+				}
+
+				if 0 < len(valueMaps) {
+					var updates []interface{}
+					for _, vm := range valueMaps {
+						for keyID, valueData := range vm {
+							updates = append(updates, map[string]interface{}{
+								"keyID": keyID,
+								"rowID": itemID,
+								"value": valueData,
+							})
+						}
+					}
+					if err := model.BatchUpdateAttributeViewCells(nil, avID, updates); nil != err {
+						ret.Code = -1
+						ret.Msg = err.Error()
+						return
+					}
+				}
+
+				model.ReloadAttrView(avID)
+			}
+		}
+	}
 }
 
 func getDocCreateSavePath(c *gin.Context) {
