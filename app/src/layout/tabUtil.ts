@@ -25,7 +25,7 @@ import { mountHelp, newNotebook } from "../util/mount";
 import { Constants } from "../constants";
 import { fetchPost, fetchSyncPost } from "../util/fetch";
 import { openFileById } from "../editor/util";
-import { openUnreadWeekArticle } from "../util/mux";
+import { openUnreadArticle } from "../util/mux";
 import { isExist } from "../mux/settings";
 
 export const getActiveTab = (wndActive = true) => {
@@ -200,7 +200,7 @@ export const newCenterEmptyTab = (app: App) => {
         <svg class="b3-list-item__graphic"><use xlink:href="#iconHelp"></use></svg>
         <span>${window.siyuan.languages.userGuide}</span>
     </div>
-    <div class="b3-list-item" id="openUnreadWeekArticle">
+    <div class="b3-list-item" id="openUnreadArticle">
         <svg class="b3-list-item__graphic"><use xlink:href="#iconOpen"></use></svg>
         <span>打开未读文章</span>
     </div>
@@ -253,8 +253,8 @@ export const newCenterEmptyTab = (app: App) => {
                         event.stopPropagation();
                         event.preventDefault();
                         break;
-                    } else if (target.id === "openUnreadWeekArticle") {
-                        openUnreadWeekArticle(app);
+                    } else if (target.id === "openUnreadArticle") {
+                        openUnreadArticle(app);
                         event.stopPropagation();
                         event.preventDefault();
                         break;

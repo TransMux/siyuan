@@ -1,6 +1,7 @@
 import { App } from "..";
 import { showMessage } from "../dialog/message";
 import { openFileById } from "../editor/util";
+import { initEditor } from "../mobile/settings/editor";
 import { get } from "../mux/settings";
 import { 获取当前ISO周数 } from "../mux/utils";
 import { fetchPost, fetchSyncPost } from "./fetch";
@@ -77,17 +78,18 @@ export function muxInsertPictureAnnotationAfterBlock(blockId: string, idPath: st
 }
 
 
-export function openUnreadWeekArticle(app: App) {
-    const 当前周数 = 获取当前ISO周数();
-    // const stmt = `SELECT * FROM blocks WHERE box = '${未读笔记本}' AND hpath like '/Week ${当前周数}%' limit 5`;
-    fetchSyncPost("/api/filetree/listDocsByPath", {
-        notebook: get<string>("未读笔记本"),
-        // TODO: 获取当前周数对应的文件id，难点：不在索引中，所以无法从数据库中sql获取
-        path: `/${get<string>("本周未读目录")}.sy`,
+export function openUnreadArticle(app: App) {
+    fetchSyncPost("/api/av/renderAttributeView", {
+        id: "20250102171020-4cqqonx",
+        pageSize: 5,
+        groupPaging: {},
+        viewID: "20250830162522-lzvfn3k",
+        query: ""
     }).then((response) => {
-        const blockIds = response.data.files.map((item: any) => item.id).slice(0, 5);
+        // 假设第一个row的值为id
+        const blockIds = response.data.view.cards.map((item: any) => item.values[0].value.block.id)
         if (blockIds.length === 0) {
-            showMessage("本周未读文章为空", 1000, "error");
+            showMessage("已无未读文章", 1000, "error");
             return;
         }
         for (const blockId of blockIds) {
