@@ -944,26 +944,18 @@ func createDocWithMd(c *gin.Context) {
 					return
 				}
 
-				// Build batch updates from values
-				var valueMaps []map[string]interface{}
-				if raw := avMap["values"]; nil != raw {
-					if m, ok := raw.(map[string]interface{}); ok {
-						valueMaps = append(valueMaps, m)
+				// 简化批量更新逻辑
+				if values, ok := avMap["values"].(map[string]interface{}); ok && len(values) > 0 {
+					updates := make([]interface{}, 0, len(values))
+					for keyID, valueData := range values {
+						updates = append(updates, map[string]interface{}{
+							"keyID": keyID,
+							"rowID": itemID,
+							"value": valueData,
+						})
 					}
-				}
 
-				if 0 < len(valueMaps) {
-					var updates []interface{}
-					for _, vm := range valueMaps {
-						for keyID, valueData := range vm {
-							updates = append(updates, map[string]interface{}{
-								"keyID": keyID,
-								"rowID": id,
-								"value": valueData,
-							})
-						}
-					}
-					if err := model.BatchUpdateAttributeViewCells(nil, avID, updates); nil != err {
+					if err := model.BatchUpdateAttributeViewCells(nil, avID, updates); err != nil {
 						ret.Code = -1
 						ret.Msg = err.Error()
 						return
