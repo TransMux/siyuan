@@ -154,6 +154,10 @@ func getAttrViewAddingBlockDefaultValues(attrView *av.AttributeView, view, group
 					nearValue := getNewValueByNearItem(nearItem, keyValues.Key, addingItemID)
 					newValue.Date.IsNotTime = nearValue.Date.IsNotTime
 				}
+
+				if nil != keyValues.Key.Date && keyValues.Key.Date.AutoFillNow {
+					newValue.Date.Content = time.Now().UnixMilli()
+				}
 			}
 
 			ret[keyValues.Key.ID] = newValue
@@ -219,7 +223,12 @@ func getAttrViewAddingBlockDefaultValues(attrView *av.AttributeView, view, group
 
 	if nil != nearItem && filterKeyIDs[groupKey.ID] {
 		// 临近项不为空并且分组字段和过滤字段相同时，优先使用临近项 https://github.com/siyuan-note/siyuan/issues/15591
-		ret[groupKey.ID] = getNewValueByNearItem(nearItem, groupKey, addingItemID)
+		newValue = getNewValueByNearItem(nearItem, groupKey, addingItemID)
+		ret[groupKey.ID] = newValue
+
+		if nil != keyValues.Key.Date && keyValues.Key.Date.AutoFillNow {
+			newValue.Date.Content = time.Now().UnixMilli()
+		}
 		return
 	}
 
@@ -254,6 +263,10 @@ func getAttrViewAddingBlockDefaultValues(attrView *av.AttributeView, view, group
 
 	if nil != newValue && !filterKeyIDs[groupKey.ID] {
 		ret[groupKey.ID] = newValue
+
+		if nil != keyValues.Key.Date && keyValues.Key.Date.AutoFillNow {
+			newValue.Date.Content = time.Now().UnixMilli()
+		}
 	}
 	return
 }
@@ -1263,7 +1276,12 @@ func SearchAttributeView(keyword string, excludeAvIDs []string) (ret []*AvSearch
 		logging.LogErrorf("read directory [%s] failed: %s", avDir, err)
 		return
 	}
+
 	avBlockRels := av.GetBlockRels()
+	if 1 > len(avBlockRels) {
+		return
+	}
+
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
@@ -1322,48 +1340,29 @@ func SearchAttributeView(keyword string, excludeAvIDs []string) (ret []*AvSearch
 	if 12 <= len(avSearchTmpResults) {
 		avSearchTmpResults = avSearchTmpResults[:12]
 	}
-	var avIDs []string
-	for _, a := range avSearchTmpResults {
-		avIDs = append(avIDs, a.AvID)
-	}
 
-	var blockIDs []string
-	for _, bIDs := range avBlockRels {
-		blockIDs = append(blockIDs, bIDs...)
-	}
-	blockIDs = gulu.Str.RemoveDuplicatedElem(blockIDs)
-
-	trees := filesys.LoadTrees(blockIDs)
-	hitAttrViews := map[string]bool{}
-	for _, blockID := range blockIDs {
-		tree := trees[blockID]
-		if nil == tree {
-			continue
-		}
-
-		node := treenode.GetNodeInTree(tree, blockID)
-		if nil == node || "" == node.AttributeViewID {
-			continue
-		}
-
-		avID := node.AttributeViewID
-		var existAv *AvSearchTempResult
-		for _, tmpResult := range avSearchTmpResults {
-			if tmpResult.AvID == avID {
-				existAv = tmpResult
-				break
+	for _, tmpResult := range avSearchTmpResults {
+		bIDs := avBlockRels[tmpResult.AvID]
+		var node *ast.Node
+		for _, bID := range bIDs {
+			tree, _ := LoadTreeByBlockID(bID)
+			if nil == tree {
+				continue
 			}
+
+			node = treenode.GetNodeInTree(tree, bID)
+			if nil == node || "" == node.AttributeViewID {
+				continue
+			}
+
+			break
 		}
-		if nil == existAv || gulu.Str.Contains(avID, excludeAvIDs) {
+
+		if nil == node {
 			continue
 		}
 
-		if hitAttrViews[avID] {
-			continue
-		}
-		hitAttrViews[avID] = true
-
-		attrView, _ := av.ParseAttributeView(avID)
+		attrView, _ := av.ParseAttributeView(tmpResult.AvID)
 		if nil == attrView {
 			continue
 		}
@@ -1378,27 +1377,27 @@ func SearchAttributeView(keyword string, excludeAvIDs []string) (ret []*AvSearch
 			hPath = box.Name + hPath
 		}
 
-		name := existAv.AvName
+		name := tmpResult.AvName
 		if "" == name {
 			name = Conf.language(267)
 		}
 
 		parent := &AvSearchResult{
-			AvID:    avID,
-			AvName:  existAv.AvName,
-			BlockID: blockID,
+			AvID:    tmpResult.AvID,
+			AvName:  tmpResult.AvName,
+			BlockID: node.ID,
 			HPath:   hPath,
 		}
 		ret = append(ret, parent)
 
 		for _, view := range attrView.Views {
 			child := &AvSearchResult{
-				AvID:       avID,
-				AvName:     existAv.AvName,
+				AvID:       tmpResult.AvID,
+				AvName:     tmpResult.AvName,
 				ViewName:   view.Name,
 				ViewID:     view.ID,
 				ViewLayout: view.LayoutType,
-				BlockID:    blockID,
+				BlockID:    node.ID,
 				HPath:      hPath,
 			}
 			parent.Children = append(parent.Children, child)
@@ -3026,11 +3025,6 @@ func addAttributeViewBlock(now int64, avID, dbBlockID, viewID, groupID, previous
 			addingItemID = ast.NewNodeID()
 			logging.LogWarnf("detached block id is empty, generate a new one [%s]", addingItemID)
 		}
-	}
-
-	if addingItemID == addingBoundBlockID {
-		addingItemID = ast.NewNodeID()
-		logging.LogWarnf("the adding item ID is the same as the bound block ID [%s], generate a new one item id [%s]", addingBoundBlockID, addingItemID)
 	}
 
 	attrView, err := av.ParseAttributeView(avID)
