@@ -958,7 +958,7 @@ func createDocWithMd(c *gin.Context) {
 						for keyID, valueData := range vm {
 							updates = append(updates, map[string]interface{}{
 								"keyID": keyID,
-								"rowID": itemID,
+								"rowID": id,
 								"value": valueData,
 							})
 						}
