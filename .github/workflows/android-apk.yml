@@ -133,18 +133,17 @@ jobs:
           echo "APK_SIGN_KEY_JKS_PW=${{ secrets.APK_SIGN_KEY_JKS_PW }}" >> $GITHUB_ENV
           echo "APK_SIGN_KEY_ALIAS=${{ secrets.APK_SIGN_KEY_ALIAS }}" >> $GITHUB_ENV
           echo "APK_SIGN_KEY_PW=${{ secrets.APK_SIGN_KEY_PW }}" >> $GITHUB_ENV
-          cat > _android/signings.gradle <<'GRADLE'
-android {
-  signingConfigs {
-    siyuanConfig {
-      storeFile file("app/siyuan-android.jks")
-      storePassword System.getenv('APK_SIGN_KEY_JKS_PW') ?: ''
-      keyAlias System.getenv('APK_SIGN_KEY_ALIAS') ?: ''
-      keyPassword System.getenv('APK_SIGN_KEY_PW') ?: ''
-    }
-  }
-}
-GRADLE
+          printf '%s\n' \
+            'android {' \
+            '  signingConfigs {' \
+            '    siyuanConfig {' \
+            '      storeFile file("app/siyuan-android.jks")' \
+            "      storePassword System.getenv('APK_SIGN_KEY_JKS_PW') ?: ''" \
+            "      keyAlias System.getenv('APK_SIGN_KEY_ALIAS') ?: ''" \
+            "      keyPassword System.getenv('APK_SIGN_KEY_PW') ?: ''" \
+            '    }' \
+            '  }' \
+            '}' > _android/signings.gradle
 
       - name: Build Debug APKs (all flavors)
         run: |
