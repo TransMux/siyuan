@@ -1,0 +1,179 @@
+name: Android APK (build kernel first)
+
+on:
+  workflow_dispatch:
+    inputs:
+      buildRelease:
+        description: "Also build release variants (requires signing or template)"
+        required: false
+        default: "false"
+      androidRef:
+        description: "siyuan-android ref (branch/tag/SHA)"
+        required: false
+        default: "master"
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    env:
+      JAVA_VERSION: '17'
+      BUILD_RELEASE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.buildRelease || 'false' }}
+      ANDROID_REF: ${{ github.event.inputs.androidRef || 'master' }}
+      ANDROID_REPO: 'siyuan-note/siyuan-android'
+
+    steps:
+      - name: Checkout kernel (this repo)
+        uses: actions/checkout@v4
+        with:
+          path: _kernel
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Android NDK
+        id: setup-ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r26d
+
+      - name: Set up Go (from kernel/go.mod)
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: _kernel/kernel/go.mod
+
+      - name: Install gomobile and gobind
+        run: |
+          go install golang.org/x/mobile/cmd/gomobile@latest
+          go install golang.org/x/mobile/cmd/gobind@latest
+          gomobile version || true
+        env:
+          GOPATH: ${{ github.workspace }}/go
+
+      - name: Initialize gomobile toolchain
+        run: |
+          echo "Using NDK at: ${{ steps.setup-ndk.outputs.ndk-path }}"
+          gomobile init -ndk ${{ steps.setup-ndk.outputs.ndk-path }}
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          GOPATH: ${{ github.workspace }}/go
+
+      - name: Build kernel.aar via gomobile bind
+        run: |
+          mkdir -p _artifacts/libs
+          pushd _kernel >/dev/null
+          gomobile bind -v -tags fts5 -androidapi 26 -target=android/arm64 -o "$GITHUB_WORKSPACE/_artifacts/libs/kernel.aar" ./kernel/mobile
+          popd >/dev/null
+        env:
+          CGO_ENABLED: 1
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          GOPATH: ${{ github.workspace }}/go
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install UI deps and build mobile assets
+        run: |
+          pushd _kernel/app >/dev/null
+          pnpm install --no-frozen-lockfile
+          pnpm run build:mobile
+          popd >/dev/null
+
+      - name: Zip assets for Android app.zip
+        run: |
+          mkdir -p _artifacts/assets
+          pushd _kernel/app >/dev/null
+          ZIP_PATH="$GITHUB_WORKSPACE/_artifacts/assets/app.zip"
+          to_zip=()
+          for d in appearance guide stage changelogs; do
+            if [ -d "$d" ]; then to_zip+=("$d"); fi
+          done
+          if [ ${#to_zip[@]} -eq 0 ]; then
+            echo "No assets found to zip; creating empty placeholder."
+            mkdir -p "$GITHUB_WORKSPACE/_artifacts/assets"
+            cd "$GITHUB_WORKSPACE/_artifacts/assets" && zip -q -r app.zip . || true
+          else
+            zip -q -r "$ZIP_PATH" "${to_zip[@]}"
+          fi
+          popd >/dev/null
+
+      - name: Checkout Android repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.ANDROID_REPO }}
+          ref: ${{ env.ANDROID_REF }}
+          path: _android
+
+      - name: Prepare Android project with artifacts
+        run: |
+          mkdir -p _android/app/libs _android/app/src/main/assets
+          cp -f _artifacts/libs/kernel.aar _android/app/libs/kernel.aar
+          cp -f _artifacts/assets/app.zip _android/app/src/main/assets/app.zip
+          if [ -f _android/signings.templates.gradle ]; then
+            cp -f _android/signings.templates.gradle _android/signings.gradle
+          fi
+          if [ -f _android/gradlew ]; then chmod +x _android/gradlew; fi
+
+      - name: Use custom keystore if provided
+        if: ${{ secrets.APK_SIGN_KEY_JKS_BASE64 != '' }}
+        run: |
+          echo "${{ secrets.APK_SIGN_KEY_JKS_BASE64 }}" | base64 -d > _android/app/siyuan-android.jks
+          # Export signing env so subsequent Gradle steps can read them
+          echo "APK_SIGN_KEY_JKS_PW=${{ secrets.APK_SIGN_KEY_JKS_PW }}" >> $GITHUB_ENV
+          echo "APK_SIGN_KEY_ALIAS=${{ secrets.APK_SIGN_KEY_ALIAS }}" >> $GITHUB_ENV
+          echo "APK_SIGN_KEY_PW=${{ secrets.APK_SIGN_KEY_PW }}" >> $GITHUB_ENV
+          cat > _android/signings.gradle <<'GRADLE'
+android {
+  signingConfigs {
+    siyuanConfig {
+      storeFile file("app/siyuan-android.jks")
+      storePassword System.getenv('APK_SIGN_KEY_JKS_PW') ?: ''
+      keyAlias System.getenv('APK_SIGN_KEY_ALIAS') ?: ''
+      keyPassword System.getenv('APK_SIGN_KEY_PW') ?: ''
+    }
+  }
+}
+GRADLE
+
+      - name: Build Debug APKs (all flavors)
+        run: |
+          cd _android
+          ./gradlew --no-daemon assembleDebug
+
+      - name: Upload Debug APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: siyuan-android-debug-apks
+          path: |
+            _android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: warn
+
+      - name: Build Release variants (optional)
+        if: env.BUILD_RELEASE == 'true'
+        run: |
+          cd _android
+          ./gradlew --no-daemon clean buildReleaseTask
+
+      - name: Upload Release outputs (APK/AAB and aggregated folder)
+        if: env.BUILD_RELEASE == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: siyuan-android-release-outputs
+          path: |
+            _android/app/build/outputs/apk/**/*.apk
+            _android/app/build/outputs/bundle/**/*.aab
+            _android/app/build-release/**
+          if-no-files-found: warn
+
+
