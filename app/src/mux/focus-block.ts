@@ -59,7 +59,7 @@ function visibilityChangeHandler() {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ visibility: document.visibilityState ? 'true' : 'false' }),
+        body: JSON.stringify({ visibility: document.hidden ? 'false' : 'true' }),
     });
 }
 
