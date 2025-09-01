@@ -296,9 +296,18 @@ func extensionCopy(c *gin.Context) {
 
 	md, _ = lute.FormatNodeSync(tree.Root, luteEngine.ParseOptions, luteEngine.RenderOptions)
 
+	focusID, ts, ok := loadStatus("focusBlockId")
+	v, _, ok2 := loadStatus("visibility")
+
 	if insertAtFocus {
-		if focusID, ts, ok := loadStatus("focusBlockId"); ok {
-			if 0 < ts && time.Now().UnixMilli()-ts <= 60*1000 {
+		if ok && ok2 {
+			// 检查 visibility 是否为 true
+			if v == "false" {
+				ret.Code = -1
+				ret.Msg = "focus block not visible"
+				return
+			}
+			if 0 < ts && time.Now().UnixMilli()-ts <= 10*60*1000 {
 				luteEngine2 := util.NewLute()
 				dataDOM, err := dataBlockDOM(md, luteEngine2)
 				if nil != err {

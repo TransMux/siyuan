@@ -53,8 +53,20 @@ function focusHandler() {
     }
 }
 
+function visibilityChangeHandler() {
+    fetch('/api/status', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ visibility: document.visibilityState ? 'true' : 'false' }),
+    });
+}
+
 export function bulletMain() {
     // 跟踪当前所在块
     window.addEventListener('mouseup', focusHandler, true);
     window.addEventListener('keyup', focusHandler, true);
+    // 跟踪窗口可见性
+    window.addEventListener("visibilitychange", visibilityChangeHandler, true);
 }
