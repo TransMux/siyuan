@@ -75,6 +75,11 @@ export class Layout {
                 if (item.id === id) {
                     this.children.splice(index + 1, 0, child);
                     if (this.direction === "lr") {
+                        console.log(item)
+                        // 所有protyle-top的子元素移除margin，避免伸缩
+                        item.element.querySelector(".protyle-top").querySelectorAll("*").forEach((element: HTMLElement) => {
+                            element.style.margin = "";
+                        });
                         // 向右分屏，左侧文档抖动，移除动画和边距
                         item.element.querySelectorAll(".protyle-content").forEach((element: HTMLElement) => {
                             if (!element.parentElement.classList.contains("fn__none")) {

@@ -403,7 +403,6 @@ export class Title {
             // 设置样式
             attrElement.style.marginRight = "96px";
             attrElement.style.marginLeft = "96px";
-            attrElement.style.transition = "margin 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
             this.element.parentElement.appendChild(attrElement);
         }
         renderCustomAttr(attrElement, protyle.block.id)
@@ -415,7 +414,6 @@ export class Title {
             // 设置样式
             avDocElement.style.marginRight = "96px";
             avDocElement.style.marginLeft = "96px";
-            avDocElement.style.transition = "margin 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
             // 插入到 this.element 的同级，但是需要是这一级的最后一个元素
             this.element.parentElement.appendChild(avDocElement);
         }
