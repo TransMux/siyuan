@@ -204,6 +204,8 @@ export const renderAVAttribute = (element: HTMLElement, id: string, protyle: IPr
             // https://x.transmux.top/j/20250504122200-mq0p2zr
             // 文档内数据库渲染，支持自定义规则
             if (!renderInFloatPanel) {
+                // 保证element有custom-attr class，用于支持文档内的属性面板，支持getFieldIdByCellElement检测
+                element.classList.add("custom-attr");
                 // @ts-ignore
                 if (window.__muxPrerenderDocAvAttribute) {
                     // @ts-ignore
