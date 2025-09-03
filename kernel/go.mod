@@ -194,7 +194,7 @@ replace github.com/mattn/go-sqlite3 => github.com/88250/go-sqlite3 v1.14.13-0.20
 
 replace github.com/pdfcpu/pdfcpu => github.com/88250/pdfcpu v0.3.14-0.20250424122812-f10e8d9d8d46
 
-replace github.com/siyuan-note/dejavu => github.com/TransMux/dejavu v0.0.0-20250903080553-9229f2b08072
+replace github.com/siyuan-note/dejavu => github.com/TransMux/dejavu v0.0.0-20250903084224-0061333430ab
 
 //replace github.com/siyuan-note/riff => D:\88250\riff
 //replace github.com/siyuan-note/httpclient => D:\88250\httpclient
