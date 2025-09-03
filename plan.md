@@ -112,17 +112,20 @@ operation.Data = tx.luteEngine.Tree2BlockDOM(tempTree, tx.luteEngine.RenderOptio
 - 消除多余的NodeList容器包裹问题  
 - 保持DOM结构的正确性
 
-**修复位置**：
+**最终修复位置**：
 - 文件：`/root/projects/siyuan/app/src/protyle/wysiwyg/transaction.ts`
-- 位置1：行数 198-210 (backlinkData处理)
-- 位置2：行数 838-850 (常规处理)
-- 修复的两个核心insert操作处理逻辑
+- 位置：行数 804-822 (previousID情况的insert处理)
+- 修复annotation插件通过 `previousID` 执行的insert操作
 
 **修复逻辑**：
 ```typescript
-// 检查operation.data是否包含NodeList结构，如果是则提取内部的NodeListItem
+// 检查是否需要处理嵌套NodeList结构
 let dataToInsert = operation.data;
-if (item.classList.contains("list") && item.getAttribute("data-type") === "NodeList") {
+
+// 检查父元素是否是NodeList，且operation.data包含嵌套结构
+if (item.parentElement && 
+    item.parentElement.classList.contains("list") && 
+    item.parentElement.getAttribute("data-type") === "NodeList") {
     const tempElement = document.createElement("template");
     tempElement.innerHTML = operation.data;
     const nodeListElement = tempElement.content.querySelector('[data-type="NodeList"]');
@@ -133,8 +136,14 @@ if (item.classList.contains("list") && item.getAttribute("data-type") === "NodeL
         }
     }
 }
-item.firstElementChild.insertAdjacentHTML("afterend", dataToInsert);
+
+item.insertAdjacentHTML("afterend", dataToInsert);
 ```
+
+**关键发现**：
+- annotation插件使用的是 `previousID` 的transaction路径，不是 `parentID` 路径
+- 需要检查插入位置(`item`)的父元素是否为NodeList容器
+- 只有当向NodeList容器插入嵌套结构时才提取NodeListItem
 
 ## 影响评估
 
@@ -160,3 +169,60 @@ item.firstElementChild.insertAdjacentHTML("afterend", dataToInsert);
 - 仅影响全局annotation插件的特定插入场景
 - 对系统其他功能零影响
 - 保持与后端逻辑的一致性
+
+## 懒加载同步问题修复 - Done
+
+### 问题发现
+经过深入调试发现，懒加载系统存在一个关键的0B文件大小问题：
+- 同步后懒加载文件可以找到但大小为0B
+- 调试日志显示文件chunks包含空字符串hash: `da39a3ee5e6b4b0d3255bfef95601890afd80709`
+
+### 根本原因分析 - Done  
+问题出在`SyncUpload`中的执行顺序错误：
+1. **错误顺序**：先执行`cleanupLazyFileChunks`清理本地chunks，再执行`AddLazyFilesFromIndex`保存文件记录
+2. **影响**：`getFiles`获取到的是chunks已被清理的损坏文件记录
+3. **结果**：LazyIndexManager保存的是空chunks的文件记录，导致后续懒加载重建文件为0B
+
+### 修复实施 - Done
+**修复位置**：`/root/projects/dejavu/sync_manual.go:307-329`
+
+**修复内容**：
+1. **调整执行顺序**：先调用`AddLazyFilesFromIndex`保存完整文件记录，再调用`cleanupLazyFileChunks`
+2. **添加验证**：在`AddLazyFilesFromIndex`中跳过chunks为空的损坏文件记录
+3. **增强日志**：添加调试日志跟踪文件记录保存过程
+
+**修复代码**：
+```go
+// 关键修复：先更新LazyIndexManager保存完整文件记录，再清理本地chunks
+// 这样确保LazyIndexManager中保存的是包含完整chunks信息的文件记录
+if nil != repo.lazyIndexMgr {
+    latestFiles, err := repo.getFiles(latest.Files)
+    if nil == err {
+        repo.lazyIndexMgr.AddLazyFilesFromIndex(latestFiles)
+        logging.LogInfof("[Lazy Index] preserved file records before cleanup")
+    } else {
+        logging.LogWarnf("failed to get latest files for lazy index update: %s", err)
+    }
+}
+
+// 清理懒加载文件的本地chunks（在保存完整记录之后）
+for _, file := range uploadFiles {
+    repo.cleanupLazyFileChunks(file)
+}
+```
+
+**验证机制**：
+```go
+// 跳过chunks为空的损坏文件记录（防止覆盖现有的完整记录）
+if len(file.Chunks) == 0 {
+    logging.LogWarnf("[Lazy Index] skip file with empty chunks: %s", file.Path)
+    continue
+}
+```
+
+### 修复结果 - Done
+- 提交哈希：`d7f90641ba3f490f4a7701abb331692d6bf03b22`
+- SiYuan依赖已更新为修复版本：`v0.0.0-20250903172431-d7f90641ba3f`
+- 确保LazyIndexManager保存完整的chunks信息
+- 解决懒加载文件0B大小问题
+- 保护LazyIndexManager中的完整数据不被损坏

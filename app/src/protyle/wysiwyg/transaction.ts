@@ -195,28 +195,7 @@ const promiseTransaction = () => {
                                 // 列表特殊处理
                                 if (item.firstElementChild && item.firstElementChild.classList.contains("protyle-action") &&
                                     item.firstElementChild.nextElementSibling.getAttribute("data-node-id") !== operation.id) {
-                                    // 检查operation.data是否包含NodeList结构，如果是则提取内部的NodeListItem
-                                    let dataToInsert = operation.data;
-                                    console.log("[Debug] item classes:", item.classList.toString());
-                                    console.log("[Debug] item data-type:", item.getAttribute("data-type"));
-                                    console.log("[Debug] operation.data:", operation.data);
-                                    if (item.classList.contains("list") && item.getAttribute("data-type") === "NodeList") {
-                                        console.log("[Debug] Trigger condition met, processing NodeList structure");
-                                        const tempElement = document.createElement("template");
-                                        tempElement.innerHTML = operation.data;
-                                        const nodeListElement = tempElement.content.querySelector('[data-type="NodeList"]');
-                                        if (nodeListElement) {
-                                            console.log("[Debug] Found NodeList element:", nodeListElement);
-                                            const listItemElement = nodeListElement.querySelector('[data-type="NodeListItem"]');
-                                            if (listItemElement) {
-                                                console.log("[Debug] Found NodeListItem, extracting:", listItemElement.outerHTML);
-                                                dataToInsert = listItemElement.outerHTML;
-                                            }
-                                        }
-                                    } else {
-                                        console.log("[Debug] Condition not met, using original data");
-                                    }
-                                    item.firstElementChild.insertAdjacentHTML("afterend", dataToInsert);
+                                    item.firstElementChild.insertAdjacentHTML("afterend", operation.data);
                                     cursorElements.push(item.firstElementChild.nextElementSibling);
                                 } else if (item.firstElementChild && item.firstElementChild.getAttribute("data-node-id") !== operation.id) {
                                     item.insertAdjacentHTML("afterbegin", operation.data);
@@ -822,7 +801,25 @@ export const onTransaction = (protyle: IProtyle, operation: IOperation, isUndo: 
                         embedElement.removeAttribute("data-render");
                         blockRender(protyle, embedElement);
                     } else {
-                        item.insertAdjacentHTML("afterend", operation.data);
+                        // 检查是否需要处理嵌套NodeList结构
+                        let dataToInsert = operation.data;
+                        
+                        // 检查父元素是否是NodeList，且operation.data包含嵌套结构
+                        if (item.parentElement && 
+                            item.parentElement.classList.contains("list") && 
+                            item.parentElement.getAttribute("data-type") === "NodeList") {
+                            const tempElement = document.createElement("template");
+                            tempElement.innerHTML = operation.data;
+                            const nodeListElement = tempElement.content.querySelector('[data-type="NodeList"]');
+                            if (nodeListElement) {
+                                const listItemElement = nodeListElement.querySelector('[data-type="NodeListItem"]');
+                                if (listItemElement) {
+                                    dataToInsert = listItemElement.outerHTML;
+                                }
+                            }
+                        }
+                        
+                        item.insertAdjacentHTML("afterend", dataToInsert);
                         cursorElements.push(item.nextElementSibling);
                     }
                 });
@@ -856,28 +853,7 @@ export const onTransaction = (protyle: IProtyle, operation: IOperation, isUndo: 
                     if (!isInEmbedBlock(item)) {
                         // 列表特殊处理
                         if (item.firstElementChild?.classList.contains("protyle-action")) {
-                            // 检查operation.data是否包含NodeList结构，如果是则提取内部的NodeListItem
-                            let dataToInsert = operation.data;
-                            console.log("[Debug2] item classes:", item.classList.toString());
-                            console.log("[Debug2] item data-type:", item.getAttribute("data-type"));
-                            console.log("[Debug2] operation.data:", operation.data);
-                            if (item.classList.contains("list") && item.getAttribute("data-type") === "NodeList") {
-                                console.log("[Debug2] Trigger condition met, processing NodeList structure");
-                                const tempElement = document.createElement("template");
-                                tempElement.innerHTML = operation.data;
-                                const nodeListElement = tempElement.content.querySelector('[data-type="NodeList"]');
-                                if (nodeListElement) {
-                                    console.log("[Debug2] Found NodeList element:", nodeListElement);
-                                    const listItemElement = nodeListElement.querySelector('[data-type="NodeListItem"]');
-                                    if (listItemElement) {
-                                        console.log("[Debug2] Found NodeListItem, extracting:", listItemElement.outerHTML);
-                                        dataToInsert = listItemElement.outerHTML;
-                                    }
-                                }
-                            } else {
-                                console.log("[Debug2] Condition not met, using original data");
-                            }
-                            item.firstElementChild.insertAdjacentHTML("afterend", dataToInsert);
+                            item.firstElementChild.insertAdjacentHTML("afterend", operation.data);
                             cursorElements.push(item.firstElementChild.nextElementSibling);
                         } else {
                             item.insertAdjacentHTML("afterbegin", operation.data);
