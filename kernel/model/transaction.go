@@ -780,13 +780,8 @@ func (tx *Transaction) doAppendInsert(operation *Operation) (ret *TxErr) {
 		operation.PreviousID = actualInsertedNode.Previous.ID
 	}
 
-	// 转换为insert操作供前端处理，同时更新Data为实际插入的节点DOM
+	// 转换为insert操作供前端处理
 	operation.Action = "insert"
-	// 创建临时树来渲染实际插入的节点
-	tempRoot := &ast.Node{Type: ast.NodeDocument}
-	tempRoot.AppendChild(actualInsertedNode)
-	tempTree := &parse.Tree{Root: tempRoot}
-	operation.Data = tx.luteEngine.Tree2BlockDOM(tempTree, tx.luteEngine.RenderOptions)
 	return
 }
 

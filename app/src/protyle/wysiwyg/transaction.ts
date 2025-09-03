@@ -195,7 +195,20 @@ const promiseTransaction = () => {
                                 // 列表特殊处理
                                 if (item.firstElementChild && item.firstElementChild.classList.contains("protyle-action") &&
                                     item.firstElementChild.nextElementSibling.getAttribute("data-node-id") !== operation.id) {
-                                    item.firstElementChild.insertAdjacentHTML("afterend", operation.data);
+                                    // 检查operation.data是否包含NodeList结构，如果是则提取内部的NodeListItem
+                                    let dataToInsert = operation.data;
+                                    if (item.classList.contains("list") && item.getAttribute("data-type") === "NodeList") {
+                                        const tempElement = document.createElement("template");
+                                        tempElement.innerHTML = operation.data;
+                                        const nodeListElement = tempElement.content.querySelector('[data-type="NodeList"]');
+                                        if (nodeListElement) {
+                                            const listItemElement = nodeListElement.querySelector('[data-type="NodeListItem"]');
+                                            if (listItemElement) {
+                                                dataToInsert = listItemElement.outerHTML;
+                                            }
+                                        }
+                                    }
+                                    item.firstElementChild.insertAdjacentHTML("afterend", dataToInsert);
                                     cursorElements.push(item.firstElementChild.nextElementSibling);
                                 } else if (item.firstElementChild && item.firstElementChild.getAttribute("data-node-id") !== operation.id) {
                                     item.insertAdjacentHTML("afterbegin", operation.data);
@@ -835,7 +848,20 @@ export const onTransaction = (protyle: IProtyle, operation: IOperation, isUndo: 
                     if (!isInEmbedBlock(item)) {
                         // 列表特殊处理
                         if (item.firstElementChild?.classList.contains("protyle-action")) {
-                            item.firstElementChild.insertAdjacentHTML("afterend", operation.data);
+                            // 检查operation.data是否包含NodeList结构，如果是则提取内部的NodeListItem
+                            let dataToInsert = operation.data;
+                            if (item.classList.contains("list") && item.getAttribute("data-type") === "NodeList") {
+                                const tempElement = document.createElement("template");
+                                tempElement.innerHTML = operation.data;
+                                const nodeListElement = tempElement.content.querySelector('[data-type="NodeList"]');
+                                if (nodeListElement) {
+                                    const listItemElement = nodeListElement.querySelector('[data-type="NodeListItem"]');
+                                    if (listItemElement) {
+                                        dataToInsert = listItemElement.outerHTML;
+                                    }
+                                }
+                            }
+                            item.firstElementChild.insertAdjacentHTML("afterend", dataToInsert);
                             cursorElements.push(item.firstElementChild.nextElementSibling);
                         } else {
                             item.insertAdjacentHTML("afterbegin", operation.data);

@@ -98,21 +98,65 @@ operation.Data = tx.luteEngine.Tree2BlockDOM(tempTree, tx.luteEngine.RenderOptio
 ## 修复总结
 
 **问题根本原因**：
-- 后端 `doAppendInsert` 在将 `appendInsert` 操作转换为 `insert` 操作时，正确更新了 `operation.ID` 和 `operation.ParentID`，但没有更新 `operation.Data`
-- 导致前端接收到的 transaction 中 `operation.Data` 仍然包含完整的 NodeList 结构，而不是实际插入的 NodeListItem
+- 前端transaction处理逻辑中，当向NodeList容器插入内容时，直接使用了`operation.data`的完整内容
+- `operation.data`包含完整的NodeList结构，但应该只插入内部的NodeListItem部分
+- 导致插入时多包了一层NodeList容器
 
 **修复方案**：
-- 在 `doAppendInsert` 函数中，转换操作类型时同时更新 `operation.Data`
-- 使用 `Tree2BlockDOM` 将实际插入的节点（`actualInsertedNode`）转换为正确的DOM字符串
-- 确保前端接收到的数据与后端实际插入的内容一致
+- 在前端transaction处理的两个关键位置添加智能解析逻辑
+- 当检测到要向NodeList容器插入数据，且`operation.data`包含NodeList结构时，自动提取内部的NodeListItem
+- 确保只插入NodeListItem，避免多余的容器包裹
 
 **修复效果**：
-- 全局annotation插件插入时，前端将收到正确的单个 NodeListItem DOM
-- 消除多余的 NodeList 容器包裹问题
-- 保证前后端数据一致性
+- 全局annotation插件插入时，前端将正确插入单个NodeListItem
+- 消除多余的NodeList容器包裹问题  
+- 保持DOM结构的正确性
 
 **修复位置**：
-- 文件：`/root/projects/siyuan/kernel/model/transaction.go`
-- 行数：783-789
-- 函数：`doAppendInsert`
+- 文件：`/root/projects/siyuan/app/src/protyle/wysiwyg/transaction.ts`
+- 位置1：行数 198-210 (backlinkData处理)
+- 位置2：行数 838-850 (常规处理)
+- 修复的两个核心insert操作处理逻辑
+
+**修复逻辑**：
+```typescript
+// 检查operation.data是否包含NodeList结构，如果是则提取内部的NodeListItem
+let dataToInsert = operation.data;
+if (item.classList.contains("list") && item.getAttribute("data-type") === "NodeList") {
+    const tempElement = document.createElement("template");
+    tempElement.innerHTML = operation.data;
+    const nodeListElement = tempElement.content.querySelector('[data-type="NodeList"]');
+    if (nodeListElement) {
+        const listItemElement = nodeListElement.querySelector('[data-type="NodeListItem"]');
+        if (listItemElement) {
+            dataToInsert = listItemElement.outerHTML;
+        }
+    }
+}
+item.firstElementChild.insertAdjacentHTML("afterend", dataToInsert);
+```
+
+## 影响评估
+
+### 安全性验证
+
+**触发条件限制**：
+1. 只在向 `data-type="NodeList"` 容器插入时触发
+2. 只处理包含嵌套NodeList结构的`operation.data`
+3. 严格的DOM元素检查：`.list` class + `data-type="NodeList"` 属性
+
+**不会影响的场景**：
+- 正常的列表创建和编辑操作（直接创建NodeListItem）
+- 向文档或其他容器插入列表（目标不是NodeList）
+- 简单的HTML内容插入（不包含嵌套结构）
+- 其他插件的常规操作
+
+**降级机制**：
+- 任何条件不满足时，回退到原始行为
+- 不会破坏现有功能
+- DOM解析安全（使用template元素）
+
+**预期影响范围**：
+- 仅影响全局annotation插件的特定插入场景
+- 对系统其他功能零影响
 - 保持与后端逻辑的一致性
