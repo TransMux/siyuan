@@ -197,16 +197,24 @@ const promiseTransaction = () => {
                                     item.firstElementChild.nextElementSibling.getAttribute("data-node-id") !== operation.id) {
                                     // 检查operation.data是否包含NodeList结构，如果是则提取内部的NodeListItem
                                     let dataToInsert = operation.data;
+                                    console.log("[Debug] item classes:", item.classList.toString());
+                                    console.log("[Debug] item data-type:", item.getAttribute("data-type"));
+                                    console.log("[Debug] operation.data:", operation.data);
                                     if (item.classList.contains("list") && item.getAttribute("data-type") === "NodeList") {
+                                        console.log("[Debug] Trigger condition met, processing NodeList structure");
                                         const tempElement = document.createElement("template");
                                         tempElement.innerHTML = operation.data;
                                         const nodeListElement = tempElement.content.querySelector('[data-type="NodeList"]');
                                         if (nodeListElement) {
+                                            console.log("[Debug] Found NodeList element:", nodeListElement);
                                             const listItemElement = nodeListElement.querySelector('[data-type="NodeListItem"]');
                                             if (listItemElement) {
+                                                console.log("[Debug] Found NodeListItem, extracting:", listItemElement.outerHTML);
                                                 dataToInsert = listItemElement.outerHTML;
                                             }
                                         }
+                                    } else {
+                                        console.log("[Debug] Condition not met, using original data");
                                     }
                                     item.firstElementChild.insertAdjacentHTML("afterend", dataToInsert);
                                     cursorElements.push(item.firstElementChild.nextElementSibling);
@@ -850,16 +858,24 @@ export const onTransaction = (protyle: IProtyle, operation: IOperation, isUndo: 
                         if (item.firstElementChild?.classList.contains("protyle-action")) {
                             // 检查operation.data是否包含NodeList结构，如果是则提取内部的NodeListItem
                             let dataToInsert = operation.data;
+                            console.log("[Debug2] item classes:", item.classList.toString());
+                            console.log("[Debug2] item data-type:", item.getAttribute("data-type"));
+                            console.log("[Debug2] operation.data:", operation.data);
                             if (item.classList.contains("list") && item.getAttribute("data-type") === "NodeList") {
+                                console.log("[Debug2] Trigger condition met, processing NodeList structure");
                                 const tempElement = document.createElement("template");
                                 tempElement.innerHTML = operation.data;
                                 const nodeListElement = tempElement.content.querySelector('[data-type="NodeList"]');
                                 if (nodeListElement) {
+                                    console.log("[Debug2] Found NodeList element:", nodeListElement);
                                     const listItemElement = nodeListElement.querySelector('[data-type="NodeListItem"]');
                                     if (listItemElement) {
+                                        console.log("[Debug2] Found NodeListItem, extracting:", listItemElement.outerHTML);
                                         dataToInsert = listItemElement.outerHTML;
                                     }
                                 }
+                            } else {
+                                console.log("[Debug2] Condition not met, using original data");
                             }
                             item.firstElementChild.insertAdjacentHTML("afterend", dataToInsert);
                             cursorElements.push(item.firstElementChild.nextElementSibling);
