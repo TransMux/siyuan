@@ -127,13 +127,30 @@ UpdateFromCloudIndex只在SyncDownload时调用，不在SyncUpload时调用。�
 2. **AddLazyFilesFromIndex方法**：专门用于在索引构建时累积懒加载文件，只更新更新时间更新的文件
 3. **保留历史记录**：确保即使文件被删除，LazyIndexManager仍保留历史记录供懒加载使用
 
+#### 关键问题发现 - Done
+
+经过用户反馈测试，发现简化方案仍然无效，错误信息：
+`懒加载文件失败: file [/assets/2025/09/network-asset-oMf0B3kTiuAiWQ1AOgMIG2UweScYBAQ0APbE6D-20250903210038-982rgsf.mp4] not found in any available index after comprehensive search`
+
+深入分析发现了**真正的根本问题**：
+- LazyIndexManager中的`isLazyLoadingFile`方法使用简化的字符串匹配
+- repo.go中的`isLazyLoadingFile`方法使用GitIgnore匹配器
+- **两者匹配逻辑不一致**导致LazyIndexManager认为某些文件不是懒加载文件而不保存！
+
+#### 最终修复方案 - Done
+
+**统一匹配逻辑修复**：
+1. LazyIndexManager添加`matcher`字段，使用与repo.go相同的GitIgnore匹配器
+2. `NewLazyIndexManager`中使用与repo相同的规则创建匹配器
+3. `isLazyLoadingFile`方法改用GitIgnore匹配器，确保两处逻辑完全一致
+
 #### 最终提交记录
-- dejavu commit fb9d945b50f1: 简化懒加载系统设计，采用增量累积策略
-- siyuan commit 834addc9f: 更新到简化版懒加载系统
+- dejavu commit 925968b85761: 修复关键问题：统一LazyIndexManager与repo的懒加载文件匹配逻辑
+- siyuan commit 466269d69: 更新到修复版本，统一懒加载文件匹配逻辑
 
 #### 预期效果
-这个简化方案从根本上解决了"无法懒加载，不存在本地或云端任何索引中"的问题，通过在索引构建时增量累积懒加载文件来维护历史记录，避免了复杂的云端历史索引扫描。
+这个修复解决了懒加载文件匹配不一致的根本问题。现在LazyIndexManager能够正确识别和保存所有懒加载文件（包括.mp4等媒体文件），从而彻底解决"file not found in any available index"的错误。
 
 ## 总结
 
-经过多轮分析和用户反馈，最终确定问题的根本原因是LazyIndexManager在索引更新时没有保留历史懒加载文件记录。简化方案通过AddLazyFilesFromIndex方法在每次索引构建时增量添加懒加载文件，确保历史记录不会丢失，从而解决了删除文件后同步导致懒加载失败的问题。
+经过深入分析，最终发现问题的根本原因是LazyIndexManager与repo.go中的懒加载文件匹配逻辑不一致。LazyIndexManager使用简化的字符串匹配，而repo.go使用GitIgnore匹配器，导致某些懒加载文件（特别是媒体文件）被LazyIndexManager误判为非懒加载文件而不保存。通过统一两处的匹配逻辑，确保LazyIndexManager能够正确识别和保存所有懒加载文件，从而彻底解决懒加载失败的问题。
