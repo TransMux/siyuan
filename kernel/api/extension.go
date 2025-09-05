@@ -348,13 +348,7 @@ func extensionCopy(c *gin.Context) {
 				broadcastTransactions(transactions)
 				return
 			}
-			ret.Code = -1
-			ret.Msg = "focus expired"
-			return
 		}
-		ret.Code = -1
-		ret.Msg = "focus not set"
-		return
 	}
 
 	ret.Data = map[string]interface{}{
