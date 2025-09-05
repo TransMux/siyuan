@@ -2498,22 +2498,6 @@ export class WYSIWYG {
                 return;
             }
 
-            // handle math ref & id ref click
-            const target = event.target as HTMLElement;
-            const hrefElement = target.querySelector('a[href^="#"]') || target.closest('a[href^="#"]');
-            if (hrefElement) {
-                const href = hrefElement.getAttribute('href');
-                if (href && href.startsWith('#')) {
-                    event.preventDefault();
-                    const labelId = href.substring(1);
-                    const labelElement = document.getElementById(labelId);
-                    if (labelElement) {
-                        labelElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                    return;
-                }
-            }
-
             this.setEmptyOutline(protyle, event.target);
             const tableElement = hasClosestByClassName(event.target, "table");
             this.element.querySelectorAll(".table").forEach(item => {
@@ -2552,6 +2536,37 @@ export class WYSIWYG {
                 } else if (aElement.classList.contains("b3-chip")) {
                     aLink = aElement.dataset.url;
                 }
+            }
+            
+            // handle math ref & id ref click
+            // 寻找父节点中是否存在 a[href^="#"]
+            let hrefElement: HTMLElement = null;
+            let el = event.target as HTMLElement;
+            while (el && el !== this.element) {
+                if (el.tagName === "A" && el.hasAttribute("href") && el.getAttribute("href").startsWith("#")) {
+                    hrefElement = el;
+                    break;
+                }
+                if (el.getAttribute && el.getAttribute("data-doc-type") === "NodeDocument") {
+                    break;
+                }
+
+                el = el.parentElement;
+            }
+            if (hrefElement) {
+                const href = hrefElement.getAttribute('href');
+                event.preventDefault();
+                const labelId = href.substring(1);
+                const labelElement = document.getElementById(labelId);
+                if (labelElement) {
+                    labelElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // 显示选中动画
+                    const blockElement = hasClosestBlock(labelElement);
+                    if (blockElement) {
+                        blockElement.classList.add("protyle-wysiwyg--select");
+                    }
+                }
+                return;
             }
 
             const blockRefElement = hasClosestByAttribute(event.target, "data-type", "block-ref");
