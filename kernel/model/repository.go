@@ -1891,7 +1891,7 @@ func newRepository() (ret *dejavu.Repo, err error) {
 
 	ignoreLines := getSyncIgnoreLines()
 	ignoreLines = append(ignoreLines, "/.siyuan/conf.json") // 忽略旧版同步配置
-	ret, err = dejavu.NewRepo(util.DataDir, util.RepoDir, util.HistoryDir, util.TempDir, Conf.System.ID, Conf.System.Name, Conf.System.OS, Conf.Repo.Key, ignoreLines, cloudRepo)
+	ret, err = dejavu.NewRepoWithLazyLoad(util.DataDir, util.RepoDir, util.HistoryDir, util.TempDir, Conf.System.ID, Conf.System.Name, Conf.System.OS, Conf.Repo.Key, ignoreLines, cloudRepo, Conf.Repo.LazyLoadEnabled)
 	if err != nil {
 		logging.LogErrorf("init data repo failed: %s", err)
 		return
@@ -2273,4 +2273,34 @@ func pushReloadPlugin(upsertPluginSet, removePluginNameSet *hashset.Set) {
 		"upsertPlugins": upsertPlugins,
 		"removePlugins": removePlugins,
 	})
+}
+
+// LoadAssetOnDemand 按需加载指定的资源文件
+func LoadAssetOnDemand(assetPath string) error {
+	repo, err := newRepository()
+	if err != nil {
+		return fmt.Errorf("repository not available: %w", err)
+	}
+	
+	return repo.LoadAssetOnDemand(assetPath)
+}
+
+// IsAssetCached 检查资源是否已缓存
+func IsAssetCached(assetPath string) bool {
+	repo, err := newRepository()
+	if err != nil {
+		return false
+	}
+	
+	return repo.IsAssetCached(assetPath)
+}
+
+// ClearLazyCache 清理懒加载缓存
+func ClearLazyCache() error {
+	repo, err := newRepository()
+	if err != nil {
+		return fmt.Errorf("repository not available: %w", err)
+	}
+	
+	return repo.ClearLazyCache()
 }

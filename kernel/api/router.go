@@ -411,6 +411,13 @@ func ServeAPI(ginServer *gin.Engine) {
 	ginServer.Handle("POST", "/api/repo/setRepoIndexRetentionDays", model.CheckAuth, model.CheckAdminRole, setRepoIndexRetentionDays)
 	ginServer.Handle("POST", "/api/repo/setRetentionIndexesDaily", model.CheckAuth, model.CheckAdminRole, setRetentionIndexesDaily)
 
+	// 懒加载相关API
+	ginServer.Handle("POST", "/api/repo/loadAssetOnDemand", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, loadAssetOnDemand)
+	ginServer.Handle("POST", "/api/repo/getAssetCacheStatus", model.CheckAuth, model.CheckAdminRole, getAssetCacheStatus)
+	ginServer.Handle("POST", "/api/repo/clearLazyCache", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, clearLazyCache)
+	ginServer.Handle("POST", "/api/repo/getLazyLoadConfig", model.CheckAuth, model.CheckAdminRole, getLazyLoadConfig)
+	ginServer.Handle("POST", "/api/repo/setLazyLoadConfig", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, setLazyLoadConfig)
+
 	ginServer.Handle("POST", "/api/riff/createRiffDeck", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, createRiffDeck)
 	ginServer.Handle("POST", "/api/riff/renameRiffDeck", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, renameRiffDeck)
 	ginServer.Handle("POST", "/api/riff/removeRiffDeck", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, removeRiffDeck)

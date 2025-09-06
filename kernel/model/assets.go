@@ -584,6 +584,27 @@ func GetAssetAbsPath(relativePath string) (ret string, err error) {
 		return
 	}
 
+	// 尝试懒加载assets文件
+	if Conf.Repo.LazyLoadEnabled && strings.HasPrefix(relativePath, "assets/") {
+		repo, repoErr := newRepository()
+		if repoErr == nil && repo != nil {
+			// 触发懒加载
+			if loadErr := repo.LoadAssetOnDemand(relativePath); loadErr != nil {
+				logging.LogWarnf("lazy load asset [%s] failed: %s", relativePath, loadErr)
+			} else {
+				// 懒加载成功，再次检查文件是否存在
+				if gulu.File.IsExist(p) {
+					ret = p
+					if !util.IsSubPath(util.WorkspaceDir, ret) {
+						err = fmt.Errorf("[%s] is not sub path of workspace", ret)
+						return
+					}
+					return
+				}
+			}
+		}
+	}
+
 	// 在笔记本下搜索
 	notebooks, err := ListNotebooks()
 	if err != nil {

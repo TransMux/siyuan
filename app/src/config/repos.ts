@@ -487,6 +487,14 @@ export const repos = {
         <span class="fn__space"></span>
         <input type="checkbox" id="syncPerception"${window.siyuan.config.sync.perception ? " checked='checked'" : ""} class="b3-switch fn__flex-center">
     </label>
+    <label class="fn__flex b3-label">
+        <div class="fn__flex-1">
+            资源文件懒加载
+            <div class="b3-label__text">启用后，assets 文件夹中的资源文件将按需下载，可显著减少首次同步时间和网络传输</div>
+        </div>
+        <span class="fn__space"></span>
+        <input type="checkbox" id="reposLazyLoadEnabled"${window.siyuan.config.repo?.lazyLoadEnabled ? " checked='checked'" : ""} class="b3-switch fn__flex-center">
+    </label>
 </div>
 <div class="b3-label">
     <div class="fn__flex config__item">
@@ -541,6 +549,20 @@ export const repos = {
             fetchPost("/api/sync/setSyncPerception", {enabled: syncPerceptionElement.checked}, () => {
                 window.siyuan.config.sync.perception = syncPerceptionElement.checked;
                 processSync();
+            });
+        });
+        const lazyLoadElement = repos.element.querySelector("#reposLazyLoadEnabled") as HTMLInputElement;
+        lazyLoadElement.addEventListener("change", () => {
+            fetchPost("/api/repo/setLazyLoadConfig", {enabled: lazyLoadElement.checked}, (response) => {
+                if (response.code === 0) {
+                    if (!window.siyuan.config.repo) {
+                        window.siyuan.config.repo = {};
+                    }
+                    window.siyuan.config.repo.lazyLoadEnabled = lazyLoadElement.checked;
+                    showMessage(lazyLoadElement.checked ? "懒加载已启用" : "懒加载已禁用");
+                } else {
+                    showMessage(response.msg);
+                }
             });
         });
         const switchConflictElement = repos.element.querySelector("#generateConflictDoc") as HTMLInputElement;
