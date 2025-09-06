@@ -483,6 +483,8 @@ func serveAssets(ginServer *gin.Engine) {
 		}
 
 		relativePath := path.Join("assets", requestPath)
+		logging.LogInfof("HTTP request for asset [%s]", relativePath)
+		
 		p, err := model.GetAssetAbsPath(relativePath)
 		if err != nil {
 			if strings.Contains(strings.TrimPrefix(requestPath, "/"), "/") {
@@ -490,10 +492,12 @@ func serveAssets(ginServer *gin.Engine) {
 				dest := url.PathEscape(strings.TrimPrefix(requestPath, "/"))
 				dest = strings.ReplaceAll(dest, ":", "%3A")
 				relativePath = path.Join("assets", dest)
+				logging.LogInfof("HTTP request for encoded asset [%s]", relativePath)
 				p, err = model.GetAssetAbsPath(relativePath)
 			}
 
 			if err != nil {
+				logging.LogWarnf("HTTP asset [%s] not found: %s", relativePath, err)
 				context.Status(http.StatusNotFound)
 				return
 			}

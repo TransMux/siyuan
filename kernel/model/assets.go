@@ -567,6 +567,34 @@ func SearchAssetsByName(keyword string, exts []string) (ret []*cache.Asset) {
 	return
 }
 
+// TryLazyLoadAsset 尝试懒加载指定的assets文件
+func TryLazyLoadAsset(relativePath string) (success bool, err error) {
+	if !Conf.Repo.LazyLoadEnabled || !strings.HasPrefix(relativePath, "assets/") {
+		return false, nil
+	}
+
+	logging.LogInfof("attempting lazy load for asset [%s]", relativePath)
+	repo, repoErr := newRepository()
+	if repoErr != nil {
+		logging.LogErrorf("get repository for lazy load failed: %s", repoErr)
+		return false, repoErr
+	}
+
+	if repo == nil {
+		logging.LogWarnf("repository is nil, cannot perform lazy load for [%s]", relativePath)
+		return false, nil
+	}
+
+	// 触发懒加载
+	if loadErr := repo.LoadAssetOnDemand(relativePath); loadErr != nil {
+		logging.LogErrorf("lazy load asset [%s] failed: %s", relativePath, loadErr)
+		return false, loadErr
+	}
+
+	logging.LogInfof("lazy load asset [%s] succeeded", relativePath)
+	return true, nil
+}
+
 func GetAssetAbsPath(relativePath string) (ret string, err error) {
 	relativePath = strings.TrimSpace(relativePath)
 	if strings.Contains(relativePath, "?") {
@@ -585,23 +613,18 @@ func GetAssetAbsPath(relativePath string) (ret string, err error) {
 	}
 
 	// 尝试懒加载assets文件
-	if Conf.Repo.LazyLoadEnabled && strings.HasPrefix(relativePath, "assets/") {
-		repo, repoErr := newRepository()
-		if repoErr == nil && repo != nil {
-			// 触发懒加载
-			if loadErr := repo.LoadAssetOnDemand(relativePath); loadErr != nil {
-				logging.LogWarnf("lazy load asset [%s] failed: %s", relativePath, loadErr)
-			} else {
-				// 懒加载成功，再次检查文件是否存在
-				if gulu.File.IsExist(p) {
-					ret = p
-					if !util.IsSubPath(util.WorkspaceDir, ret) {
-						err = fmt.Errorf("[%s] is not sub path of workspace", ret)
-						return
-					}
-					return
-				}
+	if success, _ := TryLazyLoadAsset(relativePath); success {
+		// 懒加载成功，再次检查文件是否存在
+		if gulu.File.IsExist(p) {
+			logging.LogInfof("lazy loaded asset [%s] now available at [%s]", relativePath, p)
+			ret = p
+			if !util.IsSubPath(util.WorkspaceDir, ret) {
+				err = fmt.Errorf("[%s] is not sub path of workspace", ret)
+				return
 			}
+			return
+		} else {
+			logging.LogWarnf("lazy load succeeded but file [%s] still not found at [%s]", relativePath, p)
 		}
 	}
 

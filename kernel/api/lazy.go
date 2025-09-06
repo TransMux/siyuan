@@ -102,11 +102,7 @@ func setLazyLoadConfig(c *gin.Context) {
 	model.Conf.Repo.LazyLoadEnabled = enabled
 	
 	// 保存配置
-	if err := model.SaveConf(); err != nil {
-		ret.Code = -1
-		ret.Msg = err.Error()
-		return
-	}
+	model.Conf.Save()
 
 	ret.Data = map[string]interface{}{
 		"enabled": enabled,

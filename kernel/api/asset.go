@@ -46,6 +46,8 @@ func statAsset(c *gin.Context) {
 	var p string
 	if strings.HasPrefix(path, "assets/") {
 		var err error
+		// 尝试懒加载assets文件
+		model.TryLazyLoadAsset(path)
 		p, err = model.GetAssetAbsPath(path)
 		if err != nil {
 			ret.Code = 1
@@ -284,6 +286,10 @@ func getFileAnnotation(c *gin.Context) {
 
 func resolveFileAnnotationAbsPath(assetRelPath string) (ret string, err error) {
 	filePath := strings.TrimSuffix(assetRelPath, ".sya")
+	// 尝试懒加载assets文件
+	if strings.HasPrefix(filePath, "assets/") {
+		model.TryLazyLoadAsset(filePath)
+	}
 	absPath, err := model.GetAssetAbsPath(filePath)
 	if err != nil {
 		return
@@ -359,6 +365,10 @@ func resolveAssetPath(c *gin.Context) {
 	}
 
 	path := arg["path"].(string)
+	// 尝试懒加载assets文件
+	if strings.HasPrefix(path, "assets/") {
+		model.TryLazyLoadAsset(path)
+	}
 	p, err := model.GetAssetAbsPath(path)
 	if err != nil {
 		ret.Code = -1
