@@ -15,6 +15,9 @@ app/build
 app/src/types/dist
 app/kernel*
 app/SiYuan-Kernel
+kernel/siyuan-kernel
+kernel/siyuan
+kernel/kernel
 ios
 pprof
 
