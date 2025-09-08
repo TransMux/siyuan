@@ -412,8 +412,8 @@ github.com/tklauser/go-sysconf v0.3.15 h1:VE89k0criAymJ/Os65CSn1IXaol+1wrsFHEB8O
 github.com/tklauser/go-sysconf v0.3.15/go.mod h1:Dmjwr6tYFIseJw7a3dRLJfsHAMXZ3nEnL/aZY+0IuI4=
 github.com/tklauser/numcpus v0.10.0 h1:18njr6LDBk1zuna922MgdjQuJFjrdppsZG60sHGfjso=
 github.com/tklauser/numcpus v0.10.0/go.mod h1:BiTKazU708GQTYF4mB+cmlpT2Is1gLk7XVuEeem8LsQ=
-github.com/transmux/dejavu v0.0.0-20250908042002-7da64396b46c h1:58I/VF/H6C0Ch/4e1hK/iSiV4SleU5BpcCpTVS7Okcg=
-github.com/transmux/dejavu v0.0.0-20250908042002-7da64396b46c/go.mod h1:9u6fFkH30VBjtozHDjNA/MZCULOuDtiPfGhV7DbYzww=
+github.com/transmux/dejavu v0.0.0-20250908051315-b535764efaa2 h1:WoJnApJ2nx5c0kZrobZUVd6yr93WaDYJ0UI2M8agTDk=
+github.com/transmux/dejavu v0.0.0-20250908051315-b535764efaa2/go.mod h1:9u6fFkH30VBjtozHDjNA/MZCULOuDtiPfGhV7DbYzww=
 github.com/twitchyliquid64/golang-asm v0.15.1 h1:SU5vSMR7hnwNxj24w34ZyCi/FmDZTkS4MhqMhdFk5YI=
 github.com/twitchyliquid64/golang-asm v0.15.1/go.mod h1:a1lVb/DtPvCB8fslRZhAngC2+aY1QWCk3Cedj/Gdt08=
 github.com/ugorji/go/codec v1.3.0 h1:Qd2W2sQawAfG8XSvzwhBeoGq71zXOC/Q1E9y/wUcsUA=
