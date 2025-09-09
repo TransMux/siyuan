@@ -1255,7 +1255,7 @@ export class Toolbar {
         const eventDetail = {languages: hljsLanguages};
         if (protyle.app && protyle.app.plugins) {
             protyle.app.plugins.forEach((plugin: any) => {
-                plugin.eventBus.emit("code-language-before", eventDetail);
+                plugin.eventBus.emit("code-language-update", eventDetail);
             });
         }
 
@@ -1296,23 +1296,34 @@ export class Toolbar {
             let html = "";
             // sort
             let matchInput = false;
-            matchLanguages.sort((a, b) => {
-                if (a.startsWith(lowerCaseValue) && b.startsWith(lowerCaseValue)) {
-                    if (a.length < b.length) {
+            if (lowerCaseValue) {
+                matchLanguages.sort((a, b) => {
+                    if (a.startsWith(lowerCaseValue) && b.startsWith(lowerCaseValue)) {
+                        if (a.length < b.length) {
+                            return -1;
+                        } else if (a.length === b.length) {
+                            return 0;
+                        } else {
+                            return 1;
+                        }
+                    } else if (a.startsWith(lowerCaseValue)) {
                         return -1;
-                    } else if (a.length === b.length) {
-                        return 0;
-                    } else {
+                    } else if (b.startsWith(lowerCaseValue)) {
                         return 1;
+                    } else {
+                        return 0;
                     }
-                } else if (a.startsWith(lowerCaseValue)) {
-                    return -1;
-                } else if (b.startsWith(lowerCaseValue)) {
-                    return 1;
-                } else {
-                    return 0;
-                }
-            }).forEach((item) => {
+                });
+            }
+
+            const eventDetail = {languages: matchLanguages};
+            if (protyle.app && protyle.app.plugins) {
+                protyle.app.plugins.forEach((plugin: any) => {
+                    plugin.eventBus.emit("code-language-update", eventDetail);
+                });
+            }
+
+            matchLanguages.forEach((item) => {
                 if (inputElement.value === item) {
                     matchInput = true;
                 }

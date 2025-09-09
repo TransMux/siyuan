@@ -1464,6 +1464,7 @@ export const dropEvent = (protyle: IProtyle, editorElement: HTMLElement) => {
             html += `((${id} '${response.data}'))`;
             insertHTML(protyle.lute.Md2BlockDOM(html), protyle);
         } else if (!window.siyuan.dragElement && (event.dataTransfer.types[0] === "Files" || event.dataTransfer.types.includes("text/html"))) {
+            event.preventDefault();
             // 外部文件拖入编辑器中或者编辑器内选中文字拖拽
             // https://github.com/siyuan-note/siyuan/issues/9544
             const avElement = hasClosestByClassName(event.target, "av");

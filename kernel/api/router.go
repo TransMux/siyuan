@@ -224,6 +224,7 @@ func ServeAPI(ginServer *gin.Engine) {
 	ginServer.Handle("POST", "/api/block/getBlockRelevantIDs", model.CheckAuth, getBlockRelevantIDs)
 	ginServer.Handle("POST", "/api/block/getBlockTreeInfos", model.CheckAuth, getBlockTreeInfos)
 	ginServer.Handle("POST", "/api/block/checkBlockRef", model.CheckAuth, checkBlockRef)
+	ginServer.Handle("POST", "/api/block/appendHeadingChildren", model.CheckAuth, appendHeadingChildren)
 
 	ginServer.Handle("POST", "/api/file/getFile", model.CheckAuth, getFile)
 	ginServer.Handle("POST", "/api/file/putFile", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, putFile)
@@ -471,6 +472,8 @@ func ServeAPI(ginServer *gin.Engine) {
 	ginServer.Handle("POST", "/api/av/setAttrViewGroup", model.CheckAuth, setAttrViewGroup)
 	ginServer.Handle("POST", "/api/av/batchReplaceAttributeViewBlocks", model.CheckAuth, batchReplaceAttributeViewBlocks)
 	ginServer.Handle("POST", "/api/av/getAttributeViewAddingBlockDefaultValues", model.CheckAuth, getAttributeViewAddingBlockDefaultValues)
+	ginServer.Handle("POST", "/api/av/getAttributeViewBoundBlockIDsByItemIDs", model.CheckAuth, getAttributeViewBoundBlockIDsByItemIDs)
+	ginServer.Handle("POST", "/api/av/getAttributeViewItemIDsByBoundIDs", model.CheckAuth, getAttributeViewItemIDsByBoundIDs)
 
 	ginServer.Handle("POST", "/api/ai/chatGPT", model.CheckAuth, model.CheckAdminRole, chatGPT)
 	ginServer.Handle("POST", "/api/ai/chatGPTWithAction", model.CheckAuth, model.CheckAdminRole, chatGPTWithAction)

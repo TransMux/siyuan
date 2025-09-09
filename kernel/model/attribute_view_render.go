@@ -88,6 +88,11 @@ func renderAttributeView(attrView *av.AttributeView, nodeID, viewID, query strin
 }
 
 func renderAttributeViewGroups(viewable av.Viewable, attrView *av.AttributeView, view *av.View, query string, page, pageSize int, groupPaging map[string]interface{}) (err error) {
+	groupKey := view.GetGroupKey(attrView)
+	if nil == groupKey {
+		return
+	}
+
 	// 当前日期可能会变，所以如果是按日期分组则需要重新生成分组
 	if isGroupByDate(view) {
 		createdDate := time.UnixMilli(view.GroupCreated).Format("2006-01-02")
@@ -97,23 +102,17 @@ func renderAttributeViewGroups(viewable av.Viewable, attrView *av.AttributeView,
 		}
 	}
 
-	groupKey := view.GetGroupKey(attrView)
-	if nil == groupKey {
-		return
+	// 如果是按模板分组则需要重新生成分组
+	if isGroupByTemplate(attrView, view) {
+		regenAttrViewGroups(attrView)
+		av.SaveAttributeView(attrView)
 	}
 
 	// 如果存在分组的话渲染分组视图
 
-	fixDev := false
 	for _, groupView := range view.Groups {
-		if (nil == groupView.GroupVal || nil == groupView.GroupKey) && !fixDev {
-			// TODO 分组上线后删除，预计 2025 年 9 月后可以删除
-			regenAttrViewGroups(attrView)
-			av.SaveAttributeView(attrView)
-			fixDev = true
-		}
-
-		switch groupView.GetGroupValue() {
+		groupView.Name = groupView.GetGroupValue()
+		switch groupView.Name {
 		case groupValueDefault:
 			groupView.Name = fmt.Sprintf(Conf.language(264), groupKey.Name)
 		case groupValueNotInRange:
@@ -132,8 +131,6 @@ func renderAttributeViewGroups(viewable av.Viewable, attrView *av.AttributeView,
 			groupView.Name = fmt.Sprintf(Conf.language(263), 7)
 		case groupValueNext30Days:
 			groupView.Name = fmt.Sprintf(Conf.language(263), 30)
-		default:
-			groupView.Name = groupView.GetGroupValue()
 		}
 	}
 
@@ -352,6 +349,18 @@ func isGroupByDate(view *av.View) bool {
 	return av.GroupMethodDateDay == view.Group.Method || av.GroupMethodDateWeek == view.Group.Method || av.GroupMethodDateMonth == view.Group.Method || av.GroupMethodDateYear == view.Group.Method || av.GroupMethodDateRelative == view.Group.Method
 }
 
+func isGroupByTemplate(attrView *av.AttributeView, view *av.View) bool {
+	if nil == view.Group {
+		return false
+	}
+
+	groupKey := view.GetGroupKey(attrView)
+	if nil == groupKey {
+		return false
+	}
+	return av.KeyTypeTemplate == groupKey.Type
+}
+
 func renderViewableInstance(viewable av.Viewable, view *av.View, attrView *av.AttributeView, page, pageSize int) (err error) {
 	if nil == viewable {
 		err = av.ErrViewNotFound
@@ -359,7 +368,9 @@ func renderViewableInstance(viewable av.Viewable, view *av.View, attrView *av.At
 		return
 	}
 
-	av.Filter(viewable, attrView)
+	cachedAttrViews := map[string]*av.AttributeView{}
+	rollupFurtherCollections := sql.GetFurtherCollections(attrView, cachedAttrViews)
+	av.Filter(viewable, attrView, rollupFurtherCollections, cachedAttrViews)
 	av.Sort(viewable, attrView)
 	av.Calc(viewable, attrView)
 
@@ -464,7 +475,7 @@ func RenderRepoSnapshotAttributeView(indexID, avID string) (viewable av.Viewable
 			return
 		}
 
-		attrView = &av.AttributeView{}
+		attrView = &av.AttributeView{RenderedViewables: map[string]av.Viewable{}}
 		if err = gulu.JSON.UnmarshalJSON(data, attrView); err != nil {
 			logging.LogErrorf("unmarshal attribute view [%s] failed: %s", avID, err)
 			return
@@ -507,7 +518,7 @@ func RenderHistoryAttributeView(avID, created string) (viewable av.Viewable, att
 			return
 		}
 
-		attrView = &av.AttributeView{}
+		attrView = &av.AttributeView{RenderedViewables: map[string]av.Viewable{}}
 		if err = gulu.JSON.UnmarshalJSON(data, attrView); err != nil {
 			logging.LogErrorf("unmarshal attribute view [%s] failed: %s", avID, err)
 			return

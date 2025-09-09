@@ -233,7 +233,7 @@ func processLocalFile(task DownloadTask, assetsDirPath string) DownloadResult {
 	name := filepath.Base(u)
 	name = util.FilterUploadFileName(name)
 	name = "network-asset-" + name
-	name = util.AssetName(name)
+	name = util.AssetName(name, ast.NewNodeID())
 
 	// Use date-based subfolder (YYYY/MM)
 	timeString := time.Now().Format("2006/01")
@@ -378,7 +378,7 @@ func processNetworkFile(task DownloadTask, browserClient *req.Client, assetsDirP
 			name += ext
 		}
 	}
-	name = util.AssetName(name)
+	name = util.AssetName(name, ast.NewNodeID())
 	name = "network-asset-" + name
 
 	// Use date-based subfolder (YYYY/MM)
@@ -962,7 +962,7 @@ func RenameAsset(oldPath, newName string) (newPath string, err error) {
 		return
 	}
 
-	newName = util.AssetName(newName + filepath.Ext(oldPath))
+	newName = util.AssetName(newName+filepath.Ext(oldPath), ast.NewNodeID())
 	parentDir := path.Dir(oldPath)
 	newPath = path.Join(parentDir, newName)
 	oldAbsPath, getErr := GetAssetAbsPath(oldPath)

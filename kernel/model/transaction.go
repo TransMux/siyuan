@@ -587,19 +587,19 @@ func (tx *Transaction) doPrependInsert(operation *Operation) (ret *TxErr) {
 	if nil == insertedNode {
 		return &TxErr{code: TxErrCodeBlockNotFound, msg: "invalid data tree", id: block.ID}
 	}
-	var remains []*ast.Node
-	for remain := insertedNode.Next; nil != remain; remain = remain.Next {
-		if ast.NodeKramdownBlockIAL != remain.Type {
-			if "" == remain.ID {
-				remain.ID = ast.NewNodeID()
-				remain.SetIALAttr("id", remain.ID)
-			}
-			remains = append(remains, remain)
-		}
-	}
 	if "" == insertedNode.ID {
 		insertedNode.ID = ast.NewNodeID()
 		insertedNode.SetIALAttr("id", insertedNode.ID)
+	}
+	var toInserts []*ast.Node
+	for toInsert := insertedNode; nil != toInsert; toInsert = toInsert.Next {
+		if ast.NodeKramdownBlockIAL != toInsert.Type {
+			if "" == toInsert.ID {
+				toInsert.ID = ast.NewNodeID()
+				toInsert.SetIALAttr("id", toInsert.ID)
+			}
+			toInserts = append(toInserts, toInsert)
+		}
 	}
 
 	node := treenode.GetNodeInTree(tree, operation.ParentID)
@@ -608,31 +608,45 @@ func (tx *Transaction) doPrependInsert(operation *Operation) (ret *TxErr) {
 		return &TxErr{code: TxErrCodeBlockNotFound, id: operation.ParentID}
 	}
 	isContainer := node.IsContainerBlock()
-	for i := len(remains) - 1; 0 <= i; i-- {
-		remain := remains[i]
+	slices.Reverse(toInserts)
+
+	for _, toInsert := range toInserts {
 		if isContainer {
-			if ast.NodeListItem == node.Type && 3 == node.ListData.Typ {
-				node.FirstChild.InsertAfter(remain)
+			if ast.NodeList == node.Type {
+				// 列表下只能挂列表项，所以这里需要分情况处理
+				if ast.NodeList == toInsert.Type {
+					var childLis []*ast.Node
+					for childLi := toInsert.FirstChild; nil != childLi; childLi = childLi.Next {
+						childLis = append(childLis, childLi)
+					}
+					for i := len(childLis) - 1; -1 < i; i-- {
+						node.PrependChild(childLis[i])
+					}
+				} else {
+					newLiID := ast.NewNodeID()
+					newLi := &ast.Node{ID: newLiID, Type: ast.NodeListItem, ListData: &ast.ListData{Typ: node.ListData.Typ}}
+					newLi.SetIALAttr("id", newLiID)
+					node.PrependChild(newLi)
+					newLi.AppendChild(toInsert)
+				}
 			} else if ast.NodeSuperBlock == node.Type {
-				node.FirstChild.Next.InsertAfter(remain)
+				layout := node.ChildByType(ast.NodeSuperBlockLayoutMarker)
+				if nil != layout {
+					layout.InsertAfter(toInsert)
+				} else {
+					node.FirstChild.InsertAfter(toInsert)
+				}
 			} else {
-				node.PrependChild(remain)
+				node.PrependChild(toInsert)
 			}
 		} else {
-			node.InsertAfter(remain)
+			node.InsertAfter(toInsert)
 		}
+
+		createdUpdated(toInsert)
+		tx.nodes[toInsert.ID] = toInsert
 	}
-	if isContainer {
-		if ast.NodeListItem == node.Type && 3 == node.ListData.Typ {
-			node.FirstChild.InsertAfter(insertedNode)
-		} else if ast.NodeSuperBlock == node.Type {
-			node.FirstChild.Next.InsertAfter(insertedNode)
-		} else {
-			node.PrependChild(insertedNode)
-		}
-	} else {
-		node.InsertAfter(insertedNode)
-	}
+
 	createdUpdated(insertedNode)
 	tx.nodes[insertedNode.ID] = insertedNode
 	if err = tx.writeTree(tree); err != nil {
@@ -711,10 +725,17 @@ func (tx *Transaction) doAppendInsert(operation *Operation) (ret *TxErr) {
 		return &TxErr{code: TxErrCodeBlockNotFound, id: operation.ParentID}
 	}
 	isContainer := node.IsContainerBlock()
-	var actualInsertedNode *ast.Node // 跟踪实际插入的最外层节点
+	if !isContainer {
+		slices.Reverse(toInserts)
+	}
+	var lastChildBelowHeading *ast.Node
+	if ast.NodeHeading == node.Type {
+		if children := treenode.HeadingChildren(node); 0 < len(children) {
+			lastChildBelowHeading = children[len(children)-1]
+		}
+	}
 
-	for i := 0; i < len(toInserts); i++ {
-		toInsert := toInserts[i]
+	for _, toInsert := range toInserts {
 		if isContainer {
 			if ast.NodeList == node.Type {
 				// 列表下只能挂列表项，所以这里需要分情况处理 https://github.com/siyuan-note/siyuan/issues/9955
@@ -723,11 +744,8 @@ func (tx *Transaction) doAppendInsert(operation *Operation) (ret *TxErr) {
 					for childLi := toInsert.FirstChild; nil != childLi; childLi = childLi.Next {
 						childLis = append(childLis, childLi)
 					}
-					for j, childLi := range childLis {
+					for _, childLi := range childLis {
 						node.AppendChild(childLi)
-						if i == 0 && j == 0 {
-							actualInsertedNode = childLi // 第一个插入的列表项
-						}
 					}
 				} else {
 					newLiID := ast.NewNodeID()
@@ -735,27 +753,26 @@ func (tx *Transaction) doAppendInsert(operation *Operation) (ret *TxErr) {
 					newLi.SetIALAttr("id", newLiID)
 					node.AppendChild(newLi)
 					newLi.AppendChild(toInsert)
-					if i == 0 {
-						actualInsertedNode = newLi // 新创建的列表项
-					}
 				}
 			} else if ast.NodeSuperBlock == node.Type {
 				node.LastChild.InsertBefore(toInsert)
-				if i == 0 {
-					actualInsertedNode = toInsert
-				}
 			} else {
 				node.AppendChild(toInsert)
-				if i == 0 {
-					actualInsertedNode = toInsert
-				}
 			}
 		} else {
-			node.InsertAfter(toInsert)
-			if i == 0 {
-				actualInsertedNode = toInsert
+			if ast.NodeHeading == node.Type {
+				if nil != lastChildBelowHeading {
+					lastChildBelowHeading.InsertAfter(toInsert)
+				} else {
+					node.InsertAfter(toInsert)
+				}
+			} else {
+				node.InsertAfter(toInsert)
 			}
 		}
+
+		createdUpdated(toInsert)
+		tx.nodes[toInsert.ID] = toInsert
 	}
 
 	createdUpdated(insertedNode)
@@ -764,24 +781,14 @@ func (tx *Transaction) doAppendInsert(operation *Operation) (ret *TxErr) {
 		return &TxErr{code: TxErrCodeWriteTree, msg: err.Error(), id: block.ID}
 	}
 
-	// 设置插入节点的ID
-	operation.ID = actualInsertedNode.ID
+	operation.ID = insertedNode.ID
+	operation.ParentID = insertedNode.Parent.ID
 
-	// 设置父节点ID
-	if isContainer {
-		operation.ParentID = node.ID
-	} else {
-		// 非容器块的情况，父节点是插入节点的父节点
-		operation.ParentID = actualInsertedNode.Parent.ID
-	}
-
-	// 设置前一个兄弟节点ID
-	if actualInsertedNode.Previous != nil {
-		operation.PreviousID = actualInsertedNode.Previous.ID
-	}
-
-	// 转换为insert操作供前端处理
+	// 将 appendInsert 转换为 insert 推送
 	operation.Action = "insert"
+	if nil != insertedNode.Previous {
+		operation.PreviousID = insertedNode.Previous.ID
+	}
 	return
 }
 
@@ -1294,11 +1301,19 @@ func (tx *Transaction) doInsert(operation *Operation) (ret *TxErr) {
 					node.FirstChild.InsertAfter(remain)
 				}
 			} else {
-				for i := len(remains) - 1; 0 <= i; i-- {
-					remain := remains[i]
-					node.PrependChild(remain)
+				if !node.IsContainerBlock() {
+					for i := len(remains) - 1; 0 <= i; i-- {
+						remain := remains[i]
+						node.InsertAfter(remain)
+					}
+					node.InsertAfter(insertedNode)
+				} else {
+					for i := len(remains) - 1; 0 <= i; i-- {
+						remain := remains[i]
+						node.PrependChild(remain)
+					}
+					node.PrependChild(insertedNode)
 				}
-				node.PrependChild(insertedNode)
 			}
 		}
 	}
