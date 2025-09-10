@@ -19,7 +19,7 @@ import {
     setLastNodeRange,
 } from "../util/selection";
 import { Constants } from "../../constants";
-import { isMobile } from "../../util/functions";
+import { isMobile, isElementVisible } from "../../util/functions";
 import { genEmptyElement } from "../../block/util";
 import { previewDocImage } from "../preview/image";
 import {
@@ -2604,8 +2604,15 @@ export class WYSIWYG {
                 const labelId = href.substring(1);
                 const labelElement = document.getElementById(labelId);
                 if (labelElement) {
-                    labelElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    // 显示选中动画
+                    // 检查元素是否已经可见，80%可见即认为可见
+                    const isVisible = isElementVisible(labelElement, 0.8);
+                    
+                    if (!isVisible) {
+                        // 元素不可见，执行滚动
+                        labelElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    
+                    // 无论是否滚动，都显示选中动画
                     const blockElement = hasClosestBlock(labelElement);
                     if (blockElement) {
                         blockElement.classList.add("protyle-wysiwyg--select");

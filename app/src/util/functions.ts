@@ -116,3 +116,30 @@ export const duplicateNameAddOne = (name:string) => {
     }
     return name;
 };
+
+/**
+ * 检测元素是否在视口中完全或部分可见
+ * @param element 要检测的元素
+ * @param threshold 可见性阈值 (0-1)，0表示部分可见即可，1表示完全可见
+ * @returns 是否可见
+ */
+export const isElementVisible = (element: Element, threshold = 0): boolean => {
+    const rect = element.getBoundingClientRect();
+    const windowHeight = window.innerHeight;
+    const windowWidth = window.innerWidth;
+    
+    // 计算可见区域
+    const visibleHeight = Math.min(rect.bottom, windowHeight) - Math.max(rect.top, 0);
+    const visibleWidth = Math.min(rect.right, windowWidth) - Math.max(rect.left, 0);
+    
+    if (visibleHeight <= 0 || visibleWidth <= 0) {
+        return false;
+    }
+    
+    // 计算可见性比例
+    const totalArea = rect.height * rect.width;
+    const visibleArea = visibleHeight * visibleWidth;
+    const visibilityRatio = visibleArea / totalArea;
+    
+    return visibilityRatio >= threshold;
+};
