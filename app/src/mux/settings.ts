@@ -1,7 +1,7 @@
 import { Constants } from "../constants";
 
 // @ts-ignore
-window.____muxSettings = {
+window.__muxSettings = {
     "protyle-support-bookmark-plus": true,
     "use-memo-as-annotation": true,
     "引用时先取消选区内的反链": true,
@@ -33,7 +33,7 @@ export function get<T>(key: string): T {
         return undefined as T;
     }
     // @ts-ignore
-    if (window.__muxSettings[key]) {
+    if (window.__muxSettings[key] !== undefined) {
         // @ts-ignore
         return window.__muxSettings[key] as T;
     }
