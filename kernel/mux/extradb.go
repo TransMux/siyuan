@@ -57,6 +57,15 @@ func ClosePluginDatabase() {
 
 // HandleQuery 处理查询请求
 func HandleQuery(c *gin.Context) {
+	// Check if plugin database is available (only on desktop platforms)
+	if db == nil {
+		c.JSON(http.StatusServiceUnavailable, SQLResponse{
+			Code: 1,
+			Msg:  "Plugin database not available on this platform",
+		})
+		return
+	}
+
 	var req SQLRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, SQLResponse{
@@ -137,6 +146,15 @@ func HandleQuery(c *gin.Context) {
 
 // HandleExec 处理执行请求
 func HandleExec(c *gin.Context) {
+	// Check if plugin database is available (only on desktop platforms)
+	if db == nil {
+		c.JSON(http.StatusServiceUnavailable, SQLResponse{
+			Code: 1,
+			Msg:  "Plugin database not available on this platform",
+		})
+		return
+	}
+
 	var req SQLRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, SQLResponse{

@@ -41,9 +41,13 @@ func main() {
 	sql.SetCaseSensitive(model.Conf.Search.CaseSensitive)
 	sql.SetIndexAssetPath(model.Conf.Search.IndexAssetPath)
 
-	// Initialize plugin database
-	if err := mux.InitPluginDatabase(); err != nil {
-		logging.LogErrorf("init plugin database failed: %s", err)
+	// Initialize plugin database (only on desktop platforms)
+	if util.ContainerStd == util.Container || util.ContainerDocker == util.Container {
+		if err := mux.InitPluginDatabase(); err != nil {
+			logging.LogErrorf("init plugin database failed: %s", err)
+		}
+	} else {
+		logging.LogInfof("skipping plugin database initialization on mobile platform [%s]", util.Container)
 	}
 
 	model.BootSyncData()
