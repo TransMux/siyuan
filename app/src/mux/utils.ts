@@ -171,34 +171,3 @@ export function av在客户端渲染template(content: string, dataId: string) {
     }
 }
 
-/**
- * Interface for the database query request
- */
-interface SQLRequest {
-    stmt: string;
-    args?: any[];
-}
-
-/**
- * Interface for the database query response
- */
-interface SQLResponse {
-    code: number;
-    msg: string;
-    data: any[];
-}
-
-export function extraDBSQL(request: SQLRequest): Promise<any[]> {
-    return new Promise((resolve, reject) => {
-        // 动态导入以避免 fetch ↔ utils 的循环依赖
-        import("../util/fetch").then(({ fetchPost }) => {
-            fetchPost("/api/db/query", request, (response: SQLResponse) => {
-                if (response.code === 0) {
-                    resolve(response.data || []);
-                } else {
-                    reject(new Error(response.msg || "Unknown error"));
-                }
-            });
-        }).catch(reject);
-    });
-}

@@ -43,8 +43,6 @@ import { avRender } from "../render/av/render";
 import { genIconHTML } from "../render/util";
 import { updateAttrViewCellAnimation } from "../render/av/action";
 import { paste } from "../util/paste";
-import { addIDClickCount, getIDClickCounts, 带排序的searchRefBlock } from "../../mux/idCount";
-import { get } from "../../mux/settings";
 
 export class Hint {
     public timeId: number;
@@ -74,11 +72,6 @@ export class Hint {
                     const decoded = decodeURIComponent(dataValue || "");
                     const tmp = document.createElement("div");
                     tmp.innerHTML = decoded.replace(/<mark>/g, "").replace(/<\/mark>/g, "");
-                    const span = tmp.querySelector("span[data-type='block-ref']");
-                    const id = span?.getAttribute("data-id");
-                    if (id) {
-                        addIDClickCount(id)
-                    }
                 } catch (e) {
                     // ignore parsing errors
                 }
@@ -348,7 +341,7 @@ ${unicode2Emoji(emoji.unicode)}</button>`;
 
     private genSearchHTML(protyle: IProtyle, searchElement: HTMLInputElement, nodeElement: false | HTMLElement, oldValue: string, source: THintSource) {
         this.element.lastElementChild.innerHTML = '<div class="ft__center"><img style="height:32px;width:32px;" src="/stage/loading-pure.svg"></div>';
-        带排序的searchRefBlock({
+        fetchPost("/api/search/searchRefBlock", {
             // https://x.transmux.top/j/20241101152241-xd5257k
             k: searchElement.value.trim(), // 去除 search key 两边的空格
             id: nodeElement ? nodeElement.getAttribute("data-node-id") : protyle.block.parentID,

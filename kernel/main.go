@@ -19,11 +19,9 @@
 package main
 
 import (
-	"github.com/siyuan-note/logging"
 	"github.com/siyuan-note/siyuan/kernel/cache"
 	"github.com/siyuan-note/siyuan/kernel/job"
 	"github.com/siyuan-note/siyuan/kernel/model"
-	"github.com/siyuan-note/siyuan/kernel/mux"
 	"github.com/siyuan-note/siyuan/kernel/server"
 	"github.com/siyuan-note/siyuan/kernel/sql"
 	"github.com/siyuan-note/siyuan/kernel/util"
@@ -40,15 +38,6 @@ func main() {
 	sql.InitAssetContentDatabase(false)
 	sql.SetCaseSensitive(model.Conf.Search.CaseSensitive)
 	sql.SetIndexAssetPath(model.Conf.Search.IndexAssetPath)
-
-	// Initialize plugin database (only on desktop platforms)
-	if util.ContainerStd == util.Container || util.ContainerDocker == util.Container {
-		if err := mux.InitPluginDatabase(); err != nil {
-			logging.LogErrorf("init plugin database failed: %s", err)
-		}
-	} else {
-		logging.LogInfof("skipping plugin database initialization on mobile platform [%s]", util.Container)
-	}
 
 	model.BootSyncData()
 	model.InitBoxes()

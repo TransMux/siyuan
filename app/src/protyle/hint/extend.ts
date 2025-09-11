@@ -20,7 +20,6 @@ import {hideElements} from "../ui/hideElements";
 import {genAssetHTML} from "../../asset/renderAssets";
 import {unicode2Emoji} from "../../emoji";
 import {avRender} from "../render/av/render";
-import {带排序的searchRefBlock} from "../../mux/idCount";
 import { removeInlineType } from "../toolbar/util";
 import { get } from "../../mux/settings";
 
@@ -473,7 +472,7 @@ export const hintRef = (key: string, protyle: IProtyle, source: THintSource): IH
     }
 
     protyle.hint.genLoading(protyle);
-    带排序的searchRefBlock({
+    fetchPost("/api/search/searchRefBlock", {
         k: key,
         id: nodeElement ? nodeElement.getAttribute("data-node-id") : protyle.block.parentID,
         beforeLen: Math.floor((Math.max(protyle.element.clientWidth / 2, 320) - 58) / 28.8),
@@ -529,7 +528,7 @@ export const hintEmbed = (key: string, protyle: IProtyle): IHintData[] => {
     }
     protyle.hint.genLoading(protyle);
     const nodeElement = hasClosestBlock(getEditorRange(protyle.wysiwyg.element).startContainer);
-    带排序的searchRefBlock({
+    fetchPost("/api/search/searchRefBlock", {
         k: key,
         isDatabase: false,
         beforeLen: Math.floor((Math.max(protyle.element.clientWidth / 2, 320) - 58) / 28.8),

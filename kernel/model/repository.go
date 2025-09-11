@@ -54,7 +54,6 @@ import (
 	"github.com/siyuan-note/httpclient"
 	"github.com/siyuan-note/logging"
 	"github.com/siyuan-note/siyuan/kernel/conf"
-	"github.com/siyuan-note/siyuan/kernel/mux"
 	"github.com/siyuan-note/siyuan/kernel/task"
 	"github.com/siyuan-note/siyuan/kernel/treenode"
 	"github.com/siyuan-note/siyuan/kernel/util"
@@ -1134,14 +1133,6 @@ func syncRepoDownload() (err error) {
 		return
 	}
 
-	// 同步前关闭插件数据库连接，避免数据库文件被锁定导致同步不完整
-	mux.ClosePluginDatabaseForSync()
-	defer func() {
-		// 同步后重新连接插件数据库
-		if reopenErr := mux.ReopenPluginDatabaseAfterSync(); reopenErr != nil {
-			logging.LogErrorf("reopen plugin database after sync failed: %s", reopenErr)
-		}
-	}()
 
 	logging.LogInfof("downloading data repo [device=%s, kernel=%s, provider=%d, mode=%s/%t]", Conf.System.ID, KernelID, Conf.Sync.Provider, "d", true)
 	start := time.Now()
@@ -1214,14 +1205,6 @@ func syncRepoUpload() (err error) {
 		return
 	}
 
-	// 同步前关闭插件数据库连接，避免数据库文件被锁定导致同步不完整
-	mux.ClosePluginDatabaseForSync()
-	defer func() {
-		// 同步后重新连接插件数据库
-		if reopenErr := mux.ReopenPluginDatabaseAfterSync(); reopenErr != nil {
-			logging.LogErrorf("reopen plugin database after sync failed: %s", reopenErr)
-		}
-	}()
 
 	logging.LogInfof("uploading data repo [device=%s, kernel=%s, provider=%d, mode=%s/%t]", Conf.System.ID, KernelID, Conf.Sync.Provider, "u", true)
 	start := time.Now()
@@ -1298,14 +1281,6 @@ func bootSyncRepo() (err error) {
 		return
 	}
 
-	// 同步前关闭插件数据库连接，避免数据库文件被锁定导致同步不完整
-	mux.ClosePluginDatabaseForSync()
-	defer func() {
-		// 同步后重新连接插件数据库
-		if reopenErr := mux.ReopenPluginDatabaseAfterSync(); reopenErr != nil {
-			logging.LogErrorf("reopen plugin database after sync failed: %s", reopenErr)
-		}
-	}()
 
 	isBootSyncing.Store(true)
 
@@ -1448,14 +1423,6 @@ func syncRepo(exit, byHand bool) (dataChanged bool, err error) {
 		return
 	}
 
-	// 同步前关闭插件数据库连接，避免数据库文件被锁定导致同步不完整
-	mux.ClosePluginDatabaseForSync()
-	defer func() {
-		// 同步后重新连接插件数据库
-		if reopenErr := mux.ReopenPluginDatabaseAfterSync(); reopenErr != nil {
-			logging.LogErrorf("reopen plugin database after sync failed: %s", reopenErr)
-		}
-	}()
 
 	logging.LogInfof("syncing data repo [device=%s, kernel=%s, provider=%d, mode=%s/%t]", Conf.System.ID, KernelID, Conf.Sync.Provider, "a", byHand)
 	start := time.Now()

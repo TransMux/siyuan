@@ -38,7 +38,6 @@ import (
 	"github.com/siyuan-note/filelock"
 	"github.com/siyuan-note/logging"
 	"github.com/siyuan-note/siyuan/kernel/conf"
-	"github.com/siyuan-note/siyuan/kernel/mux"
 	"github.com/siyuan-note/siyuan/kernel/sql"
 	"github.com/siyuan-note/siyuan/kernel/task"
 	"github.com/siyuan-note/siyuan/kernel/treenode"
@@ -632,8 +631,6 @@ func Close(force, setCurrentWorkspace bool, execInstallPkg int) (exitCode int) {
 			((IsSubscriber() && conf.ProviderSiYuan == Conf.Sync.Provider) || conf.ProviderSiYuan != Conf.Sync.Provider) {
 			syncData(true, false)
 			if 0 != ExitSyncSucc {
-				// Kernel sync failed; close plugin database to unlock extra.db
-				mux.ClosePluginDatabaseForSync()
 				exitCode = 1
 				return
 			}
@@ -665,7 +662,6 @@ func Close(force, setCurrentWorkspace bool, execInstallPkg int) (exitCode int) {
 	Conf.Close()
 	sql.CloseDatabase()
 	util.SaveAssetsTexts()
-	mux.ClosePluginDatabase()
 	clearWorkspaceTemp()
 	clearCorruptedNotebooks()
 	clearPortJSON()
