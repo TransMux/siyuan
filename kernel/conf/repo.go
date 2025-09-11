@@ -33,6 +33,9 @@ type Repo struct {
 	// 自动清理数据仓库 Automatic purge for local data repo https://github.com/siyuan-note/siyuan/issues/13091
 	IndexRetentionDays    int `json:"indexRetentionDays"`    // 索引保留天数
 	RetentionIndexesDaily int `json:"retentionIndexesDaily"` // 每日保留索引数
+	
+	// 懒加载功能配置
+	LazyLoadEnabled bool `json:"lazyLoadEnabled"` // 是否启用资源文件懒加载
 }
 
 func NewRepo() *Repo {
@@ -40,6 +43,7 @@ func NewRepo() *Repo {
 		SyncIndexTiming:       12 * 1000,
 		IndexRetentionDays:    180,
 		RetentionIndexesDaily: 2,
+		LazyLoadEnabled:       true, // 默认启用懒加载
 	}
 }
 

@@ -1149,6 +1149,10 @@ declare namespace Config {
          * Automatic purge for local data repo indexes retention daily
          */
         retentionIndexesDaily: number;
+        /**
+         * Lazy loading for assets files
+         */
+        lazyLoadEnabled: boolean;
     }
 
     /**
