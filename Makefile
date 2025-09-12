@@ -22,7 +22,12 @@ install-desktop:
 install:
 	make install-app
 	make install-desktop
-	curl -G "http://100.74.82.128:6253/push" --data-urlencode "message=SiYuan Build Success"
+
+install-mobile:
+	cd app && pnpm build:mobile
+	rm -rf /mnt/c/Users/InEas/AppData/Local/Programs/SiYuan/resources/stage/build/mobile-bak
+	mv /mnt/c/Users/InEas/AppData/Local/Programs/SiYuan/resources/stage/build/mobile /mnt/c/Users/InEas/AppData/Local/Programs/SiYuan/resources/stage/build/mobile-bak
+	cp -r /root/projects/siyuan/app/stage/build/mobile /mnt/c/Users/InEas/AppData/Local/Programs/SiYuan/resources/stage/build/mobile
 
 pull:
 	git pull --all
