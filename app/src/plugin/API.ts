@@ -1,36 +1,20 @@
-import {confirmDialog} from "../dialog/confirmDialog";
-import {Plugin} from "./index";
-import {hideMessage, showMessage} from "../dialog/message";
-import {Dialog} from "../dialog";
+// 只保留轻量级工具函数的直接导入
 import {fetchGet, fetchPost, fetchSyncPost} from "../util/fetch";
 import {getBackend, getFrontend} from "../util/functions";
+import {updateHotkeyTip} from "../protyle/util/compatibility";
+import * as platformUtils from "../protyle/util/compatibility";
+import {Constants} from "../constants";
+
+// 所有重型模块和可能产生循环引用的模块都延迟加载
 /// #if !MOBILE
 import {openFile, openFileById} from "../editor/util";
 import {openNewWindow, openNewWindowById} from "../window/openNewWindow";
 import {Tab} from "../layout/Tab";
-/// #endif
-import {updateHotkeyTip} from "../protyle/util/compatibility";
-import * as platformUtils from "../protyle/util/compatibility";
-import {App} from "../index";
-import {Constants} from "../constants";
-import {Setting} from "./Setting";
-import {Menu} from "./Menu";
-import {Protyle} from "../protyle";
-import {openMobileFileById} from "../mobile/editor";
-import {lockScreen, exitSiYuan} from "../dialog/processSystem";
-import {Model} from "../layout/Model";
 import {getActiveTab, getDockByType} from "../layout/tabUtil";
-/// #if !MOBILE
 import {getAllModels} from "../layout/getAll";
 /// #endif
 import {getAllEditor} from "../layout/getAll";
-import {openSetting} from "../config";
-import {openAttr, openFileAttr} from "../menus/commonMenuItem";
-import {globalCommand} from "../boot/globalEvent/command/global";
-import {exportLayout} from "../layout/util";
-import {saveScroll} from "../protyle/scroll/saveScroll";
 import {hasClosestByClassName} from "../protyle/util/hasClosest";
-import {Files} from "../layout/dock/Files";
 
 let openTab;
 let openWindow;
@@ -303,37 +287,78 @@ export const expandDocTree = async (options: {
 };
 
 export const API = {
+    // 直接导出的轻量级函数
     adaptHotkey: updateHotkeyTip,
-    confirm: confirmDialog,
     Constants,
-    showMessage,
-    hideMessage,
     fetchPost,
     fetchSyncPost,
     fetchGet,
     getFrontend,
     getBackend,
-    getModelByDockType,
-    openTab,
-    openWindow,
-    openMobileFileById,
-    lockScreen,
-    exitSiYuan,
-    Protyle,
-    Plugin,
-    Dialog,
-    Menu,
-    Setting,
+    platformUtils,
     getAllEditor,
     /// #if !MOBILE
     getActiveTab,
     getAllModels,
     /// #endif
+    
+    // 所有重型模块都使用延迟加载
+    get confirmDialog() {
+        return require("../dialog/confirmDialog").confirmDialog;
+    },
+    get confirm() {
+        return require("../dialog/confirmDialog").confirmDialog;
+    },
+    get showMessage() {
+        return require("../dialog/message").showMessage;
+    },
+    get hideMessage() {
+        return require("../dialog/message").hideMessage;
+    },
+    get Dialog() {
+        return require("../dialog").Dialog;
+    },
+    get Protyle() {
+        return require("../protyle").Protyle;
+    },
+    get Plugin() {
+        return require("./index").Plugin;
+    },
+    get Menu() {
+        return require("./Menu").Menu;
+    },
+    get Setting() {
+        return require("./Setting").Setting;
+    },
+    get lockScreen() {
+        return require("../dialog/processSystem").lockScreen;
+    },
+    get exitSiYuan() {
+        return require("../dialog/processSystem").exitSiYuan;
+    },
+    get openSetting() {
+        return require("../config").openSetting;
+    },
+    get globalCommand() {
+        return require("../boot/globalEvent/command/global").globalCommand;
+    },
+    
+    // 平台相关的延迟加载
+    getModelByDockType,
+    openTab,
+    openWindow,
+    /// #if MOBILE
+    get openMobileFileById() {
+        return require("../mobile/editor").openMobileFileById;
+    },
+    /// #else
+    get openMobileFileById() {
+        return require("../mobile/editor").openMobileFileById;
+    },
+    /// #endif
+    
     getActiveEditor,
-    platformUtils,
-    openSetting,
     openAttributePanel,
     saveLayout,
-    globalCommand,
     expandDocTree
 };
