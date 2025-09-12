@@ -151,7 +151,6 @@ export const openSetting = (app: App) => {
       <div class="config__tab-container config__tab-container--full fn__none" data-name="account"></div>
       <div class="config__tab-container fn__none" data-name="repos"></div>
       <div class="config__tab-container fn__none" data-name="publish"></div>
-      <div class="config__tab-container fn__none" data-name="mux"></div>
       <div class="config__tab-container fn__none" data-name="about"></div>
       <div class="fn__hr--b"></div>
   </div>
