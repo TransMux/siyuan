@@ -1,4 +1,4 @@
-import { Constants } from "../constants";
+const ZWSP = "\u200b";
 
 // @ts-ignore
 window.__muxSettings = {
@@ -17,11 +17,11 @@ window.__muxSettings = {
         "clear"
     ],
     "altx上色顺序Values": [
-        { "type": "style1", "color": `var(--b3-card-info-background)${Constants.ZWSP}var(--b3-card-info-color)` }, // 最弱
-        { "type": "style1", "color": `var(--b3-card-warning-background)${Constants.ZWSP}var(--b3-card-warning-color)` },
-        { "type": "style1", "color": `var(--b3-card-error-background)${Constants.ZWSP}var(--b3-card-error-color)` },
-        { "type": "style1", "color": `${Constants.ZWSP}var(--b3-font-color5)` },
-        { "type": "style1", "color": `${Constants.ZWSP}var(--b3-font-color13)` },
+        { "type": "style1", "color": `var(--b3-card-info-background)${ZWSP}var(--b3-card-info-color)` }, // 最弱
+        { "type": "style1", "color": `var(--b3-card-warning-background)${ZWSP}var(--b3-card-warning-color)` },
+        { "type": "style1", "color": `var(--b3-card-error-background)${ZWSP}var(--b3-card-error-color)` },
+        { "type": "style1", "color": `${ZWSP}var(--b3-font-color5)` },
+        { "type": "style1", "color": `${ZWSP}var(--b3-font-color13)` },
         { "type": "clear" }
     ]
 }

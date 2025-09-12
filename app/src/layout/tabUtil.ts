@@ -26,7 +26,6 @@ import { Constants } from "../constants";
 import { fetchPost, fetchSyncPost } from "../util/fetch";
 import { openFileById } from "../editor/util";
 import { openUnreadArticle } from "../util/mux";
-import { isExist } from "../mux/settings";
 
 export const getActiveTab = (wndActive = true) => {
     const activeTabElement = document.querySelector(".layout__wnd--active .item--focus");

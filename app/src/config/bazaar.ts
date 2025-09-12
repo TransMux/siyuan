@@ -19,7 +19,7 @@ import {loadAssets} from "../util/assets";
 import {addScript} from "../protyle/util/addScript";
 import {useShell} from "../util/pathName";
 import { BUILTIN_PLUGIN_INFOS, loadBuiltinPlugin } from "../plugin/builtin/loadBuiltin";
-import { get, update } from "../mux/settings";
+import { get } from "../mux/settings";
 
 export const bazaar = {
     element: undefined as Element,
@@ -989,22 +989,21 @@ export const bazaar = {
                         const enabled = (target as HTMLInputElement).checked;
                         if (dataObj.builtin) {
                             // Built-in plugin toggle via settings
-                            update(`builtin.${dataObj.name}.enable`, enabled).then(() => {
-                                if (enabled) {
-                                    loadBuiltinPlugin(app, dataObj.name);
-                                    // 检查是否存在设置面板
-                                    const pluginObj = app.plugins.find(p => p.name === dataObj.name);
-                                    // @ts-ignore
-                                    const hasSetting = pluginObj && (pluginObj.setting || pluginObj.__proto__.hasOwnProperty("openSetting"));
-                                    if (hasSetting) {
-                                        target.parentElement.querySelector('[data-type="setting"]').classList.remove("fn__none");
-                                    }
-                                } else {
-                                    uninstall(app, dataObj.name);
-                                    target.parentElement.querySelector('[data-type="setting"]').classList.add("fn__none");
+                            // Note: Plugin settings are now static, enable status not persisted
+                            if (enabled) {
+                                loadBuiltinPlugin(app, dataObj.name);
+                                // 检查是否存在设置面板
+                                const pluginObj = app.plugins.find(p => p.name === dataObj.name);
+                                // @ts-ignore
+                                const hasSetting = pluginObj && (pluginObj.setting || pluginObj.__proto__.hasOwnProperty("openSetting"));
+                                if (hasSetting) {
+                                    target.parentElement.querySelector('[data-type="setting"]').classList.remove("fn__none");
                                 }
-                                target.removeAttribute("disabled");
-                            });
+                            } else {
+                                uninstall(app, dataObj.name);
+                                target.parentElement.querySelector('[data-type="setting"]').classList.add("fn__none");
+                            }
+                            target.removeAttribute("disabled");
                         } else {
                             // external plugin path remains
                             fetchPost("/api/petal/setPetalEnabled", {

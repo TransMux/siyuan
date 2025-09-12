@@ -17,7 +17,6 @@ import {Dialog} from "../dialog";
 import {ai} from "./ai";
 import {flashcard} from "./flashcard";
 import {publish} from "./publish";
-import {mux} from "./mux";
 import {App} from "../index";
 import {isHuawei, isInHarmony} from "../protyle/util/compatibility";
 import {Constants} from "../constants";
@@ -90,11 +89,6 @@ export const genItemPanel = (type: string, containerElement: Element, app: App) 
             containerElement.innerHTML = publish.genHTML();
             publish.element = containerElement;
             publish.bindEvent();
-            break;
-        case "mux":
-            containerElement.innerHTML = mux.genHTML();
-            mux.element = containerElement;
-            mux.bindEvent();
             break;
         default:
             break;
