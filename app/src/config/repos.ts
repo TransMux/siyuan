@@ -510,6 +510,16 @@ export const repos = {
     <div id="reposCloudSyncList" class="fn__none b3-label"><img style="margin: 0 auto;display: block;width: 64px;height: 100%" src="/stage/loading-pure.svg"></div>
 </div>
 <div class="b3-label fn__flex">
+    <div class="fn__flex-1">
+        修复懒加载数据一致性
+        <div class="b3-label__text">检查并修复索引中有但清单中缺失的懒加载文件</div>
+    </div>
+    <div class="fn__space"></div>
+    <button class="b3-button b3-button--outline fn__flex-center fn__size200" id="repairLazyDataConsistency">
+        <svg><use xlink:href="#iconRefresh"></use></svg>修复数据一致性
+    </button>
+</div>
+<div class="b3-label fn__flex">
     <div class="fn__flex-center">${window.siyuan.languages.cloudBackup}</div>
     <div class="b3-list-item__meta fn__flex-center">${window.siyuan.languages.cloudBackupTip}</div>
 </div>
@@ -649,5 +659,28 @@ export const repos = {
                 target = target.parentElement;
             }
         });
+        
+        // 添加修复懒加载数据一致性按钮的事件处理
+        const repairButton = repos.element.querySelector("#repairLazyDataConsistency") as HTMLButtonElement;
+        if (repairButton) {
+            repairButton.addEventListener("click", () => {
+                // 禁用按钮防止重复点击
+                repairButton.disabled = true;
+                repairButton.innerHTML = '<svg><use xlink:href="#iconRefresh"></use></svg>修复中...';
+                
+                fetchPost("/api/sync/repairLazyDataConsistency", {}, (response) => {
+                    if (response.code === 0) {
+                        const repairedCount = response.data.repairedCount || 0;
+                        showMessage(`修复完成，共修复 ${repairedCount} 个文件`, 3000);
+                    } else {
+                        showMessage(`修复失败：${response.msg}`, 5000);
+                    }
+                    
+                    // 恢复按钮状态
+                    repairButton.disabled = false;
+                    repairButton.innerHTML = '<svg><use xlink:href="#iconRefresh"></use></svg>修复数据一致性';
+                });
+            });
+        }
     },
 };

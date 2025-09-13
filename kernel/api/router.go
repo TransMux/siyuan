@@ -263,6 +263,7 @@ func ServeAPI(ginServer *gin.Engine) {
 	ginServer.Handle("POST", "/api/sync/createCloudSyncDir", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, createCloudSyncDir)
 	ginServer.Handle("POST", "/api/sync/removeCloudSyncDir", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, removeCloudSyncDir)
 	ginServer.Handle("POST", "/api/sync/listCloudSyncDir", model.CheckAuth, model.CheckAdminRole, listCloudSyncDir)
+	ginServer.Handle("POST", "/api/sync/repairLazyDataConsistency", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, repairLazyDataConsistency)
 	ginServer.Handle("POST", "/api/sync/performSync", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, performSync)
 	ginServer.Handle("POST", "/api/sync/performBootSync", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, performBootSync)
 	ginServer.Handle("POST", "/api/sync/getBootSync", model.CheckAuth, getBootSync)

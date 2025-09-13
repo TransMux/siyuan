@@ -747,3 +747,20 @@ func setCloudSyncDir(c *gin.Context) {
 	name := arg["name"].(string)
 	model.SetCloudSyncDir(name)
 }
+
+func repairLazyDataConsistency(c *gin.Context) {
+	ret := gulu.Ret.NewResult()
+	defer c.JSON(http.StatusOK, ret)
+
+	repairedCount, err := model.RepairLazyDataConsistency()
+	if err != nil {
+		ret.Code = -1
+		ret.Msg = err.Error()
+		ret.Data = map[string]interface{}{"closeTimeout": 5000}
+		return
+	}
+
+	ret.Data = map[string]interface{}{
+		"repairedCount": repairedCount,
+	}
+}

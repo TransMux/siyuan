@@ -2269,3 +2269,14 @@ func ClearLazyCache() error {
 
 	return repo.ClearLazyCache()
 }
+
+// RepairLazyDataConsistency 修复懒加载数据一致性问题
+func RepairLazyDataConsistency() (int, error) {
+	repo, err := newRepository()
+	if err != nil {
+		return 0, fmt.Errorf("repository not available: %w", err)
+	}
+
+	// 调用dejavu的RepairLazyDataConsistency方法修复数据一致性
+	return repo.RepairLazyDataConsistency()
+}
