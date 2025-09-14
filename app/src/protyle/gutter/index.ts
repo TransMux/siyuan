@@ -1816,14 +1816,14 @@ export class Gutter {
                 }
             }).element);
         }
-        window.siyuan.menus.menu.append(new MenuItem({ id: "separator_2", type: "separator" }).element);
+        window.siyuan.menus.menu.append(new MenuItem({id: "separator_2", type: "separator"}).element);
         // if (!protyle.options.backlinkData) {
         //     window.siyuan.menus.menu.append(new MenuItem({
         //         id: "enter",
         //         accelerator: `${updateHotkeyTip(window.siyuan.config.keymap.general.enter.custom)}/${updateHotkeyTip("⌘" + window.siyuan.languages.click)}`,
         //         label: window.siyuan.languages.enter,
         //         click: () => {
-        //             zoomOut({ protyle, id });
+        //             zoomOut({protyle, id});
         //         }
         //     }).element);
         //     window.siyuan.menus.menu.append(new MenuItem({
@@ -1882,21 +1882,21 @@ export class Gutter {
         //     }
         // }
         // window.siyuan.menus.menu.append(new MenuItem({
-        //     id: "jumpToParentNext",
-        //     label: window.siyuan.languages.jumpToParentNext,
-        //     accelerator: window.siyuan.config.keymap.editor.general.jumpToParentNext.custom,
-        //     click() {
-        //         hideElements(["select"], protyle);
-        //         jumpToParent(protyle, nodeElement, "next");
-        //     }
-        // }).element);
-        // window.siyuan.menus.menu.append(new MenuItem({
         //     id: "jumpToParentPrev",
         //     label: window.siyuan.languages.jumpToParentPrev,
         //     accelerator: window.siyuan.config.keymap.editor.general.jumpToParentPrev.custom,
         //     click() {
         //         hideElements(["select"], protyle);
         //         jumpToParent(protyle, nodeElement, "previous");
+        //     }
+        // }).element);
+        // window.siyuan.menus.menu.append(new MenuItem({
+        //     id: "jumpToParentNext",
+        //     label: window.siyuan.languages.jumpToParentNext,
+        //     accelerator: window.siyuan.config.keymap.editor.general.jumpToParentNext.custom,
+        //     click() {
+        //         hideElements(["select"], protyle);
+        //         jumpToParent(protyle, nodeElement, "next");
         //     }
         // }).element);
         // window.siyuan.menus.menu.append(new MenuItem({
