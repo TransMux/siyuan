@@ -137,9 +137,26 @@ export class QuickAppendPlugin extends Plugin {
                     return;
                 }
 
-                const newBlockId = response.data?.[0]?.doOperations?.[0]?.id;
+                let newBlockId = response.data?.[0]?.doOperations?.[0]?.id;
                 if (!newBlockId) {
                     return;
+                }
+
+                // 如果返回的是NodeList，需要提取其中的NodeListItem的id
+                const doOperation = response.data?.[0]?.doOperations?.[0];
+                if (doOperation?.data && typeof doOperation.data === 'string') {
+                    try {
+                        // 解析HTML内容来查找实际的列表项id
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(doOperation.data, 'text/html');
+                        const listItem = doc.querySelector('[data-type="NodeListItem"]');
+                        if (listItem && listItem.getAttribute('data-node-id')) {
+                            newBlockId = listItem.getAttribute('data-node-id');
+                        }
+                    } catch (e) {
+                        // 如果解析失败，使用原始id
+                        console.warn('Failed to parse HTML data:', e);
+                    }
                 }
 
                 const infoRes = await fetchSyncPost("/api/block/getBlockInfo", { id: newBlockId });
