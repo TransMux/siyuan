@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"mime"
 	"net/http"
@@ -71,13 +72,21 @@ type DownloadResult struct {
 	Size      int64
 	Data      []byte
 	Name      string
+	Written   bool   // 是否已写入文件系统
+	Attempts  int    // 重试次数
+	TempPath  string // 临时文件路径
 }
 
 // 并发下载配置
 const (
-	DefaultConcurrentDownloads = 10 // 默认并发下载数
-	MaxConcurrentDownloads     = 20 // 最大并发下载数
-	DownloadTimeout            = 60 * time.Second
+	DefaultConcurrentDownloads = 10                      // 默认并发下载数
+	MaxConcurrentDownloads     = 20                      // 最大并发下载数
+	DownloadTimeout            = 60 * time.Second        // 下载超时时间
+	MaxFileSize                = 1024 * 1024 * 1024 * 10 // 10GB文件大小限制
+	BatchWriteThreshold        = 5                       // 批量写入阈值
+	BatchWriteInterval         = 10 * time.Second        // 批量写入间隔
+	MaxRetryAttempts           = 3                       // 最大重试次数
+	RetryDelay                 = 2 * time.Second         // 重试延迟
 )
 
 func HandleAssetsRemoveEvent(assetAbsPath string) {
@@ -282,8 +291,8 @@ func processNetworkFile(task DownloadTask, browserClient *req.Client, assetsDirP
 	util.PushUpdateMsg(msgId, fmt.Sprintf(Conf.Language(119), displayU), 15000)
 
 	request := browserClient.R()
-	// Increase retries with shorter interval to improve robustness
-	request.SetRetryCount(3).SetRetryFixedInterval(2 * time.Second)
+	// 设置重试机制
+	request.SetRetryCount(MaxRetryAttempts).SetRetryFixedInterval(RetryDelay)
 	if "" != task.OriginalURL {
 		request.SetHeader("Referer", task.OriginalURL)
 	} else {
@@ -316,14 +325,10 @@ func processNetworkFile(task DownloadTask, browserClient *req.Client, assetsDirP
 		return result
 	}
 
-	if 1024*1024*96 < resp.ContentLength {
-		result.Error = fmt.Errorf("file too large: %s", humanize.IBytes(uint64(resp.ContentLength)))
-		return result
-	}
-
-	data, repErr := resp.ToBytes()
-	if nil != repErr {
-		result.Error = fmt.Errorf("read response failed: %s", repErr)
+	if MaxFileSize < resp.ContentLength {
+		result.Error = fmt.Errorf("file too large: %s (max: %s)",
+			humanize.IBytes(uint64(resp.ContentLength)),
+			humanize.IBytes(MaxFileSize))
 		return result
 	}
 
@@ -359,49 +364,70 @@ func processNetworkFile(task DownloadTask, browserClient *req.Client, assetsDirP
 	}
 	name, _ = url.PathUnescape(name)
 	name = util.FilterUploadFileName(name)
-	ext := util.Ext(name)
-	if !util.IsCommonExt(ext) {
-		if mtype := mimetype.Detect(data); nil != mtype {
-			ext = mtype.Extension()
-			name += ext
-		}
-	}
-	if "" == ext && bytes.HasPrefix(data, []byte("<svg ")) && bytes.HasSuffix(data, []byte("</svg>")) {
-		ext = ".svg"
-		name += ext
-	}
-	if "" == ext {
-		contentType := resp.Header.Get("Content-Type")
-		exts, _ := mime.ExtensionsByType(contentType)
-		if 0 < len(exts) {
-			ext = exts[0]
-			name += ext
-		}
-	}
-	name = util.AssetName(name, ast.NewNodeID())
-	name = "network-asset-" + name
 
-	// Use date-based subfolder (YYYY/MM)
-	timeString := time.Now().Format("2006/01")
-	datedAssetsDirPath := filepath.Join(assetsDirPath, timeString)
-	if !gulu.File.IsExist(datedAssetsDirPath) {
-		if err := os.MkdirAll(datedAssetsDirPath, 0755); err != nil {
-			result.Error = fmt.Errorf("create dated assets dir failed: %s", err)
-			return result
-		}
+	// 创建临时文件用于流式下载
+	tempFile, tempErr := os.CreateTemp(util.TempDir, "siyuan-download-*.tmp")
+	if nil != tempErr {
+		result.Error = fmt.Errorf("create temp file failed: %s", tempErr)
+		return result
 	}
-	writePath := filepath.Join(datedAssetsDirPath, name)
+	tempPath := tempFile.Name()
+	defer func() {
+		if !result.Success {
+			// 下载失败时清理临时文件
+			// 注意：tempFile可能已经被关闭，所以忽略Close错误
+			tempFile.Close() // 安全关闭，即使已关闭也不会报错
+			os.Remove(tempPath)
+		}
+	}()
 
-	if err := filelock.WriteFile(writePath, data); err != nil {
-		result.Error = fmt.Errorf("write file failed: %s", err)
+	// 使用io.Copy进行流式下载，避免大文件占用内存
+	downloadedBytes, copyErr := io.Copy(tempFile, resp.Body)
+	tempFile.Close() // 关闭文件句柄
+	if nil != copyErr {
+		result.Error = fmt.Errorf("stream download failed: %s", copyErr)
 		return result
 	}
 
+	// 检测文件类型以完善扩展名（读取文件头部数据）
+	if tempFile, openErr := os.Open(tempPath); openErr == nil {
+		header := make([]byte, 512) // 读取前512字节用于类型检测
+		n, _ := tempFile.Read(header)
+		tempFile.Close()
+		header = header[:n]
+
+		ext := util.Ext(name)
+		if !util.IsCommonExt(ext) {
+			if mtype := mimetype.Detect(header); nil != mtype {
+				ext = mtype.Extension()
+				name += ext
+			}
+		}
+		if "" == ext && bytes.HasPrefix(header, []byte("<svg ")) {
+			ext = ".svg"
+			name += ext
+		}
+		if "" == ext {
+			contentType := resp.Header.Get("Content-Type")
+			exts, _ := mime.ExtensionsByType(contentType)
+			if 0 < len(exts) {
+				ext = exts[0]
+				name += ext
+			}
+		}
+	}
+
+	name = util.AssetName(name, ast.NewNodeID())
+	name = "network-asset-" + name
+
+	// 设置结果信息（临时文件路径，等待后续移动）
+	timeString := time.Now().Format("2006/01")
 	result.Success = true
 	result.LocalPath = "assets/" + timeString + "/" + name
-	result.Data = data
 	result.Name = name
-	result.Size = int64(len(data))
+	result.Size = downloadedBytes
+	result.Written = false
+	result.TempPath = tempPath
 	return result
 }
 
@@ -503,14 +529,67 @@ func NetAssets2LocalAssets(rootID string, onlyImg bool, originalURL string) (err
 		close(resultChan)
 	}()
 
-	// 收集结果
+	// 收集结果和批量写入管理
 	var forbiddenCount int32
 	completedTasks := 0
-	// 进度按原始任务数统计
 	totalTasks := len(tasks)
+	var pendingWrites []DownloadResult
+	var writeTimer *time.Timer
+	writeMutex := sync.Mutex{}
+
+	// 批量文件移动函数
+	flushPendingWrites := func() {
+		writeMutex.Lock()
+		defer writeMutex.Unlock()
+
+		if len(pendingWrites) == 0 {
+			return
+		}
+
+		for _, result := range pendingWrites {
+			if !result.Written && result.Success && result.TempPath != "" {
+				// 从result.LocalPath解析目标路径，确保时间戳一致性
+				// result.LocalPath格式: "assets/2006/01/filename"
+				relativePath := result.LocalPath
+				if !strings.HasPrefix(relativePath, "assets/") {
+					logging.LogErrorf("invalid LocalPath format: %s", relativePath)
+					os.Remove(result.TempPath)
+					continue
+				}
+				
+				finalPath := filepath.Join(assetsDirPath, strings.TrimPrefix(relativePath, "assets/"))
+				finalDir := filepath.Dir(finalPath)
+				
+				if !gulu.File.IsExist(finalDir) {
+					if mkErr := os.MkdirAll(finalDir, 0755); mkErr != nil {
+						logging.LogErrorf("create target dir [%s] failed: %s", finalDir, mkErr)
+						// 清理临时文件
+						os.Remove(result.TempPath)
+						continue
+					}
+				}
+
+				// 尝试移动文件（原子操作）
+				if moveErr := os.Rename(result.TempPath, finalPath); moveErr != nil {
+					// 如果移动失败（可能是跨分区），则复制后删除
+					if copyErr := filelock.Copy(result.TempPath, finalPath); copyErr != nil {
+						logging.LogErrorf("move temp file [%s] to [%s] failed: %s", result.TempPath, finalPath, copyErr)
+					} else {
+						// 复制成功，删除临时文件
+						os.Remove(result.TempPath)
+					}
+				}
+			}
+		}
+
+		pendingWrites = nil
+		if writeTimer != nil {
+			writeTimer.Stop()
+			writeTimer = nil
+		}
+	}
 
 	for result := range resultChan {
-		// 将该唯一 URL 的结果应用到所有相同 URL 的任务上
 		group := urlToTasks[result.Task.URL]
 		if 0 == len(group) {
 			group = []DownloadTask{result.Task}
@@ -521,16 +600,40 @@ func NetAssets2LocalAssets(rootID string, onlyImg bool, originalURL string) (err
 				setAssetsLinkDest(t.DestNode, t.Dest, result.LocalPath)
 			}
 			atomic.AddInt32(&files, 1)
+
+			// 添加到批量写入队列
+			writeMutex.Lock()
+			pendingWrites = append(pendingWrites, result)
+
+			// 检查是否需要立即写入
+			if len(pendingWrites) >= BatchWriteThreshold {
+				writeMutex.Unlock()
+				flushPendingWrites()
+			} else {
+				// 设置定时器
+				if writeTimer == nil {
+					writeTimer = time.AfterFunc(BatchWriteInterval, flushPendingWrites)
+				}
+				writeMutex.Unlock()
+			}
 		} else {
+			// 下载失败，清理临时文件
+			if result.TempPath != "" {
+				os.Remove(result.TempPath)
+			}
+
 			if result.Error != nil {
-				if strings.Contains(result.Error.Error(), "forbidden") || strings.Contains(result.Error.Error(), "access forbidden") {
+				errorMsg := result.Error.Error()
+				if strings.Contains(errorMsg, "forbidden") || strings.Contains(errorMsg, "access forbidden") {
 					atomic.AddInt32(&forbiddenCount, 1)
+				} else if strings.Contains(errorMsg, "file too large") {
+					// 大文件错误，给出更明确的提示
+					util.PushErrMsg(fmt.Sprintf("文件太大无法下载: %s", result.Task.URL), 7000)
 				}
 				logging.LogErrorf("download task failed [%s]: %s", result.Task.URL, result.Error)
 			}
 		}
 
-		// 该唯一 URL 完成后，按其引用的原始链接数量推进进度
 		completedTasks += len(group)
 		if completedTasks > totalTasks {
 			completedTasks = totalTasks
@@ -538,6 +641,9 @@ func NetAssets2LocalAssets(rootID string, onlyImg bool, originalURL string) (err
 		progress := float64(completedTasks) / float64(totalTasks) * 100
 		util.PushUpdateMsg(msgId, fmt.Sprintf("下载进度: %.1f%% (%d/%d)", progress, completedTasks, totalTasks), 15000)
 	}
+
+	// 完成后刷新所有待写入数据
+	flushPendingWrites()
 
 	// 处理结果和消息
 	util.PushClearMsg(msgId)
