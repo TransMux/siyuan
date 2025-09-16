@@ -13,7 +13,7 @@ window.__muxSettings = {
         "var(--b3-font-color1)",
         "var(--b3-card-info-color)",
         "var(--b3-card-warning-color)",
-        "var(--b3-card-info-color)",
+        "var(--b3-card-error-color)",
         "clear"
     ],
     "altx上色顺序Values": [
