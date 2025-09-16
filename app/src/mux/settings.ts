@@ -15,7 +15,7 @@ window.__muxSettings = {
         "var(--b3-card-warning-color)",
         "var(--b3-card-info-color)",
         "clear"
-    ]],
+    ],
     "altx上色顺序Values": [
         {
             "type": "style1",
