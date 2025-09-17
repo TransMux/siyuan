@@ -24,8 +24,6 @@ import {openAssetNewWindow} from "../window/openNewWindow";
 import {escapeHtml} from "../util/escape";
 import {copyTextByType} from "../protyle/toolbar/util";
 import {hideElements} from "../protyle/ui/hideElements";
-import {isLazyLoadableAsset} from "../util/functions";
-import {refreshAssetAfterLoad} from "../util/lazyAssets";
 
 const bindAttrInput = (inputElement: HTMLInputElement, id: string) => {
     inputElement.addEventListener("change", () => {
@@ -803,30 +801,6 @@ export const openMenu = (app: App, src: string, onlyMenu: boolean, showAccelerat
                     openBy(src, "app");
                 }
             });
-            
-            // 添加懒加载选项
-            if (isLazyLoadableAsset(src)) {
-                submenu.push({
-                    id: "lazyLoadAsset",
-                    icon: "iconDownload",
-                    label: "懒加载此文件",
-                    click() {
-                        const msgId = showMessage("正在加载文件...", -1);
-                        fetchPost("/api/asset/lazyLoadSingle", {
-                            assetPath: src
-                        }, (response) => {
-                            hideMessage(msgId);
-                            if (response.code === 0) {
-                                showMessage("文件加载成功", 3000);
-                                // 刷新指定资源而不是整个页面
-                                refreshAssetAfterLoad(src);
-                            } else {
-                                showMessage(`文件加载失败：${response.msg}`, 5000);
-                            }
-                        });
-                    }
-                });
-            }
             /// #endif
         } else {
             /// #if !BROWSER

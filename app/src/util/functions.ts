@@ -143,10 +143,3 @@ export const isElementVisible = (element: Element, threshold = 0): boolean => {
     
     return visibilityRatio >= threshold;
 };
-
-export const isLazyLoadableAsset = (assetPath: string): boolean => {
-    if (!assetPath || !window.siyuan.config.repo?.lazyLoadEnabled) {
-        return false;
-    }
-    return assetPath.startsWith("assets/");
-};

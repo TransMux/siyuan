@@ -48,7 +48,6 @@ import {blockRender} from "../protyle/render/blockRender";
 import {renameAsset} from "../editor/rename";
 import {electronUndo} from "../protyle/undo";
 import {pushBack} from "../mobile/util/MobileBackFoward";
-import {reloadProtyle} from "../protyle/util/reload";
 import {copyPNGByLink, exportAsset} from "./util";
 import {removeInlineType} from "../protyle/toolbar/util";
 import {alignImgCenter, alignImgLeft} from "../protyle/wysiwyg/commonHotkey";
@@ -64,7 +63,7 @@ import {hintRenderAssets} from "../protyle/hint/extend";
 import {Menu} from "../plugin/Menu";
 import {getFirstBlock} from "../protyle/wysiwyg/getBlock";
 import {popSearch} from "../mobile/menu/search";
-import {hideMessage, showMessage} from "../dialog/message";
+import {showMessage} from "../dialog/message";
 import {renderAVAttribute} from "../protyle/render/av/blockAttr";
 import {img3115} from "../boot/compatibleVersion";
 import {renderCustomAttr} from "../mux/attributeView";
@@ -929,37 +928,6 @@ export const contentMenu = (protyle: IProtyle, nodeElement: Element) => {
         }
     }
     /// #endif
-    
-    // 添加懒加载文档所有文件选项
-    if (window.siyuan.config.repo?.lazyLoadEnabled) {
-        window.siyuan.menus.menu.append(new MenuItem({
-            type: "separator",
-        }).element);
-        window.siyuan.menus.menu.append(new MenuItem({
-            id: "lazyLoadDocAssets",
-            icon: "iconDownload",
-            label: "下载文档所有懒加载文件",
-            click() {
-                const msgId = showMessage("正在检查并下载懒加载文件...", -1);
-                fetchPost("/api/asset/lazyLoadDocAssets", {
-                    docId: protyle.block.rootID
-                }, (response) => {
-                    hideMessage(msgId);
-                    if (response.code === 0) {
-                        const count = response.data.count || 0;
-                        showMessage(`成功加载 ${count} 个文件`, 3000);
-                        if (count > 0) {
-                            // 重新加载protyle以显示新加载的资源
-                            reloadProtyle(protyle, false);
-                        }
-                    } else {
-                        showMessage(`加载失败：${response.msg}`, 5000);
-                    }
-                });
-            }
-        }).element);
-    }
-    
     if (protyle?.app?.plugins) {
         emitOpenMenu({
             plugins: protyle.app.plugins,
