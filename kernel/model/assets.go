@@ -372,6 +372,7 @@ func processNetworkFile(task DownloadTask, browserClient *req.Client, assetsDirP
 		return result
 	}
 	tempPath := tempFile.Name()
+	logging.LogInfof("created temp file for download [%s] -> [%s]", u, tempPath)
 	defer func() {
 		if !result.Success {
 			// 下载失败时清理临时文件
@@ -388,6 +389,7 @@ func processNetworkFile(task DownloadTask, browserClient *req.Client, assetsDirP
 		result.Error = fmt.Errorf("stream download failed: %s", copyErr)
 		return result
 	}
+	logging.LogInfof("download completed [%s] -> [%s], size: %s", u, tempPath, humanize.IBytes(uint64(downloadedBytes)))
 
 	// 检测文件类型以完善扩展名（读取文件头部数据）
 	if tempFile, openErr := os.Open(tempPath); openErr == nil {
@@ -531,11 +533,27 @@ func NetAssets2LocalAssets(rootID string, onlyImg bool, originalURL string) (err
 
 	// 收集结果和批量写入管理
 	var forbiddenCount int32
+	var totalDownloadedBytes int64 // 统计已下载的字节数
 	completedTasks := 0
 	totalTasks := len(tasks)
 	var pendingWrites []DownloadResult
 	var writeTimer *time.Timer
 	writeMutex := sync.Mutex{}
+	
+	// 创建2秒定时器，定期更新下载进度
+	progressTicker := time.NewTicker(2 * time.Second)
+	defer progressTicker.Stop()
+	
+	// 启动进度更新协程
+	go func() {
+		for range progressTicker.C {
+			downloadedBytes := atomic.LoadInt64(&totalDownloadedBytes)
+			if downloadedBytes > 0 {
+				util.PushUpdateMsg(msgId, fmt.Sprintf("下载进度: %d/%d 文件，已下载: %s", 
+					completedTasks, totalTasks, humanize.IBytes(uint64(downloadedBytes))), 15000)
+			}
+		}
+	}()
 
 	// 批量文件移动函数
 	flushPendingWrites := func() {
@@ -576,8 +594,11 @@ func NetAssets2LocalAssets(rootID string, onlyImg bool, originalURL string) (err
 						logging.LogErrorf("move temp file [%s] to [%s] failed: %s", result.TempPath, finalPath, copyErr)
 					} else {
 						// 复制成功，删除临时文件
+						logging.LogInfof("copied temp file [%s] to [%s] and removed temp file", result.TempPath, finalPath)
 						os.Remove(result.TempPath)
 					}
+				} else {
+					logging.LogInfof("moved temp file [%s] to [%s]", result.TempPath, finalPath)
 				}
 			}
 		}
@@ -600,6 +621,8 @@ func NetAssets2LocalAssets(rootID string, onlyImg bool, originalURL string) (err
 				setAssetsLinkDest(t.DestNode, t.Dest, result.LocalPath)
 			}
 			atomic.AddInt32(&files, 1)
+			// 累计已下载的字节数
+			atomic.AddInt64(&totalDownloadedBytes, result.Size)
 
 			// 添加到批量写入队列
 			writeMutex.Lock()
@@ -646,7 +669,6 @@ func NetAssets2LocalAssets(rootID string, onlyImg bool, originalURL string) (err
 	flushPendingWrites()
 
 	// 处理结果和消息
-	util.PushClearMsg(msgId)
 	finalFiles := int(atomic.LoadInt32(&files))
 	finalForbiddenCount := int(atomic.LoadInt32(&forbiddenCount))
 
