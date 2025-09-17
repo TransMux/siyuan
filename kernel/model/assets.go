@@ -77,16 +77,71 @@ type DownloadResult struct {
 	TempPath  string // 临时文件路径
 }
 
+// 全局下载状态管理
+type DownloadState struct {
+	URL       string
+	Status    string // "downloading", "completed", "failed"
+	LocalPath string
+	Error     error
+	StartTime time.Time
+}
+
+var (
+	downloadStates = sync.Map{} // map[string]*DownloadState - URL到下载状态的映射
+	downloadMutex  = sync.RWMutex{}
+)
+
+
+// 下载状态管理函数
+func getDownloadState(url string) (*DownloadState, bool) {
+	if state, ok := downloadStates.Load(url); ok {
+		downloadState := state.(*DownloadState)
+		// 检查状态是否超时
+		if time.Since(downloadState.StartTime) > DownloadStateTimeout {
+			downloadStates.Delete(url)
+			return nil, false
+		}
+		return downloadState, true
+	}
+	return nil, false
+}
+
+func setDownloadState(url, status string, localPath string, err error) {
+	state := &DownloadState{
+		URL:       url,
+		Status:    status,
+		LocalPath: localPath,
+		Error:     err,
+		StartTime: time.Now(),
+	}
+	downloadStates.Store(url, state)
+}
+
+func removeDownloadState(url string) {
+	downloadStates.Delete(url)
+}
+
+func cleanExpiredDownloadStates() {
+	downloadStates.Range(func(key, value interface{}) bool {
+		state := value.(*DownloadState)
+		if time.Since(state.StartTime) > DownloadStateTimeout {
+			downloadStates.Delete(key)
+		}
+		return true
+	})
+}
+
 // 并发下载配置
 const (
 	DefaultConcurrentDownloads = 10                      // 默认并发下载数
 	MaxConcurrentDownloads     = 20                      // 最大并发下载数
-	DownloadTimeout            = 60 * time.Second        // 下载超时时间
+	DownloadTimeout            = 30 * time.Second        // 下载超时时间（缩短到30秒）
 	MaxFileSize                = 1024 * 1024 * 1024 * 10 // 10GB文件大小限制
 	BatchWriteThreshold        = 5                       // 批量写入阈值
 	BatchWriteInterval         = 10 * time.Second        // 批量写入间隔
 	MaxRetryAttempts           = 3                       // 最大重试次数
 	RetryDelay                 = 2 * time.Second         // 重试延迟
+	DownloadStateTimeout       = 5 * time.Minute         // 下载状态超时时间
 )
 
 func HandleAssetsRemoveEvent(assetAbsPath string) {
@@ -293,6 +348,22 @@ func processNetworkFile(task DownloadTask, browserClient *req.Client, assetsDirP
 	request := browserClient.R()
 	// 设置重试机制
 	request.SetRetryCount(MaxRetryAttempts).SetRetryFixedInterval(RetryDelay)
+	
+	// 设置更完整的浏览器头部以避免被识别为爬虫
+	request.SetHeaders(map[string]string{
+		"Accept":          "*/*",
+		"Accept-Language": "en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
+		"Accept-Encoding": "gzip, deflate, br",
+		"Cache-Control":   "no-cache",
+		"Pragma":          "no-cache",
+		"Sec-Fetch-Dest":  "empty",
+		"Sec-Fetch-Mode":  "cors",
+		"Sec-Fetch-Site":  "cross-site",
+	})
+	
+	// 使用真实的浏览器User-Agent而不是SiYuan标识
+	request.SetHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+	
 	if "" != task.OriginalURL {
 		request.SetHeader("Referer", task.OriginalURL)
 	} else {
@@ -487,14 +558,46 @@ func NetAssets2LocalAssets(rootID string, onlyImg bool, originalURL string) (err
 		return
 	}
 
-	// 去重相同 URL，避免重复下载；但仍会更新所有引用
+	// 清理过期的下载状态
+	cleanExpiredDownloadStates()
+
+	// 去重相同 URL，避免重复下载；检查全局下载状态
 	urlToTasks := map[string][]DownloadTask{}
 	for _, t := range tasks {
 		urlToTasks[t.URL] = append(urlToTasks[t.URL], t)
 	}
+	
 	var uniqueTasks []DownloadTask
+	var alreadyCompletedTasks []DownloadTask
+	
 	for _, group := range urlToTasks {
 		if 0 < len(group) {
+			url := group[0].URL
+			
+			// 检查是否已经在下载或下载完成
+			if state, exists := getDownloadState(url); exists {
+				switch state.Status {
+				case "downloading":
+					// 正在下载，跳过
+					logging.LogInfof("skipping duplicate download for URL: %s (already downloading)", url)
+					continue
+				case "completed":
+					// 已完成下载，直接使用已有结果
+					logging.LogInfof("reusing completed download for URL: %s -> %s", url, state.LocalPath)
+					for _, task := range group {
+						setAssetsLinkDest(task.DestNode, task.Dest, state.LocalPath)
+					}
+					atomic.AddInt32(&files, 1)
+					alreadyCompletedTasks = append(alreadyCompletedTasks, group...)
+					continue
+				case "failed":
+					// 之前失败，重新尝试
+					removeDownloadState(url)
+				}
+			}
+			
+			// 标记为正在下载
+			setDownloadState(url, "downloading", "", nil)
 			uniqueTasks = append(uniqueTasks, group[0])
 		}
 	}
@@ -539,21 +642,6 @@ func NetAssets2LocalAssets(rootID string, onlyImg bool, originalURL string) (err
 	var pendingWrites []DownloadResult
 	var writeTimer *time.Timer
 	writeMutex := sync.Mutex{}
-	
-	// 创建2秒定时器，定期更新下载进度
-	progressTicker := time.NewTicker(2 * time.Second)
-	defer progressTicker.Stop()
-	
-	// 启动进度更新协程
-	go func() {
-		for range progressTicker.C {
-			downloadedBytes := atomic.LoadInt64(&totalDownloadedBytes)
-			if downloadedBytes > 0 {
-				util.PushUpdateMsg(msgId, fmt.Sprintf("下载进度: %d/%d 文件，已下载: %s", 
-					completedTasks, totalTasks, humanize.IBytes(uint64(downloadedBytes))), 15000)
-			}
-		}
-	}()
 
 	// 批量文件移动函数
 	flushPendingWrites := func() {
@@ -617,6 +705,9 @@ func NetAssets2LocalAssets(rootID string, onlyImg bool, originalURL string) (err
 		}
 
 		if result.Success {
+			// 更新下载状态为已完成
+			setDownloadState(result.Task.URL, "completed", result.LocalPath, nil)
+			
 			for _, t := range group {
 				setAssetsLinkDest(t.DestNode, t.Dest, result.LocalPath)
 			}
@@ -640,6 +731,9 @@ func NetAssets2LocalAssets(rootID string, onlyImg bool, originalURL string) (err
 				writeMutex.Unlock()
 			}
 		} else {
+			// 更新下载状态为失败
+			setDownloadState(result.Task.URL, "failed", "", result.Error)
+			
 			// 下载失败，清理临时文件
 			if result.TempPath != "" {
 				os.Remove(result.TempPath)
