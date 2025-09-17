@@ -70,20 +70,9 @@ export const addEditorToDatabase = (protyle: IProtyle, range: Range, type?: stri
         // [SiYuan在聚焦 / 查询属性视图的时候，针对列表，最好是针对列表项进行添加，而不是中间的段落，因为段落的块标无法选中](siyuan://blocks/20241030180132-2uc3epb)
         protyle.wysiwyg.element.querySelectorAll(".protyle-wysiwyg--select").forEach((item: HTMLElement) => {
             let toBeAddItem = item;
-            const parent = item.parentElement;
-
-            if (parent.dataset.type === "NodeListItem") {
-                // 找到parent中第一个data-type="NodeParagraph"的子元素
-                const firstParagraphChild = Array.from(parent.children).find(
-                    (child: HTMLElement) => child.dataset.type === "NodeParagraph"
-                ) as HTMLElement;
-
-                // 如果当前item是这个第一个NodeParagraph子元素
-                if (firstParagraphChild === item) {
-                    toBeAddItem = parent;
-                }
+            if (item.parentElement.dataset.type === "NodeListItem") {
+                toBeAddItem = item.parentElement;
             }
-
             if (!targetElement) {
                 targetElement = toBeAddItem;
             }
