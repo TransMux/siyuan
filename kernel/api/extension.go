@@ -299,55 +299,47 @@ func extensionCopy(c *gin.Context) {
 	focusID, ts, ok := loadStatus("focusBlockId")
 	v, _, ok2 := loadStatus("visibility")
 
-	if insertAtFocus {
-		if ok && ok2 {
-			// 检查 visibility 是否为 true
-			if v == "false" {
+	if insertAtFocus && ok && ok2 && v != "false" {
+		if 0 < ts && time.Now().UnixMilli()-ts <= 10*60*1000 {
+			luteEngine2 := util.NewLute()
+			dataDOM, err := dataBlockDOM(md, luteEngine2)
+			if nil != err {
 				ret.Code = -1
-				ret.Msg = "focus block not visible"
+				ret.Msg = "data block DOM failed: " + err.Error()
 				return
 			}
-			if 0 < ts && time.Now().UnixMilli()-ts <= 10*60*1000 {
-				luteEngine2 := util.NewLute()
-				dataDOM, err := dataBlockDOM(md, luteEngine2)
-				if nil != err {
-					ret.Code = -1
-					ret.Msg = "data block DOM failed: " + err.Error()
-					return
-				}
-				transactions := []*model.Transaction{
-					{
-						DoOperations: []*model.Operation{
-							{
-								Action:   "appendInsert",
-								Data:     dataDOM,
-								ParentID: focusID,
-							},
+			transactions := []*model.Transaction{
+				{
+					DoOperations: []*model.Operation{
+						{
+							Action:   "appendInsert",
+							Data:     dataDOM,
+							ParentID: focusID,
 						},
 					},
-				}
-				model.PerformTransactions(&transactions)
-				model.FlushTxQueue()
-				var newID string
-				if len(transactions) > 0 && len(transactions[0].DoOperations) > 0 {
-					op := transactions[0].DoOperations[0]
-					if op.ID != "" {
-						newID = op.ID
-					} else if op.BlockID != "" {
-						newID = op.BlockID
-					}
-				}
-				if newID != "" {
-					saveStatus("focusBlockId", newID)
-				}
-				ret.Data = map[string]interface{}{
-					"md":       md,
-					"withMath": withMath,
-				}
-				ret.Msg = model.Conf.Language(72)
-				broadcastTransactions(transactions)
-				return
+				},
 			}
+			model.PerformTransactions(&transactions)
+			model.FlushTxQueue()
+			var newID string
+			if len(transactions) > 0 && len(transactions[0].DoOperations) > 0 {
+				op := transactions[0].DoOperations[0]
+				if op.ID != "" {
+					newID = op.ID
+				} else if op.BlockID != "" {
+					newID = op.BlockID
+				}
+			}
+			if newID != "" {
+				saveStatus("focusBlockId", newID)
+			}
+			ret.Data = map[string]interface{}{
+				"md":       md,
+				"withMath": withMath,
+			}
+			ret.Msg = model.Conf.Language(72)
+			broadcastTransactions(transactions)
+			return
 		}
 	}
 
